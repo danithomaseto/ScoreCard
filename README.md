@@ -1,8 +1,9 @@
 # Score Card - Automacao
 
-Automatiza a montagem semanal do Score Card. Fase atual: interface web para
-escolher a Operacao e executar o login automatico no portal de origem dos
-dados. Extracao/download do arquivo sera adicionado na proxima etapa.
+Automatiza a montagem semanal do Score Card. A interface web deixa escolher
+a Operacao e, com um clique, faz login no portal de origem, abre o relatorio
+configurado, aplica os filtros e baixa o arquivo Excel direto para a pasta
+de destino (por padrao, a Area de Trabalho).
 
 ## Operacoes
 
@@ -29,8 +30,13 @@ serao replicadas depois seguindo o mesmo padrao.
 4. Acesse `http://localhost:5000`, escolha a operacao "Hugo Boss" e clique em
    "Executar login".
 
-O resultado (sucesso/erro) aparece na tela, e um screenshot da pagina apos a
-tentativa e salvo em `screenshots/` para conferencia.
+O resultado (sucesso/erro) aparece na tela. Em caso de sucesso, o Excel e
+salvo direto na pasta de destino (por padrao, a Area de Trabalho do usuario
+que esta rodando a aplicacao). Em caso de erro, um screenshot da pagina no
+momento da falha e salvo em `screenshots/` para ajudar a diagnosticar.
+
+Para mudar a pasta de destino do arquivo baixado, defina a variavel
+`DOWNLOAD_DIR` no `.env` (ex.: `DOWNLOAD_DIR=C:\Users\seu.usuario\Downloads`).
 
 > Importante: o portal da Hugo Boss fica na rede interna da DHL. Para o login
 > funcionar, a maquina que roda esta aplicacao precisa ter acesso a essa rede

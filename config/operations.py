@@ -13,5 +13,9 @@ OPERATIONS = {
         "login_url": "https://czcholspc003138.prg-dc.dhl.com:11217/rp/login",
         "username_env": "HUGO_BOSS_USERNAME",
         "password_env": "HUGO_BOSS_PASSWORD",
+        "report_name": "rptLMUserSummaryRaw",
+        "date_range_option": "Last Week",
+        "group_by_option": "User ID",
+        "export_format": "EXCEL",
     },
 }
