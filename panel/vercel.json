@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/jobs/[id]/complete.js": {
+      "maxDuration": 30
+    }
+  }
+}
