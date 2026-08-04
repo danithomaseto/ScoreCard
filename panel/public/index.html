@@ -68,6 +68,8 @@
   }
   #gate .card { max-width: 360px; width: 100%; margin: 0; }
   .note { font-size: 12px; color: #98a2b3; margin-top: -8px; margin-bottom: 16px; }
+  .status { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 13px; }
+  .status.error { background: #fef3f2; color: #b42318; }
 </style>
 </head>
 <body>
@@ -79,6 +81,7 @@
     <label for="token-input">Token</label>
     <input id="token-input" type="password" placeholder="Token">
     <button id="token-save">Entrar</button>
+    <div id="gate-error" class="status error" hidden></div>
   </div>
 </div>
 
@@ -116,6 +119,7 @@
 <script>
 const TOKEN_KEY = 'scorecard_token';
 const gate = document.getElementById('gate');
+const gateError = document.getElementById('gate-error');
 const tokenInput = document.getElementById('token-input');
 const tokenSave = document.getElementById('token-save');
 const operationSelect = document.getElementById('operation');
@@ -127,31 +131,64 @@ function getToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-function showGate() {
+function showGate(message) {
   gate.hidden = false;
+  if (message) {
+    gateError.textContent = message;
+    gateError.hidden = false;
+  } else {
+    gateError.hidden = true;
+  }
 }
 
 function hideGate() {
   gate.hidden = true;
+  gateError.hidden = true;
 }
 
-tokenSave.addEventListener('click', () => {
+tokenSave.addEventListener('click', async () => {
   const value = tokenInput.value.trim();
   if (!value) return;
   localStorage.setItem(TOKEN_KEY, value);
-  hideGate();
-  bootstrap();
+  gateError.hidden = true;
+  tokenSave.disabled = true;
+  tokenSave.textContent = 'Verificando...';
+  try {
+    await bootstrap();
+  } finally {
+    tokenSave.disabled = false;
+    tokenSave.textContent = 'Entrar';
+  }
 });
 
 async function apiFetch(path, options = {}) {
   const token = getToken();
   const headers = Object.assign({}, options.headers, { Authorization: `Bearer ${token}` });
-  const res = await fetch(path, Object.assign({}, options, { headers }));
+  let res;
+  try {
+    res = await fetch(path, Object.assign({}, options, { headers }));
+  } catch (err) {
+    throw new Error('Nao foi possivel conectar no painel (confira a URL ou sua internet).');
+  }
+
   if (res.status === 401) {
     localStorage.removeItem(TOKEN_KEY);
-    showGate();
-    throw new Error('Token invalido.');
+    const message = 'Token invalido ou nao autorizado. Confira o valor e tente de novo.';
+    showGate(message);
+    throw new Error(message);
   }
+
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const data = await res.json();
+      detail = data.error || '';
+    } catch (err) {
+      // resposta sem JSON, ignora
+    }
+    throw new Error(detail || `Erro do servidor (HTTP ${res.status}).`);
+  }
+
   return res;
 }
 
