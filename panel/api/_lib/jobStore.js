@@ -2,6 +2,22 @@ const { put, list } = require('@vercel/blob');
 
 const PREFIX = 'jobs/';
 
+// Blob Stores criados no modo novo do Vercel (OIDC) nao emitem mais um
+// BLOB_READ_WRITE_TOKEN classico — em vez disso, cada chamada precisa
+// informar o storeId explicitamente (a autenticacao acontece sozinha,
+// via identidade do proprio deployment na Vercel). Configuramos o ID em
+// BLOB_STORE_ID (variavel nossa, estavel) em vez de depender do nome
+// gerado automaticamente pela Vercel (que muda conforme o nome do
+// Store). Projetos que ainda usam o token classico simplesmente ignoram
+// isso, sem problema.
+function blobOptions(extra = {}) {
+  const options = { ...extra };
+  if (process.env.BLOB_STORE_ID) {
+    options.storeId = process.env.BLOB_STORE_ID;
+  }
+  return options;
+}
+
 function jobJsonPath(id) {
   return `${PREFIX}${id}.json`;
 }
@@ -17,12 +33,16 @@ function sanitizeJob(job) {
 
 async function saveJob(job) {
   job.updatedAt = new Date().toISOString();
-  await put(jobJsonPath(job.id), JSON.stringify(job), {
-    access: 'public',
-    contentType: 'application/json',
-    addRandomSuffix: false,
-    allowOverwrite: true,
-  });
+  await put(
+    jobJsonPath(job.id),
+    JSON.stringify(job),
+    blobOptions({
+      access: 'public',
+      contentType: 'application/json',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+    })
+  );
   return job;
 }
 
@@ -50,7 +70,7 @@ async function fetchJobBlob(blobUrl) {
 // Retorna o job "cru" (pode conter usuario/senha se ainda pendente). Uso
 // interno apenas — quem chama e responsavel por nao vazar credenciais.
 async function getJobRaw(id) {
-  const { blobs } = await list({ prefix: jobJsonPath(id), limit: 1 });
+  const { blobs } = await list(blobOptions({ prefix: jobJsonPath(id), limit: 1 }));
   if (!blobs.length) return null;
   return fetchJobBlob(blobs[0].url);
 }
@@ -60,7 +80,7 @@ async function getJob(id) {
 }
 
 async function listJobs({ status } = {}) {
-  const { blobs } = await list({ prefix: PREFIX });
+  const { blobs } = await list(blobOptions({ prefix: PREFIX }));
   const jsonBlobs = blobs.filter((b) => b.pathname.endsWith('.json'));
   const jobs = await Promise.all(jsonBlobs.map((b) => fetchJobBlob(b.url)));
   const valid = jobs.filter(Boolean).map(sanitizeJob);
@@ -68,4 +88,4 @@ async function listJobs({ status } = {}) {
   return status ? valid.filter((j) => j.status === status) : valid;
 }
 
-module.exports = { createJob, saveJob, getJob, getJobRaw, listJobs, sanitizeJob };
+module.exports = { createJob, saveJob, getJob, getJobRaw, listJobs, sanitizeJob, blobOptions };

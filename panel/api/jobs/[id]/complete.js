@@ -1,6 +1,6 @@
 const { put } = require('@vercel/blob');
 const { requireAuth } = require('../../_lib/auth');
-const { getJob, saveJob } = require('../../_lib/jobStore');
+const { getJob, saveJob, blobOptions } = require('../../_lib/jobStore');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -28,10 +28,11 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Arquivo vazio ou invalido.' });
     }
 
-    const blob = await put(`jobs/${id}-${filename}`, fileBuffer, {
-      access: 'public',
-      addRandomSuffix: true,
-    });
+    const blob = await put(
+      `jobs/${id}-${filename}`,
+      fileBuffer,
+      blobOptions({ access: 'public', addRandomSuffix: true })
+    );
 
     job.status = 'done';
     job.message = 'Relatorio pronto para download.';
