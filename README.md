@@ -1,102 +1,78 @@
 # Score Card - Automacao
 
-Automatiza a montagem semanal do Score Card. Arquitetura 100% web, dividida
-em duas partes porque o portal de origem (Hugo Boss) fica na rede interna
-da DHL, inacessivel para servidores na nuvem:
+Automatiza a montagem semanal do Score Card: uma interface web local deixa
+escolher a Operacao, faz login no portal de origem (BlueYonder/RP),
+navega ate o relatorio, aplica os filtros (Last Week / User ID) e exporta
+o Excel direto para a subpasta da operacao dentro da pasta do SharePoint
+sincronizada via OneDrive.
 
-- **Painel** (`public/index.html` + `api/`): pagina unica HTML/CSS/JS,
-  hospedada no Vercel. Acessivel de qualquer lugar. Deixa escolher a
-  Operacao, disparar uma execucao e acompanhar o status/baixar o
-  resultado.
-- **Agente** (`agent/`): script Node.js que roda numa maquina com acesso a
-  rede da operacao (ex.: seu PC conectado na VPN da DHL). Ele fica de olho
-  no painel, pega as tarefas pendentes, faz a automacao (login + extracao
-  do relatorio via Playwright) e envia o Excel de volta pro painel.
+## Operacoes cadastradas
 
+Todas cadastradas em `config/operations.py`, usando o mesmo fluxo de
+automacao (`automation/generic.py` + `automation/base.py`):
+
+Hugo Boss, Hughes, Swa, Nike/Fisia, Sumup, Rede, JCB, Lego, SpaceX, HPE,
+Armani, ABB.
+
+## Configuracao
+
+1. Instale as dependencias:
+   ```bash
+   pip install -r requirements.txt
+   playwright install chromium
+   ```
+2. Copie `.env.example` para `.env` e preencha as credenciais reais:
+   ```bash
+   cp .env.example .env
+   ```
+   O arquivo `.env` **nunca** deve ser commitado (ja esta no
+   `.gitignore`) — ele guarda usuario e senha em texto puro.
+3. Confirme que a pasta do SharePoint esta sincronizada via OneDrive no
+   seu computador (deve aparecer como uma pasta normal no Explorador de
+   Arquivos). O caminho base esta fixo em
+   `automation/generic.py` (`SHAREPOINT_BASE_DIR`) — ajuste se o caminho
+   na sua maquina for diferente.
+4. Conecte na VPN da DHL (os portais sao internos).
+5. Rode a aplicacao:
+   ```bash
+   python app.py
+   ```
+6. Acesse `http://localhost:5000`, escolha a operacao e clique em
+   "Executar login".
+
+## Onde o relatorio e salvo
+
+Cada operacao salva na sua subpasta dentro de:
 ```
-Voce (navegador) --> Painel (Vercel) <-- Agente local (sua maquina/VPN) --> Portal Hugo Boss
-        |                    ^
-        +---- clica Executar-+  (cria tarefa)
-        |                    |
-        +---- baixa Excel <--+  (agente envia o resultado)
+<SHAREPOINT_BASE_DIR>/<sharepoint_folder da operacao>
 ```
+Ex.: `.../CLM GESTÃO CONJUNTA - Automação Score/Hugo Boss/`. Para forçar
+todas as operações a salvarem num único lugar fixo (útil para testes),
+defina `DOWNLOAD_DIR` no `.env`.
 
-## 1. Publicar o painel no Vercel
-
-1. No painel do Vercel, importe este repositorio como um novo projeto
-   (Framework Preset: "Other").
-2. Em **Storage**, crie um **Blob Store** e conecte ao projeto (isso injeta
-   automaticamente a variavel `BLOB_READ_WRITE_TOKEN`).
-3. Em **Settings > Environment Variables**, adicione:
-   - `APP_TOKEN` = um token secreto qualquer, escolhido por voce (ex.: gere
-     com `openssl rand -hex 20`). Ele protege o painel e a API — sem ele,
-     ninguem consegue disparar tarefas nem ver o historico.
-4. Faça o deploy (push nesta branch, ou `vercel --prod` pela CLI).
-5. Acesse a URL publicada. Na primeira vez, ele vai pedir o token — cole o
-   mesmo valor de `APP_TOKEN`.
-
-> O token fica salvo no navegador (localStorage). Trate a URL + token como
-> informacao sensivel: quem tiver os dois consegue disparar extracoes e
-> baixar os relatorios.
-
-## 2. Configurar o agente local
-
-O agente precisa rodar numa maquina com acesso a rede da operacao (para a
-Hugo Boss, conectada na VPN da DHL).
-
-```bash
-cd agent
-npm install
-npx playwright install chromium
-cp .env.example .env
-```
-
-Edite `agent/.env` com os valores reais (veja `agent/.env.example` para o
-formato completo):
-```
-DASHBOARD_URL=https://seu-projeto.vercel.app
-APP_TOKEN=<o mesmo APP_TOKEN configurado no Vercel>
-HUGO_BOSS_USERNAME=<seu usuario>
-HUGO_BOSS_PASSWORD=<sua senha>
-```
-
-Rode o agente:
-```bash
-npm start
-```
-Ele fica verificando o painel a cada poucos segundos. Deixe essa janela
-aberta enquanto for usar o painel (não precisa ficar rodando 24/7 — só
-quando quiser executar uma extração).
-
-## 3. Usar
-
-1. Abra o painel no navegador (celular, notebook, de onde for).
-2. Escolha a operacao e clique em **Executar**.
-3. Com o agente rodando na maquina com VPN, ele pega a tarefa em poucos
-   segundos, faz login, aplica os filtros do relatorio (Last Week / User
-   ID) e exporta em Excel.
-4. Quando o status virar **Concluido** no painel, clique em **Baixar
-   Excel**.
-
-Se der erro, o status fica **Falhou** com a mensagem de qual etapa travou,
-e um screenshot é salvo em `agent/screenshots/` na maquina do agente, para
-ajudar a ajustar a automacao.
+Em caso de falha, um screenshot da tela no momento do erro é salvo em
+`screenshots/` (fora do controle de versão), para ajudar a diagnosticar.
 
 ## Adicionando uma nova operacao
 
-1. `agent/config/operations.js`: adicione a entrada com `loginUrl` e os
-   nomes das variaveis de usuario/senha.
-2. Adicione essas variaveis no `agent/.env` (e no `agent/.env.example`).
-3. Crie `agent/automation/<operacao>.js` seguindo o padrao de
-   `hugoBoss.js`.
-4. Registre o runner em `agent/agent.js` (objeto `RUNNERS`).
-5. `api/_lib/operations.js`: adicione a mesma chave, só com o `label`
-   (isso é o que faz a operacao aparecer no dropdown do painel).
+1. Adicione uma entrada em `config/operations.py` com `label`,
+   `login_url`, `sharepoint_folder` e os demais parametros (todos
+   seguem o mesmo padrao das operacoes existentes).
+2. A operacao aparece automaticamente no dropdown — nao precisa criar
+   nenhum arquivo novo, `automation/generic.py` funciona para todas.
 
-## Limitacoes conhecidas
+## Estrutura do site (BlueYonder RP)
 
-- O upload do relatorio para o painel passa por uma Vercel Function, que
-  tem limite de ~4.5 MB por requisicao. Para os relatorios de resumo
-  semanal isso costuma ser suficiente; se um relatorio futuro for maior,
-  o upload vai falhar e vamos precisar mudar para upload direto no Blob.
-- O agente processa uma tarefa por vez, em sequencia.
+A area de relatorios roda dentro de um `<iframe>` cujo nome muda a cada
+sessao (contém um token/timestamp); por isso o codigo localiza o frame
+por um trecho fixo do nome (`reporting-ReportOpr`) em vez do nome
+completo. Os campos "Date Range" e "Group By 1" sao comboboxes que só
+reagem a digitação real (tecla por tecla), não a `fill()` direto — ver
+`select_combobox` em `automation/base.py`.
+
+## Proximo passo (painel web)
+
+A ideia e evoluir para um painel hospedado (Vercel) acessivel de
+qualquer lugar, com um agente local (rodando numa maquina com VPN da
+DHL) processando as extracoes em segundo plano. Este repositorio, por
+enquanto, e a versao local (Flask) que ja funciona ponta a ponta.
