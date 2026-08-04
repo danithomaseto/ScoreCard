@@ -90,6 +90,13 @@
     <label for="operation">Operacao</label>
     <select id="operation"></select>
 
+    <label for="dhl-username">Usuario (do portal da operacao)</label>
+    <input id="dhl-username" type="text" autocomplete="username" placeholder="Seu usuario">
+
+    <label for="dhl-password">Senha</label>
+    <input id="dhl-password" type="password" autocomplete="current-password" placeholder="Sua senha">
+    <p class="note">Usada so nesta execucao — nao fica salva no historico.</p>
+
     <button id="run-btn">Executar</button>
   </div>
 
@@ -220,15 +227,28 @@ async function loadJobs() {
   renderJobs(data.jobs || []);
 }
 
+const usernameInput = document.getElementById('dhl-username');
+const passwordInput = document.getElementById('dhl-password');
+
 runBtn.addEventListener('click', async () => {
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!username || !password) {
+    alert('Preencha usuario e senha do portal da operacao.');
+    return;
+  }
+
   runBtn.disabled = true;
   runBtn.textContent = 'Enviando...';
   try {
     await apiFetch('/api/jobs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ operation: operationSelect.value }),
+      body: JSON.stringify({ operation: operationSelect.value, username, password }),
     });
+    // Nao deixa a senha parada no formulario depois de enviar.
+    passwordInput.value = '';
     await loadJobs();
   } catch (err) {
     alert('Erro ao criar tarefa: ' + err.message);

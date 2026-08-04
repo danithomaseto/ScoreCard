@@ -13,13 +13,16 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'POST') {
-    const { operation } = req.body || {};
+    const { operation, username, password } = req.body || {};
     if (!operation || !OPERATIONS[operation]) {
       return res.status(400).json({ error: 'Operacao invalida.' });
     }
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Usuario e senha sao obrigatorios.' });
+    }
 
     const id = crypto.randomUUID();
-    const job = await createJob(id, operation, OPERATIONS[operation].label);
+    const job = await createJob(id, operation, OPERATIONS[operation].label, username, password);
     return res.status(201).json(job);
   }
 

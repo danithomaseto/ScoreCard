@@ -27,14 +27,19 @@ def default_download_dir(config):
     return os.path.join(SHAREPOINT_BASE_DIR, folder)
 
 
-def run(operation_key, headless=True):
+def run(operation_key, headless=True, username=None, password=None):
     """Executa a automacao completa (login + extracao do relatorio) para
     qualquer operacao cadastrada em config/operations.py. Todas seguem o
     mesmo fluxo: login, Reports > Reports, abrir o relatorio, aplicar os
-    filtros e exportar em Excel."""
+    filtros e exportar em Excel.
+
+    Se username/password forem passados (ex: vindos do painel, digitados
+    pela pessoa que disparou a tarefa), eles tem prioridade. Caso
+    contrario, cai para as variaveis de ambiente (uso do app.py local).
+    """
     config = OPERATIONS[operation_key]
-    username = os.environ.get(config["username_env"])
-    password = os.environ.get(config["password_env"])
+    username = username or os.environ.get(config["username_env"])
+    password = password or os.environ.get(config["password_env"])
 
     if not username or not password:
         return {
@@ -42,7 +47,7 @@ def run(operation_key, headless=True):
             "success": False,
             "message": (
                 f"Credenciais nao configuradas. Defina {config['username_env']} e "
-                f"{config['password_env']} no arquivo .env."
+                f"{config['password_env']} no arquivo .env, ou informe no painel."
             ),
         }
 

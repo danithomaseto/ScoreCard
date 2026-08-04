@@ -2,9 +2,11 @@
 pendentes, roda a automacao Playwright (automation/generic.py) e envia o
 relatorio de volta para o painel.
 
-Precisa rodar numa maquina com acesso a rede da operacao (VPN da DHL).
-Configuracao em .env (veja .env.example): DASHBOARD_URL, APP_TOKEN,
-DHL_USERNAME, DHL_PASSWORD.
+O usuario/senha usados na automacao vem da propria tarefa (quem disparou
+pelo painel digitou ali) — o agente nao precisa de credenciais fixas no
+.env para isso. Precisa rodar numa maquina com acesso a rede da operacao
+(VPN da DHL). Configuracao em .env (veja .env.example): DASHBOARD_URL,
+APP_TOKEN.
 """
 
 import os
@@ -47,10 +49,16 @@ def fetch_pending_jobs():
 
 
 def claim_job(job_id):
+    """Reserva a tarefa. A resposta do claim e a UNICA que traz
+    usuario/senha (digitados pela pessoa no painel) — o job nunca mais
+    carrega credenciais depois disso. Retorna None se nao conseguiu
+    reservar (ex: outro agente ja pegou)."""
     resp = requests.post(
         f"{DASHBOARD_URL}/api/jobs/{job_id}/claim", headers=auth_headers(), timeout=30
     )
-    return resp.ok
+    if not resp.ok:
+        return None
+    return resp.json()
 
 
 def report_failure(job_id, message):
@@ -83,12 +91,16 @@ def process_job(job):
         return
 
     print(f"[{job['id']}] Reservando tarefa '{operation_key}'...")
-    if not claim_job(job["id"]):
+    claimed = claim_job(job["id"])
+    if not claimed:
         print(f"[{job['id']}] Nao foi possivel reservar (outro agente pode ja ter pegado).")
         return
 
+    username = claimed.get("username")
+    password = claimed.get("password")
+
     print(f"[{job['id']}] Executando automacao...")
-    result = generic.run(operation_key, headless=True)
+    result = generic.run(operation_key, headless=True, username=username, password=password)
 
     if not result.get("success"):
         message = result.get("message", "Falha desconhecida.")

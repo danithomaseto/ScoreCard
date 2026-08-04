@@ -60,8 +60,24 @@ Swa, Nike/Fisia, Sumup, Rede, JCB, Lego, SpaceX, HPE, Armani, ABB.
    Ele fica verificando o painel a cada poucos segundos — deixe rodando
    enquanto for usar (nao precisa 24/7).
 3. **Usar**: abra a URL do painel no navegador (de onde for), informe o
-   token, escolha a operacao e clique em Executar. Quando o agente
+   token, escolha a operacao, digite **seu proprio usuario e senha do
+   portal daquela operacao** e clique em Executar. Quando o agente
    processar, o status muda pra "Concluido" com um link de download.
+
+### Credenciais por pessoa
+
+Cada tarefa carrega o usuario/senha que a pessoa digitou no painel — nao
+existe uma credencial fixa compartilhada pra quem usa o painel. Isso
+tambem significa que **varias pessoas podem rodar o agente**, cada uma
+na sua propria maquina com VPN; qualquer agente disponivel pega a
+proxima tarefa pendente e usa a credencial daquela tarefa especifica,
+entao a automacao nao fica presa a uma unica maquina.
+
+A senha so existe em texto simples durante o tempo em que a tarefa esta
+"Pendente" (geralmente poucos segundos, ate um agente disponivel
+reservar). Assim que um agente reserva a tarefa, o painel apaga
+usuario/senha do que fica salvo — nunca aparecem de novo em nenhuma
+tela ou historico depois disso.
 
 ## Opcao 2: usar so localmente (sem painel)
 
