@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
     const blob = await put(
       `jobs/${id}-${filename}`,
       fileBuffer,
-      blobOptions({ access: 'public', addRandomSuffix: true })
+      blobOptions({ access: 'private', addRandomSuffix: true })
     );
 
     job.status = 'done';

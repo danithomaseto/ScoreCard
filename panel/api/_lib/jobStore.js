@@ -18,6 +18,16 @@ function blobOptions(extra = {}) {
   return options;
 }
 
+// Contas mais novas do Vercel so oferecem Blob Store no modo "Private"
+// (nao existe mais opcao publica). Isso significa que mesmo ler o
+// conteudo de um blob (nao so escrever) exige autenticacao — por isso
+// toda leitura interna passa o token como Bearer.
+function authHeaders() {
+  return process.env.BLOB_READ_WRITE_TOKEN
+    ? { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` }
+    : {};
+}
+
 function jobJsonPath(id) {
   return `${PREFIX}${id}.json`;
 }
@@ -37,7 +47,7 @@ async function saveJob(job) {
     jobJsonPath(job.id),
     JSON.stringify(job),
     blobOptions({
-      access: 'public',
+      access: 'private',
       contentType: 'application/json',
       addRandomSuffix: false,
       allowOverwrite: true,
@@ -62,7 +72,7 @@ async function createJob(id, operation, operationLabel, username, password) {
 }
 
 async function fetchJobBlob(blobUrl) {
-  const res = await fetch(blobUrl, { cache: 'no-store' });
+  const res = await fetch(blobUrl, { cache: 'no-store', headers: authHeaders() });
   if (!res.ok) return null;
   return res.json();
 }
@@ -88,4 +98,13 @@ async function listJobs({ status } = {}) {
   return status ? valid.filter((j) => j.status === status) : valid;
 }
 
-module.exports = { createJob, saveJob, getJob, getJobRaw, listJobs, sanitizeJob, blobOptions };
+module.exports = {
+  createJob,
+  saveJob,
+  getJob,
+  getJobRaw,
+  listJobs,
+  sanitizeJob,
+  blobOptions,
+  authHeaders,
+};
