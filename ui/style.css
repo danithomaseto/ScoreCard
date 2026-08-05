@@ -1,0 +1,127 @@
+* { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #f2f4f7;
+  margin: 0;
+  min-height: 100vh;
+  color: #1d2939;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: #fff;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.topbar h1 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.topbar .actions button {
+  margin-left: 8px;
+}
+
+/* IMPORTANTE: nao colocar "display" aqui. Este bloco e usado em
+   elementos escondidos via atributo [hidden]; um "display" fixo aqui
+   sobrescreveria o [hidden] do navegador e o elemento nunca sumiria
+   (ja aconteceu esse bug na versao do painel web). O "display: flex"
+   entra condicionalmente via ":not([hidden])" mais abaixo. */
+.center-wrap {
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 28px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.card.wide {
+  max-width: 640px;
+}
+
+h2 { font-size: 20px; margin: 0 0 4px; }
+.subtitle { color: #667085; font-size: 13px; margin: 0 0 20px; }
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #344054;
+}
+
+select, input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #d0d5dd;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #d40511;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #f2f4f7;
+  color: #344054;
+}
+
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.status {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #f2f4f7;
+  color: #344054;
+}
+.status.success { background: #ecfdf3; color: #027a48; }
+.status.error { background: #fef3f2; color: #b42318; }
+
+.folder-box {
+  background: #f9fafb;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  color: #344054;
+  word-break: break-all;
+  margin-bottom: 16px;
+}
+
+.main-content {
+  padding: 32px 24px;
+  display: flex;
+  justify-content: center;
+}
+
+#settings-modal {
+  position: fixed; inset: 0; background: rgba(16,24,40,0.6);
+  align-items: center; justify-content: center; padding: 16px;
+  z-index: 10;
+}
+#settings-modal:not([hidden]) { display: flex; }
+
+#login-view:not([hidden]) { display: flex; }

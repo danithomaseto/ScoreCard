@@ -1,129 +1,103 @@
-# Score Card - Automacao
+# Score Card - Aplicativo Desktop
 
-Automatiza a montagem semanal do Score Card. Duas formas de usar:
+Versao 100% local do Score Card: sem Vercel, sem Supabase, sem depender
+de internet pra funcionar (so precisa de rede pra acessar o Summary e,
+na primeira vez, baixar o Chromium usado internamente). Roda como um
+programa desktop de verdade (janela nativa, sem barra de navegador),
+usando [pywebview](https://pywebview.flowrl.com/) pra mostrar a
+interface (HTML/CSS/JS) com um backend em Python.
 
-- **Painel web** (`panel/`): pagina publicada no Vercel, acessivel de
-  qualquer lugar, pra escolher a Operacao, disparar a extracao e
-  acompanhar o status/baixar o resultado.
-- **App local** (`app.py`): interface Flask rodando so na sua maquina,
-  em `http://localhost:5000` — util pra testar sem depender do Vercel.
+## Como funciona
 
-Em ambos os casos, quem faz o trabalho pesado (login no portal, navegar
-ate o relatorio, aplicar filtros, exportar em Excel) e sempre o mesmo
-codigo Python (`automation/`), rodando numa maquina com acesso a rede da
-operacao (VPN da DHL) — os portais sao internos e nao podem ser
-alcancados por um servidor na nuvem.
+1. Tela de login: cada pessoa entra com o **seu proprio** usuario/senha
+   do Summary (nada fixo no codigo).
+2. Na primeira vez, pede pra selecionar a pasta do SharePoint/OneDrive
+   onde os relatorios vao ser salvos — fica guardado localmente
+   (`%APPDATA%\ScoreCard\settings.json`), nao precisa selecionar de novo
+   nas proximas vezes. Da pra trocar depois em Configuracoes.
+3. Escolhe a operacao, clica em Executar — a automacao roda com as
+   credenciais informadas, e salva o relatorio na subpasta daquela
+   operacao dentro da pasta configurada.
 
-```
-Painel (Vercel, de qualquer lugar) <--> agent.py (sua maquina/VPN) --> Portal da operacao
-App local (so na sua maquina)      <--> automation/ (direto, sem painel) --> Portal da operacao
-```
+Toda a logica de automacao (login no Summary, navegacao pelo iframe de
+relatorios, filtros, exportacao) e a mesma ja validada nas versoes
+anteriores do projeto — nada mudou nesse ponto, so a forma como o
+usuario interage com o programa.
 
-## Operacoes cadastradas
-
-Todas em `config/operations.py`, usando o mesmo fluxo de automacao
-(`automation/generic.py` + `automation/base.py`): Hugo Boss, Hughes,
-Swa, Nike/Fisia, Sumup, Rede, JCB, Lego, SpaceX, HPE, Armani, ABB.
-
-## Configuracao comum (local)
-
-1. Instale as dependencias:
-   ```bash
-   pip install -r requirements.txt
-   playwright install chromium
-   ```
-2. Copie `.env.example` para `.env` e preencha:
-   ```bash
-   cp .env.example .env
-   ```
-   O arquivo `.env` **nunca** deve ser commitado (ja esta no
-   `.gitignore`) — guarda usuario/senha em texto puro.
-3. Confirme que a pasta do SharePoint esta sincronizada via OneDrive no
-   seu computador (deve aparecer como pasta normal no Explorador de
-   Arquivos). O caminho base esta fixo em `automation/generic.py`
-   (`SHAREPOINT_BASE_DIR`) — ajuste se for diferente na sua maquina.
-4. Conecte na VPN da DHL antes de rodar qualquer automacao.
-
-## Opcao 1: usar o painel web
-
-1. **Publicar o painel no Vercel**: importe a pasta `panel/` como
-   projeto (em Settings do projeto Vercel, configure "Root Directory"
-   = `panel`). Em Storage, crie um **Blob Store** e conecte ao projeto
-   (injeta `BLOB_READ_WRITE_TOKEN` automaticamente). Em Environment
-   Variables, adicione `APP_TOKEN` (um valor secreto a sua escolha).
-2. **Rodar o agente local**: no `.env` (raiz do repo), preencha tambem
-   `DASHBOARD_URL` (a URL do projeto Vercel) e `APP_TOKEN` (o mesmo
-   valor). Rode:
-   ```bash
-   python agent.py
-   ```
-   Ele fica verificando o painel a cada poucos segundos — deixe rodando
-   enquanto for usar (nao precisa 24/7).
-3. **Usar**: abra a URL do painel no navegador (de onde for), informe o
-   token, escolha a operacao, digite **seu proprio usuario e senha do
-   portal daquela operacao** e clique em Executar. Quando o agente
-   processar, o status muda pra "Concluido" com um link de download.
-
-### Credenciais por pessoa
-
-Cada tarefa carrega o usuario/senha que a pessoa digitou no painel — nao
-existe uma credencial fixa compartilhada pra quem usa o painel. Isso
-tambem significa que **varias pessoas podem rodar o agente**, cada uma
-na sua propria maquina com VPN; qualquer agente disponivel pega a
-proxima tarefa pendente e usa a credencial daquela tarefa especifica,
-entao a automacao nao fica presa a uma unica maquina.
-
-A senha so existe em texto simples durante o tempo em que a tarefa esta
-"Pendente" (geralmente poucos segundos, ate um agente disponivel
-reservar). Assim que um agente reserva a tarefa, o painel apaga
-usuario/senha do que fica salvo — nunca aparecem de novo em nenhuma
-tela ou historico depois disso.
-
-## Opcao 2: usar so localmente (sem painel)
+## Rodando em modo desenvolvimento (sem gerar o .exe)
 
 ```bash
-python app.py
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+playwright install chromium
+python main.py
 ```
-Acesse `http://localhost:5000`, escolha a operacao e clique em
-"Executar login". Nao depende do Vercel nem do agente.
 
-## Onde o relatorio e salvo
+## Gerando o .exe
 
-Em ambas as opcoes, cada operacao salva na sua subpasta dentro de:
-```
-<SHAREPOINT_BASE_DIR>/<sharepoint_folder da operacao>
-```
-Ex.: `.../CLM GESTÃO CONJUNTA - Automação Score/Hugo Boss/`. Pelo painel,
-o agente tambem envia uma copia pro Vercel Blob, pra aparecer o link de
-download no historico. Para forcar tudo numa unica pasta fixa (util pra
-testes), defina `DOWNLOAD_DIR` no `.env`.
+**Precisa ser feito numa maquina Windows** (o PyInstaller gera o
+executavel pro sistema operacional em que ele roda — nao da pra gerar
+um .exe a partir de Linux/Mac).
 
-Em caso de falha, um screenshot da tela no momento do erro e salvo em
-`screenshots/` (fora do controle de versao), pra ajudar a diagnosticar.
+Na pasta do projeto, de duplo-clique em `build.bat` (ou rode pelo
+terminal). Ele:
+1. Cria um ambiente virtual Python (se ainda nao existir).
+2. Instala as dependencias.
+3. Baixa o Chromium.
+4. Empacota tudo com o PyInstaller.
+
+Ao final, o executavel fica em `dist\ScoreCard\ScoreCard.exe`. Essa
+pasta inteira (`dist\ScoreCard`) e o que voce distribui pras outras
+pessoas — nao só o `.exe` sozinho, ele precisa dos arquivos ao lado.
+
+### Pre-requisitos na maquina que gera o .exe
+
+- Python 3.10+ instalado.
+- Windows 10/11 com o **Microsoft Edge WebView2 Runtime** (ja vem
+  instalado por padrao nas versoes atuais do Windows; se faltar, o
+  pywebview avisa e da o caminho pra instalar).
+
+### Pre-requisitos na maquina de quem so vai USAR o .exe
+
+Nenhum — nem Python, nem nada tecnico. So o WebView2 Runtime (que,
+de novo, ja vem com o Windows atualizado).
+
+## Primeira execucao (para quem usa o .exe)
+
+Na primeira vez que o programa roda, se o Chromium interno ainda nao
+estiver presente, ele baixa sozinho antes de abrir a janela (pode
+demorar um pouco, dependendo da internet — no momento essa etapa nao
+mostra uma mensagem na tela, ja que o executavel roda sem console;
+funciona silenciosamente, so demora um pouco mais na primeira vez).
+
+## Configuracoes / trocar a pasta do SharePoint
+
+Dentro do app, botao **Configuracoes** no topo, depois **Alterar
+pasta**. Abre o seletor de pastas nativo do Windows.
 
 ## Adicionando uma nova operacao
 
-1. Adicione uma entrada em `config/operations.py` com `label`,
-   `login_url`, `sharepoint_folder` e os demais parametros (mesmo
-   padrao das operacoes existentes).
-2. Se for usar o painel, adicione a mesma chave (so com `label`) em
-   `panel/api/_lib/operations.js`.
-3. Pronto — aparece no dropdown automaticamente, sem precisar criar
-   nenhum arquivo novo.
+Mesma coisa de sempre: adicionar uma entrada em `config/operations.py`
+com `label`, `login_url`, `sharepoint_folder` e os demais parametros —
+aparece sozinha no dropdown, sem precisar mexer em mais nada.
 
-## Estrutura do site (BlueYonder RP)
+## Estrutura
 
-A area de relatorios roda dentro de um `<iframe>` cujo nome muda a cada
-sessao (contem um token/timestamp); por isso o codigo localiza o frame
-por um trecho fixo do nome (`reporting-ReportOpr`) em vez do nome
-completo. Os campos "Date Range" e "Group By 1" sao comboboxes que so
-reagem a digitacao real (tecla por tecla), nao a `fill()` direto — ver
-`select_combobox` em `automation/base.py`.
-
-## Limitacoes conhecidas
-
-- O upload do relatorio pro painel passa por uma Vercel Function, com
-  limite de ~4.5 MB por requisicao — suficiente pros relatorios atuais.
-- O agente processa uma tarefa por vez, em sequencia.
-- O agente so funciona enquanto a maquina que roda ele estiver ligada
-  (tela travada nao e problema; suspensao/hibernacao, sim).
+```
+main.py              # cria a janela, garante que o Chromium existe
+api.py                # metodos chamados pelo JS (login, executar, config)
+settings_store.py     # persiste a pasta do SharePoint em %APPDATA%
+automation/
+  base.py              # login, iframe, comboboxes, export (Playwright)
+  generic.py            # orquestra o fluxo por operacao
+config/
+  operations.py         # cadastro das operacoes
+ui/
+  index.html             # login + painel + configuracoes
+  style.css
+  app.js
+requirements.txt
+build.spec               # config do PyInstaller
+build.bat                 # script de build de um clique (Windows)
+```
