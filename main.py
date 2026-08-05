@@ -38,7 +38,10 @@ def ensure_browser_installed():
 
     try:
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=True)
+            # channel="chromium" pra checar exatamente o mesmo binario
+            # que automation/base.py vai usar de verdade (o Chromium
+            # completo, nao o chromium-headless-shell).
+            browser = playwright.chromium.launch(headless=True, channel="chromium")
             browser.close()
         return
     except Exception:

@@ -54,6 +54,14 @@ def open_browser_session(headless=True):
     launch_kwargs = {"headless": headless}
     if os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE"):
         launch_kwargs["executable_path"] = os.environ["PLAYWRIGHT_CHROMIUM_EXECUTABLE"]
+    else:
+        # Forca o Chromium "completo" em vez do chromium-headless-shell
+        # (variante enxuta que o Playwright passou a preferir em modo
+        # headless por padrao) — esse segundo binario e baixado a parte
+        # e nem sempre acompanha um "playwright install chromium"
+        # simples, o que ja causou "Executable doesn't exist" mesmo com
+        # o Chromium normal presente.
+        launch_kwargs["channel"] = "chromium"
 
     playwright = sync_playwright().start()
     browser = playwright.chromium.launch(**launch_kwargs)
