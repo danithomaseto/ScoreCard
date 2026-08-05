@@ -21,13 +21,45 @@ datas = [("ui", "ui")]
 binaries = []
 hiddenimports = []
 
-# Garante que o driver interno do Playwright (usado tanto pra rodar o
-# Chromium quanto pro download automatico na primeira execucao) vai
-# junto no pacote.
+# Garante que o driver interno do Playwright (usado pra controlar o
+# Chromium) vai junto no pacote.
 pw_datas, pw_binaries, pw_hiddenimports = collect_all("playwright")
 datas += pw_datas
 binaries += pw_binaries
 hiddenimports += pw_hiddenimports
+
+
+def find_playwright_chromium():
+    """Localiza o Chromium ja baixado nesta maquina (via 'playwright
+    install chromium', rodado antes deste build) e devolve como entrada
+    de datas do PyInstaller, pra ir embutido dentro do .exe.
+
+    Baixar o navegador na primeira execucao do usuario final se mostrou
+    pouco confiavel rodando de dentro do app ja empacotado (o driver do
+    Playwright nao consegue completar o download nesse contexto). Em
+    vez disso, o Chromium vai junto no pacote, pronto pra usar — o
+    usuario final nunca precisa baixar nada.
+    """
+    cache_dir = os.path.join(os.environ.get("LOCALAPPDATA", ""), "ms-playwright")
+    entries = []
+    if os.path.isdir(cache_dir):
+        for name in os.listdir(cache_dir):
+            full_path = os.path.join(cache_dir, name)
+            # So o Chromium "completo" (channel="chromium" no codigo) —
+            # nao precisamos do chromium_headless_shell.
+            if name.startswith("chromium-") and os.path.isdir(full_path):
+                entries.append((full_path, f"playwright/driver/package/.local-browsers/{name}"))
+    return entries
+
+
+chromium_datas = find_playwright_chromium()
+if not chromium_datas:
+    raise SystemExit(
+        "Nenhum Chromium do Playwright encontrado em "
+        "%LOCALAPPDATA%\\ms-playwright. Rode 'python -m playwright "
+        "install chromium' antes de gerar o .exe."
+    )
+datas += chromium_datas
 
 a = Analysis(
     ["main.py"],

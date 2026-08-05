@@ -1,6 +1,6 @@
 @echo off
 REM Gera o ScoreCard.exe. Rode este arquivo dando duplo-clique, ou pelo
-REM PowerShell/CMD dentro da pasta "desktop".
+REM PowerShell/CMD dentro da pasta do projeto.
 
 echo ============================================
 echo  Score Card - gerando o executavel (.exe)
