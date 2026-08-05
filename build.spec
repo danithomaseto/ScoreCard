@@ -8,7 +8,14 @@
 # rapido pra abrir do que o modo "arquivo unico", especialmente com o
 # Playwright/Chromium empacotado junto.
 
+import os
+
 from PyInstaller.utils.hooks import collect_all
+
+# Defina SCORECARD_BUILD_CONSOLE=1 antes de rodar o build pra gerar uma
+# versao com console visivel (mostra prints e tracebacks de erro) — util
+# so pra diagnosticar problemas. A versao final/normal fica sem console.
+SHOW_CONSOLE = os.environ.get("SCORECARD_BUILD_CONSOLE") == "1"
 
 datas = [("ui", "ui")]
 binaries = []
@@ -46,7 +53,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,
+    console=SHOW_CONSOLE,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
