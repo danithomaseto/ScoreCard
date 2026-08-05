@@ -1,6 +1,20 @@
 import os
 import sys
 
+# Precisa vir ANTES de importar qualquer coisa que use subprocess (o
+# Playwright abre um processo interno pra controlar o navegador). Numa
+# build "sem console" do PyInstaller (windowed), sys.stdout/stderr/stdin
+# ficam None — e isso trava o Playwright silenciosamente na hora de
+# abrir o navegador, sem nenhum erro visivel. Ver:
+# https://github.com/pyinstaller/pyinstaller/issues/6598 (mesmo padrao
+# afeta qualquer lib que dependa de subprocess com stdio herdado).
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w")
+if sys.stdin is None:
+    sys.stdin = open(os.devnull, "r")
+
 import webview
 
 from api import Api
