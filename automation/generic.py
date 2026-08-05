@@ -13,14 +13,16 @@ from automation.base import (
 from config.operations import OPERATIONS
 
 
-def run(operation_key, base_dir, headless=True, username=None, password=None):
+def run(operation_key, base_dir, headless=True, username=None, password=None, on_progress=None):
     """Executa a automacao completa (login + extracao do relatorio) para
     qualquer operacao cadastrada em config/operations.py.
 
     base_dir e a pasta do SharePoint/OneDrive escolhida pelo usuario nas
     configuracoes do aplicativo; cada operacao salva na sua propria
     subpasta dentro dela. username/password sao os informados na tela de
-    login do aplicativo (nunca fixos no codigo).
+    login do aplicativo (nunca fixos no codigo). on_progress, se
+    informado, e chamado com uma frase curta a cada etapa (usado pra
+    atualizar a tela do app em tempo real).
     """
     config = OPERATIONS[operation_key]
 
@@ -43,6 +45,11 @@ def run(operation_key, base_dir, headless=True, username=None, password=None):
 
     def log(step):
         print(f"[{operation_key}] {step}", flush=True)
+        if on_progress:
+            try:
+                on_progress(step)
+            except Exception:
+                pass  # nunca deixa um erro de UI derrubar a automacao
 
     log("abrindo o navegador...")
     playwright, browser, page = open_browser_session(headless=headless)

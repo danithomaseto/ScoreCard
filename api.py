@@ -3,6 +3,7 @@ pywebview.api.<metodo>(...). Cada metodo publico aqui vira uma funcao
 chamavel do JavaScript.
 """
 
+import json
 import os
 
 import webview
@@ -92,11 +93,22 @@ class Api:
         # trava ou demora, ja que o .exe empacotado nao mostra log nenhum.
         headless = os.environ.get("SCORECARD_HEADLESS", "1") != "0"
 
+        def on_progress(step):
+            if not self._window:
+                return
+            # json.dumps escapa a string com seguranca pra virar um
+            # literal valido de JS (aspas, barras, acentos, etc.)
+            js_text = json.dumps(step)
+            self._window.evaluate_js(
+                f"window.updateProgress && window.updateProgress({js_text})"
+            )
+
         result = generic.run(
             operation_key,
             base_dir=folder_check["folder"],
             headless=headless,
             username=self._username,
             password=self._password,
+            on_progress=on_progress,
         )
         return result

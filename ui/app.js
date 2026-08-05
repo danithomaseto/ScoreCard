@@ -91,6 +91,12 @@ loginBtn.addEventListener('click', async () => {
   }
 });
 
+// Chamado pelo Python (api.py) a cada etapa da automacao, em tempo
+// real, enquanto run_extraction ainda esta rodando.
+window.updateProgress = function (text) {
+  showStatus(runStatus, text, '');
+};
+
 runBtn.addEventListener('click', async () => {
   runStatus.hidden = true;
   const folderOk = await ensureFolderConfigured();
