@@ -87,10 +87,15 @@ class Api:
         if not folder_check["valid"]:
             return {"success": False, "message": folder_check["message"]}
 
+        # SCORECARD_HEADLESS=0 mostra o navegador de verdade, fazendo a
+        # automacao na tela — util pra descobrir em qual etapa exata algo
+        # trava ou demora, ja que o .exe empacotado nao mostra log nenhum.
+        headless = os.environ.get("SCORECARD_HEADLESS", "1") != "0"
+
         result = generic.run(
             operation_key,
             base_dir=folder_check["folder"],
-            headless=True,
+            headless=headless,
             username=self._username,
             password=self._password,
         )
