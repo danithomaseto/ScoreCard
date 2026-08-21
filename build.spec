@@ -3,10 +3,13 @@
 # (precisa ser executado no Windows - o .exe nao pode ser gerado a
 # partir de outro sistema operacional).
 #
-# Modo "one-folder": o resultado fica em dist/ScoreCard/ (uma pasta com
-# o ScoreCard.exe e os arquivos de apoio ao lado). Mais confiavel e mais
-# rapido pra abrir do que o modo "arquivo unico", especialmente com o
-# Playwright/Chromium empacotado junto.
+# Modo "one-file": todo mundo (codigo, interface, Chromium) fica
+# compactado dentro de UM UNICO ScoreCard.exe — nada de pasta "dist"
+# junto pra distribuir. A troca: como o Chromium embutido e grande, o
+# .exe precisa descompactar tudo numa pasta temporaria a CADA abertura
+# (nao so na primeira vez), entao o programa demora mais pra iniciar do
+# que no modo "pasta". Foi uma escolha deliberada, priorizando
+# distribuicao (um arquivo so) sobre velocidade de abertura.
 
 import os
 
@@ -78,27 +81,20 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.datas,
     [],
-    exclude_binaries=True,
     name="ScoreCard",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
     console=SHOW_CONSOLE,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-)
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name="ScoreCard",
 )

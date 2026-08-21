@@ -19,12 +19,19 @@ pip install -r requirements.txt
 echo Baixando o Chromium (usado pela automacao)...
 python -m playwright install chromium
 
-echo Gerando o executavel com o PyInstaller...
+echo Limpando builds anteriores...
+if exist build rmdir /s /q build
+if exist dist rmdir /s /q dist
+
+echo Gerando o executavel com o PyInstaller (arquivo unico)...
 pyinstaller build.spec --noconfirm
 
 echo.
 echo ============================================
 echo  Pronto! O executavel esta em:
-echo  dist\ScoreCard\ScoreCard.exe
+echo  dist\ScoreCard.exe
+echo  (esse arquivo sozinho ja e o suficiente pra
+echo  distribuir - nao precisa de mais nada da
+echo  pasta dist junto)
 echo ============================================
 pause
