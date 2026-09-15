@@ -21,22 +21,43 @@
 </div>
 
 <div id="app-view" hidden>
+  <div class="topbar-dhl">
+    <span class="dhl-logo">DHL</span>
+    <span class="topbar-title">Score Card</span>
+  </div>
+
   <div class="app-shell">
     <nav class="sidebar">
-      <div class="sidebar-brand">Score Card</div>
-      <button class="nav-item" data-page="home">Inicio</button>
-      <button class="nav-item" data-page="extract">Extrair Dados</button>
-      <button class="nav-item" data-page="headcount">Headcount</button>
-      <button class="nav-item" data-page="reports">Relatorios</button>
-      <button class="nav-item" data-page="settings">Configuracoes</button>
+      <button class="nav-item" data-page="home">🏠 Inicio</button>
+      <button class="nav-item" data-page="extract">⬇ Extrair Dados</button>
+      <button class="nav-item" data-page="headcount">👤 Headcount</button>
+      <button class="nav-item" data-page="reports">📊 Relatorios</button>
+      <button class="nav-item" data-page="settings">⚙ Configuracoes</button>
       <button class="nav-item nav-item-logout" id="logout-btn">Sair</button>
+      <div class="sidebar-footer">
+        <div class="sidebar-status">
+          <span class="status-dot"></span>
+          <div>
+            <div class="status-title">Sistema Online</div>
+            <div class="status-sub">Pronto para extracao</div>
+          </div>
+        </div>
+        <div class="sidebar-brand-footer">DHL &mdash; Excellence. Simply delivered.</div>
+      </div>
     </nav>
 
     <div class="content-area">
       <section id="page-home" class="page" hidden>
-        <div class="card wide">
-          <h2>Inicio</h2>
-          <p class="subtitle">Em breve: um resumo dos resultados das extracoes.</p>
+        <div class="home-layout">
+          <div class="card hero-card">
+            <h2>Bem-vindo!</h2>
+            <p class="subtitle">Extraia os dados, processe as informacoes e visualize os indicadores da sua equipe de forma rapida e simples.</p>
+          </div>
+          <div class="card last-run-card">
+            <div class="last-run-label">Ultima extracao</div>
+            <div class="last-run-value" id="last-run-value">Nenhuma extracao ainda</div>
+            <div class="last-run-status empty" id="last-run-status">Aguardando</div>
+          </div>
         </div>
       </section>
 

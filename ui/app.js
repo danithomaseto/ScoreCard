@@ -19,6 +19,8 @@ const logoutBtn = document.getElementById('logout-btn');
 const folderPathEl = document.getElementById('folder-path');
 const chooseFolderBtn = document.getElementById('choose-folder-btn');
 const reportsListEl = document.getElementById('reports-list');
+const lastRunValueEl = document.getElementById('last-run-value');
+const lastRunStatusEl = document.getElementById('last-run-status');
 
 const navItems = document.querySelectorAll('.nav-item[data-page]');
 const pages = document.querySelectorAll('.page');
@@ -49,12 +51,28 @@ async function showPage(pageName) {
   for (const page of pages) {
     page.hidden = page.id !== `page-${pageName}`;
   }
-  if (pageName === 'reports') {
+  if (pageName === 'home') {
+    await loadLastRun();
+  } else if (pageName === 'reports') {
     await loadReportHistory();
   } else if (pageName === 'settings') {
     const check = await pywebview.api.validate_sharepoint_folder();
     folderPathEl.textContent = check.valid ? check.folder : 'Nenhuma pasta configurada ainda.';
   }
+}
+
+async function loadLastRun() {
+  const history = await pywebview.api.get_report_history();
+  if (!history.length) {
+    lastRunValueEl.textContent = 'Nenhuma extracao ainda';
+    lastRunStatusEl.textContent = 'Aguardando';
+    lastRunStatusEl.className = 'last-run-status empty';
+    return;
+  }
+  const last = history[0];
+  lastRunValueEl.textContent = `${last.operation} - ${new Date(last.timestamp).toLocaleString('pt-BR')}`;
+  lastRunStatusEl.textContent = 'Concluida';
+  lastRunStatusEl.className = 'last-run-status';
 }
 
 navItems.forEach((btn) => {
