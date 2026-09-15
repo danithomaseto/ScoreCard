@@ -1,6 +1,5 @@
 const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
-const settingsModal = document.getElementById('settings-modal');
 
 const loginUsername = document.getElementById('login-username');
 const loginPassword = document.getElementById('login-password');
@@ -16,11 +15,13 @@ const groupBySelect = document.getElementById('group-by');
 const runBtn = document.getElementById('run-btn');
 const runStatus = document.getElementById('run-status');
 
-const settingsBtn = document.getElementById('settings-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const folderPathEl = document.getElementById('folder-path');
 const chooseFolderBtn = document.getElementById('choose-folder-btn');
-const closeSettingsBtn = document.getElementById('close-settings-btn');
+const reportsListEl = document.getElementById('reports-list');
+
+const navItems = document.querySelectorAll('.nav-item[data-page]');
+const pages = document.querySelectorAll('.page');
 
 function showStatus(el, message, kind) {
   el.textContent = message;
@@ -38,6 +39,63 @@ async function showApp() {
   appView.hidden = false;
   await loadOperations();
   await loadGroupByOptions();
+  await showPage('home');
+}
+
+async function showPage(pageName) {
+  for (const btn of navItems) {
+    btn.classList.toggle('active', btn.dataset.page === pageName);
+  }
+  for (const page of pages) {
+    page.hidden = page.id !== `page-${pageName}`;
+  }
+  if (pageName === 'reports') {
+    await loadReportHistory();
+  } else if (pageName === 'settings') {
+    const check = await pywebview.api.validate_sharepoint_folder();
+    folderPathEl.textContent = check.valid ? check.folder : 'Nenhuma pasta configurada ainda.';
+  }
+}
+
+navItems.forEach((btn) => {
+  btn.addEventListener('click', () => showPage(btn.dataset.page));
+});
+
+async function loadReportHistory() {
+  const history = await pywebview.api.get_report_history();
+  reportsListEl.innerHTML = '';
+  if (!history.length) {
+    const empty = document.createElement('p');
+    empty.className = 'subtitle';
+    empty.textContent = 'Nenhum relatorio extraido ainda.';
+    reportsListEl.appendChild(empty);
+    return;
+  }
+  for (const entry of history) {
+    const row = document.createElement('div');
+    row.className = 'report-row';
+
+    const main = document.createElement('div');
+    main.className = 'report-row-main';
+
+    const opLabel = document.createElement('strong');
+    opLabel.textContent = entry.operation;
+
+    const when = document.createElement('span');
+    when.className = 'report-row-date';
+    when.textContent = new Date(entry.timestamp).toLocaleString('pt-BR');
+
+    main.appendChild(opLabel);
+    main.appendChild(when);
+
+    const path = document.createElement('div');
+    path.className = 'report-row-path';
+    path.textContent = entry.file_path;
+
+    row.appendChild(main);
+    row.appendChild(path);
+    reportsListEl.appendChild(row);
+  }
 }
 
 async function loadOperations() {
@@ -157,16 +215,6 @@ runBtn.addEventListener('click', async () => {
     runBtn.disabled = false;
     runBtn.textContent = 'Executar';
   }
-});
-
-settingsBtn.addEventListener('click', async () => {
-  const check = await pywebview.api.validate_sharepoint_folder();
-  folderPathEl.textContent = check.valid ? check.folder : 'Nenhuma pasta configurada ainda.';
-  settingsModal.hidden = false;
-});
-
-closeSettingsBtn.addEventListener('click', () => {
-  settingsModal.hidden = true;
 });
 
 chooseFolderBtn.addEventListener('click', async () => {

@@ -21,52 +21,79 @@
 </div>
 
 <div id="app-view" hidden>
-  <div class="topbar">
-    <h1>Score Card</h1>
-    <div class="actions">
-      <button class="secondary" id="settings-btn">Configuracoes</button>
-      <button class="secondary" id="logout-btn">Sair</button>
+  <div class="app-shell">
+    <nav class="sidebar">
+      <div class="sidebar-brand">Score Card</div>
+      <button class="nav-item" data-page="home">Inicio</button>
+      <button class="nav-item" data-page="extract">Extrair Dados</button>
+      <button class="nav-item" data-page="headcount">Headcount</button>
+      <button class="nav-item" data-page="reports">Relatorios</button>
+      <button class="nav-item" data-page="settings">Configuracoes</button>
+      <button class="nav-item nav-item-logout" id="logout-btn">Sair</button>
+    </nav>
+
+    <div class="content-area">
+      <section id="page-home" class="page" hidden>
+        <div class="card wide">
+          <h2>Inicio</h2>
+          <p class="subtitle">Em breve: um resumo dos resultados das extracoes.</p>
+        </div>
+      </section>
+
+      <section id="page-extract" class="page" hidden>
+        <div class="card wide">
+          <h2>Extrair relatorio</h2>
+          <p class="subtitle">Selecione a operacao e clique em Executar.</p>
+
+          <label for="operation">Operacao</label>
+          <select id="operation"></select>
+
+          <label for="date-range-mode">Periodo</label>
+          <select id="date-range-mode">
+            <option value="last_week">Ultima semana (padrao)</option>
+            <option value="custom">Periodo especifico</option>
+          </select>
+
+          <div id="custom-date-fields" hidden>
+            <label for="from-date">De</label>
+            <input type="date" id="from-date">
+            <label for="to-date">Ate</label>
+            <input type="date" id="to-date">
+          </div>
+
+          <label for="group-by">Group By 1</label>
+          <select id="group-by"></select>
+
+          <button id="run-btn">Executar</button>
+
+          <div id="run-status" class="status" hidden></div>
+        </div>
+      </section>
+
+      <section id="page-headcount" class="page" hidden>
+        <div class="card wide">
+          <h2>Headcount</h2>
+          <p class="subtitle">Em breve.</p>
+        </div>
+      </section>
+
+      <section id="page-reports" class="page" hidden>
+        <div class="card wide">
+          <h2>Relatorios</h2>
+          <p class="subtitle">Ultimos relatorios extraidos nesta maquina.</p>
+          <div id="reports-list"></div>
+        </div>
+      </section>
+
+      <section id="page-settings" class="page" hidden>
+        <div class="card wide">
+          <h2>Configuracoes</h2>
+          <p class="subtitle">Pasta do SharePoint/OneDrive onde os relatorios sao salvos.</p>
+          <div class="folder-box" id="folder-path">Nenhuma pasta selecionada.</div>
+          <button id="choose-folder-btn">Alterar pasta</button>
+        </div>
+      </section>
     </div>
-  </div>
-
-  <div class="main-content">
-    <div class="card wide">
-      <h2>Extrair relatorio</h2>
-      <p class="subtitle">Selecione a operacao e clique em Executar.</p>
-
-      <label for="operation">Operacao</label>
-      <select id="operation"></select>
-
-      <label for="date-range-mode">Periodo</label>
-      <select id="date-range-mode">
-        <option value="last_week">Ultima semana (padrao)</option>
-        <option value="custom">Periodo especifico</option>
-      </select>
-
-      <div id="custom-date-fields" hidden>
-        <label for="from-date">De</label>
-        <input type="date" id="from-date">
-        <label for="to-date">Ate</label>
-        <input type="date" id="to-date">
-      </div>
-
-      <label for="group-by">Group By 1</label>
-      <select id="group-by"></select>
-
-      <button id="run-btn">Executar</button>
-
-      <div id="run-status" class="status" hidden></div>
-    </div>
-  </div>
-</div>
-
-<div id="settings-modal" hidden>
-  <div class="card">
-    <h2>Configuracoes</h2>
-    <p class="subtitle">Pasta do SharePoint/OneDrive onde os relatorios sao salvos.</p>
-    <div class="folder-box" id="folder-path">Nenhuma pasta selecionada.</div>
-    <button id="choose-folder-btn">Alterar pasta</button>
-    <button class="secondary" id="close-settings-btn">Fechar</button>
   </div>
 </div>
 

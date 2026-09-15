@@ -10,6 +10,7 @@ import webview
 
 from automation import generic
 from config.operations import GROUP_BY_OPTIONS, OPERATIONS
+import history_store
 import settings_store
 
 
@@ -119,4 +120,11 @@ class Api:
             date_range=date_range,
             group_by=group_by,
         )
+        if result.get("success") and result.get("file_path"):
+            history_store.add_entry(OPERATIONS[operation_key]["label"], result["file_path"])
         return result
+
+    # ---------------- Historico ----------------
+
+    def get_report_history(self):
+        return history_store.get_history()
