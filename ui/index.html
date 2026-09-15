@@ -37,6 +37,19 @@
       <label for="operation">Operacao</label>
       <select id="operation"></select>
 
+      <label for="date-range-mode">Periodo</label>
+      <select id="date-range-mode">
+        <option value="last_week">Ultima semana (padrao)</option>
+        <option value="custom">Periodo especifico</option>
+      </select>
+
+      <div id="custom-date-fields" hidden>
+        <label for="from-date">De</label>
+        <input type="date" id="from-date">
+        <label for="to-date">Ate</label>
+        <input type="date" id="to-date">
+      </div>
+
       <button id="run-btn">Executar</button>
 
       <div id="run-status" class="status" hidden></div>

@@ -8,6 +8,10 @@ const loginBtn = document.getElementById('login-btn');
 const loginStatus = document.getElementById('login-status');
 
 const operationSelect = document.getElementById('operation');
+const dateRangeMode = document.getElementById('date-range-mode');
+const customDateFields = document.getElementById('custom-date-fields');
+const fromDateInput = document.getElementById('from-date');
+const toDateInput = document.getElementById('to-date');
 const runBtn = document.getElementById('run-btn');
 const runStatus = document.getElementById('run-status');
 
@@ -97,8 +101,29 @@ window.updateProgress = function (text) {
   showStatus(runStatus, text, '');
 };
 
+dateRangeMode.addEventListener('change', () => {
+  customDateFields.hidden = dateRangeMode.value !== 'custom';
+});
+
 runBtn.addEventListener('click', async () => {
   runStatus.hidden = true;
+
+  let dateRange = null;
+  if (dateRangeMode.value === 'custom') {
+    if (!fromDateInput.value || !toDateInput.value) {
+      showStatus(runStatus, 'Preencha as datas De e Ate.', 'error');
+      return;
+    }
+    if (fromDateInput.value > toDateInput.value) {
+      showStatus(runStatus, 'A data "De" nao pode ser depois da data "Ate".', 'error');
+      return;
+    }
+    // yyyy-mm-dd (formato nativo do <input type="date">) - a conversao
+    // pro formato que o Summary espera (dd/mm/yyyy) acontece no Python,
+    // perto de onde o campo de verdade e preenchido.
+    dateRange = { from_date: fromDateInput.value, to_date: toDateInput.value };
+  }
+
   const folderOk = await ensureFolderConfigured();
   if (!folderOk) {
     showStatus(runStatus, 'E necessario selecionar a pasta do SharePoint antes de executar.', 'error');
@@ -109,7 +134,7 @@ runBtn.addEventListener('click', async () => {
   runBtn.textContent = 'Executando...';
   showStatus(runStatus, 'Executando a automacao, aguarde...', '');
   try {
-    const result = await pywebview.api.run_extraction(operationSelect.value);
+    const result = await pywebview.api.run_extraction(operationSelect.value, dateRange);
     showStatus(runStatus, result.message, result.success ? 'success' : 'error');
   } catch (err) {
     showStatus(runStatus, 'Erro inesperado: ' + err.message, 'error');

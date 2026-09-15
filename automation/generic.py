@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from automation.base import (
     export_report,
@@ -7,13 +8,28 @@ from automation.base import (
     open_report,
     open_reports_menu,
     select_combobox,
+    select_custom_date_range,
     open_browser_session,
     take_screenshot,
 )
 from config.operations import OPERATIONS
 
 
-def run(operation_key, base_dir, headless=True, username=None, password=None, on_progress=None):
+def _to_site_date_format(iso_date):
+    """Converte yyyy-mm-dd (formato do <input type="date"> do navegador)
+    pro formato dd/mm/yyyy que o campo do Summary espera."""
+    return datetime.strptime(iso_date, "%Y-%m-%d").strftime("%d/%m/%Y")
+
+
+def run(
+    operation_key,
+    base_dir,
+    headless=True,
+    username=None,
+    password=None,
+    on_progress=None,
+    date_range=None,
+):
     """Executa a automacao completa (login + extracao do relatorio) para
     qualquer operacao cadastrada em config/operations.py.
 
@@ -22,7 +38,9 @@ def run(operation_key, base_dir, headless=True, username=None, password=None, on
     subpasta dentro dela. username/password sao os informados na tela de
     login do aplicativo (nunca fixos no codigo). on_progress, se
     informado, e chamado com uma frase curta a cada etapa (usado pra
-    atualizar a tela do app em tempo real).
+    atualizar a tela do app em tempo real). date_range, se informado, e
+    um dict {"from_date": "yyyy-mm-dd", "to_date": "yyyy-mm-dd"} pra usar
+    um periodo especifico em vez do padrao (Ultima semana) da operacao.
     """
     config = OPERATIONS[operation_key]
 
@@ -68,8 +86,16 @@ def run(operation_key, base_dir, headless=True, username=None, password=None, on
         log(f"abrindo o relatorio '{config['report_name']}'...")
         open_report(frame, config["report_name"])
 
-        log("preenchendo Date Range...")
-        select_combobox(frame, "Date Range", config["date_range_type_text"])
+        if date_range:
+            log(f"selecionando periodo especifico ({date_range['from_date']} a {date_range['to_date']})...")
+            select_custom_date_range(
+                frame,
+                from_date=_to_site_date_format(date_range["from_date"]),
+                to_date=_to_site_date_format(date_range["to_date"]),
+            )
+        else:
+            log("preenchendo Date Range...")
+            select_combobox(frame, "Date Range", config["date_range_type_text"])
 
         log("preenchendo Group By 1...")
         select_combobox(

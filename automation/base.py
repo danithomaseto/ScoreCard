@@ -234,6 +234,52 @@ def select_combobox(frame, label, type_text, option_text=None):
             raise RuntimeError(f"Nao foi possivel confirmar '{label}' com Enter: {exc}")
 
 
+def select_custom_date_range(frame, from_date, to_date, from_time=None, to_time=None):
+    """Seleciona 'Custom Date Range' e preenche De/Ate, no lugar do
+    padrao 'Last Week'. from_date/to_date no formato dd/mm/yyyy (igual
+    o campo do Summary espera). from_time/to_time no formato HH:MM:SS;
+    se omitidos, cobre o dia inteiro (00:00:00 ate 23:59:59).
+
+    ATENCAO: esta funcao ainda nao foi validada contra o site real —
+    foi escrita a partir de um screenshot, sem ver o HTML de verdade
+    (o mesmo tipo de suposicao que already causou varias rodadas de
+    ajuste no login e nos comboboxes). Assim que tivermos uma gravacao
+    do Playwright Codegen interagindo com esses campos, esta funcao
+    deve ser substituida pelos seletores exatos gravados.
+    """
+    from_time = from_time or "00:00:00"
+    to_time = to_time or "23:59:59"
+
+    radio_selectors = [
+        lambda f: f.get_by_label("Custom Date Range", exact=False),
+        lambda f: f.get_by_text("Custom Date Range", exact=True),
+    ]
+    if not _click_first_match(frame, radio_selectors, timeout=5000):
+        raise RuntimeError("Nao foi possivel selecionar 'Custom Date Range'.")
+
+    def fill_group(label, date_value, time_value):
+        label_locator = frame.get_by_text(label, exact=False).first
+        try:
+            label_locator.wait_for(state="visible", timeout=5000)
+        except Exception as exc:
+            raise RuntimeError(f"Nao foi possivel localizar o campo '{label}': {exc}")
+
+        try:
+            date_input = label_locator.locator("xpath=following::input[1]")
+            date_input.fill(date_value, timeout=5000)
+        except Exception as exc:
+            raise RuntimeError(f"Nao foi possivel preencher a data em '{label}': {exc}")
+
+        try:
+            time_input = label_locator.locator("xpath=following::input[2]")
+            time_input.fill(time_value, timeout=5000)
+        except Exception as exc:
+            raise RuntimeError(f"Nao foi possivel preencher a hora em '{label}': {exc}")
+
+    fill_group("From Date", from_date, from_time)
+    fill_group("To Date", to_date, to_time)
+
+
 def export_report(page, frame, download_dir, operation_key, export_format="EXCEL"):
     """Clica em Export, escolhe o formato e salva o arquivo baixado em
     download_dir. Retorna o caminho completo do arquivo salvo."""

@@ -77,7 +77,7 @@ class Api:
 
     # ---------------- Extracao ----------------
 
-    def run_extraction(self, operation_key):
+    def run_extraction(self, operation_key, date_range=None):
         if not self.is_logged_in():
             return {"success": False, "message": "Faca login antes de executar."}
 
@@ -110,5 +110,6 @@ class Api:
             username=self._username,
             password=self._password,
             on_progress=on_progress,
+            date_range=date_range,
         )
         return result
