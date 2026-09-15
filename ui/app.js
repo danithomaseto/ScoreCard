@@ -28,11 +28,18 @@ const historyTableBody = document.getElementById('history-table-body');
 const navItems = document.querySelectorAll('.nav-item[data-page]');
 const pages = document.querySelectorAll('.page');
 
+// Uma etapa pra cada mensagem que automation/generic.py emite via
+// on_progress, na mesma ordem em que acontecem.
 const PROGRESS_STEPS = [
-  { key: 'login', match: (t) => t.includes('abrindo o navegador') || t.includes('fazendo login') },
-  { key: 'report', match: (t) => t.includes('abrindo menu') || t.includes('localizando o iframe') || t.includes('abrindo o relatorio') },
-  { key: 'filters', match: (t) => t.includes('date range') || t.includes('periodo especifico') || t.includes('group by') },
-  { key: 'export', match: (t) => t.includes('exportando e baixando') || t.includes('concluido') },
+  { key: 'browser', match: (t) => t.includes('abrindo o navegador') },
+  { key: 'login', match: (t) => t.includes('fazendo login') },
+  { key: 'menu', match: (t) => t.includes('abrindo menu') },
+  { key: 'frame', match: (t) => t.includes('localizando o iframe') },
+  { key: 'report', match: (t) => t.includes('abrindo o relatorio') },
+  { key: 'period', match: (t) => t.includes('periodo especifico') || t.includes('date range') },
+  { key: 'groupby', match: (t) => t.includes('group by') },
+  { key: 'export', match: (t) => t.includes('exportando e baixando') },
+  { key: 'save', match: (t) => t.includes('concluido') },
 ];
 
 function showStatus(el, message, kind) {
