@@ -63,7 +63,7 @@
       <section id="page-extract" class="page" hidden>
         <div class="page-wide-wrap">
           <h2 class="page-heading">Extrair Dados</h2>
-          <p class="subtitle">Escolha a operacao, o periodo e o agrupamento, e acompanhe o andamento da extracao.</p>
+          <p class="subtitle">Escolha a operacao, as datas e o agrupamento, e acompanhe o andamento da extracao.</p>
 
           <div class="extract-layout">
             <div class="card params-card">
@@ -81,13 +81,7 @@
               <label for="operation">Operacao</label>
               <select id="operation"></select>
 
-              <label for="date-range-mode">Periodo</label>
-              <select id="date-range-mode">
-                <option value="last_week">Ultima semana (padrao)</option>
-                <option value="custom">Periodo especifico</option>
-              </select>
-
-              <div id="custom-date-fields" hidden class="field-row">
+              <div class="field-row">
                 <div>
                   <label for="from-date">Data inicial</label>
                   <input type="date" id="from-date">

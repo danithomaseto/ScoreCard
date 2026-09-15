@@ -7,8 +7,6 @@ const loginBtn = document.getElementById('login-btn');
 const loginStatus = document.getElementById('login-status');
 
 const operationSelect = document.getElementById('operation');
-const dateRangeMode = document.getElementById('date-range-mode');
-const customDateFields = document.getElementById('custom-date-fields');
 const fromDateInput = document.getElementById('from-date');
 const toDateInput = document.getElementById('to-date');
 const groupBySelect = document.getElementById('group-by');
@@ -266,28 +264,21 @@ window.updateProgress = function (text) {
   progressPercentEl.textContent = `${Math.round(((stepIndex + 1) / PROGRESS_STEPS.length) * 100)}%`;
 };
 
-dateRangeMode.addEventListener('change', () => {
-  customDateFields.hidden = dateRangeMode.value !== 'custom';
-});
-
 runBtn.addEventListener('click', async () => {
   runStatus.hidden = true;
 
-  let dateRange = null;
-  if (dateRangeMode.value === 'custom') {
-    if (!fromDateInput.value || !toDateInput.value) {
-      showStatus(runStatus, 'Preencha as datas De e Ate.', 'error');
-      return;
-    }
-    if (fromDateInput.value > toDateInput.value) {
-      showStatus(runStatus, 'A data "De" nao pode ser depois da data "Ate".', 'error');
-      return;
-    }
-    // yyyy-mm-dd (formato nativo do <input type="date">) - a conversao
-    // pro formato que o Summary espera (dd/mm/yyyy) acontece no Python,
-    // perto de onde o campo de verdade e preenchido.
-    dateRange = { from_date: fromDateInput.value, to_date: toDateInput.value };
+  if (!fromDateInput.value || !toDateInput.value) {
+    showStatus(runStatus, 'Preencha a Data inicial e a Data final.', 'error');
+    return;
   }
+  if (fromDateInput.value > toDateInput.value) {
+    showStatus(runStatus, 'A "Data inicial" nao pode ser depois da "Data final".', 'error');
+    return;
+  }
+  // yyyy-mm-dd (formato nativo do <input type="date">) - a conversao
+  // pro formato que o Summary espera (dd/mm/yyyy) acontece no Python,
+  // perto de onde o campo de verdade e preenchido.
+  const dateRange = { from_date: fromDateInput.value, to_date: toDateInput.value };
 
   const folderOk = await ensureFolderConfigured();
   if (!folderOk) {
