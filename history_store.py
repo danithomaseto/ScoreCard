@@ -35,13 +35,12 @@ def get_history():
         return []
 
 
-def add_entry(operation_label, file_path):
+def add_entry(entry):
+    """entry e um dict com os detalhes da extracao (operation, period_label,
+    group_by, status, duration_seconds, file_path, message). O timestamp e
+    preenchido aqui, no momento em que a extracao termina."""
     entries = get_history()
-    entries.insert(0, {
-        "operation": operation_label,
-        "file_path": file_path,
-        "timestamp": datetime.now().isoformat(timespec="seconds"),
-    })
+    entries.insert(0, {**entry, "timestamp": datetime.now().isoformat(timespec="seconds")})
     entries = entries[:MAX_ENTRIES]
     with open(_history_path(), "w", encoding="utf-8") as fh:
         json.dump(entries, fh, indent=2, ensure_ascii=False)

@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime
 
 from automation.base import (
@@ -65,6 +66,15 @@ def run(
     folder = config.get("sharepoint_folder") or config["label"]
     download_dir = os.path.join(base_dir, folder)
 
+    if date_range:
+        period_label = (
+            f"{_to_site_date_format(date_range['from_date'])} - "
+            f"{_to_site_date_format(date_range['to_date'])}"
+        )
+    else:
+        period_label = "Ultima semana"
+    group_by_option = group_by or config["group_by_option"]
+
     def log(step):
         print(f"[{operation_key}] {step}", flush=True)
         if on_progress:
@@ -73,9 +83,15 @@ def run(
             except Exception:
                 pass  # nunca deixa um erro de UI derrubar a automacao
 
+    start_time = time.monotonic()
     log("abrindo o navegador...")
     playwright, browser, page = open_browser_session(headless=headless)
-    result = {"operation": operation_key}
+    result = {
+        "operation": operation_key,
+        "operation_label": config["label"],
+        "period_label": period_label,
+        "group_by": group_by_option,
+    }
 
     try:
         log("fazendo login...")
@@ -101,7 +117,6 @@ def run(
             log("preenchendo Date Range...")
             select_combobox(frame, "Date Range", config["date_range_type_text"])
 
-        group_by_option = group_by or config["group_by_option"]
         group_by_type_text = group_by if group_by else config["group_by_type_text"]
         log(f"preenchendo Group By 1 ({group_by_option})...")
         select_combobox(
@@ -134,4 +149,5 @@ def run(
         browser.close()
         playwright.stop()
 
+    result["duration_seconds"] = round(time.monotonic() - start_time, 1)
     return result

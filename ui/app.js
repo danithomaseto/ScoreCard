@@ -18,12 +18,24 @@ const runStatus = document.getElementById('run-status');
 const logoutBtn = document.getElementById('logout-btn');
 const folderPathEl = document.getElementById('folder-path');
 const chooseFolderBtn = document.getElementById('choose-folder-btn');
-const reportsListEl = document.getElementById('reports-list');
 const lastRunValueEl = document.getElementById('last-run-value');
 const lastRunStatusEl = document.getElementById('last-run-status');
 
+const progressBadgeEl = document.getElementById('progress-badge');
+const progressDetailEl = document.getElementById('progress-detail');
+const progressPercentEl = document.getElementById('progress-percent');
+const stepEls = document.querySelectorAll('#progress-steps .step');
+const historyTableBody = document.getElementById('history-table-body');
+
 const navItems = document.querySelectorAll('.nav-item[data-page]');
 const pages = document.querySelectorAll('.page');
+
+const PROGRESS_STEPS = [
+  { key: 'login', match: (t) => t.includes('abrindo o navegador') || t.includes('fazendo login') },
+  { key: 'report', match: (t) => t.includes('abrindo menu') || t.includes('localizando o iframe') || t.includes('abrindo o relatorio') },
+  { key: 'filters', match: (t) => t.includes('date range') || t.includes('periodo especifico') || t.includes('group by') },
+  { key: 'export', match: (t) => t.includes('exportando e baixando') || t.includes('concluido') },
+];
 
 function showStatus(el, message, kind) {
   el.textContent = message;
@@ -53,8 +65,8 @@ async function showPage(pageName) {
   }
   if (pageName === 'home') {
     await loadLastRun();
-  } else if (pageName === 'reports') {
-    await loadReportHistory();
+  } else if (pageName === 'extract') {
+    await loadHistoryTable();
   } else if (pageName === 'settings') {
     const check = await pywebview.api.validate_sharepoint_folder();
     folderPathEl.textContent = check.valid ? check.folder : 'Nenhuma pasta configurada ainda.';
@@ -79,41 +91,84 @@ navItems.forEach((btn) => {
   btn.addEventListener('click', () => showPage(btn.dataset.page));
 });
 
-async function loadReportHistory() {
+async function loadHistoryTable() {
   const history = await pywebview.api.get_report_history();
-  reportsListEl.innerHTML = '';
+  historyTableBody.innerHTML = '';
   if (!history.length) {
-    const empty = document.createElement('p');
-    empty.className = 'subtitle';
-    empty.textContent = 'Nenhum relatorio extraido ainda.';
-    reportsListEl.appendChild(empty);
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 6;
+    cell.className = 'empty-history-msg';
+    cell.textContent = 'Nenhuma extracao registrada ainda.';
+    row.appendChild(cell);
+    historyTableBody.appendChild(row);
     return;
   }
   for (const entry of history) {
-    const row = document.createElement('div');
-    row.className = 'report-row';
+    const row = document.createElement('tr');
+    row.appendChild(makeCell(new Date(entry.timestamp).toLocaleString('pt-BR')));
+    row.appendChild(makeCell(entry.operation || '-'));
+    row.appendChild(makeCell(entry.period_label || '-'));
+    row.appendChild(makeCell(entry.group_by || '-'));
+    row.appendChild(makeCell(formatDuration(entry.duration_seconds)));
 
-    const main = document.createElement('div');
-    main.className = 'report-row-main';
+    const statusCell = document.createElement('td');
+    const ok = entry.status === 'success';
+    const pill = document.createElement('span');
+    pill.className = 'status-pill ' + (ok ? 'success' : 'error');
+    pill.textContent = ok ? 'Concluida' : 'Falha';
+    statusCell.appendChild(pill);
+    row.appendChild(statusCell);
 
-    const opLabel = document.createElement('strong');
-    opLabel.textContent = entry.operation;
-
-    const when = document.createElement('span');
-    when.className = 'report-row-date';
-    when.textContent = new Date(entry.timestamp).toLocaleString('pt-BR');
-
-    main.appendChild(opLabel);
-    main.appendChild(when);
-
-    const path = document.createElement('div');
-    path.className = 'report-row-path';
-    path.textContent = entry.file_path;
-
-    row.appendChild(main);
-    row.appendChild(path);
-    reportsListEl.appendChild(row);
+    historyTableBody.appendChild(row);
   }
+}
+
+function makeCell(text) {
+  const td = document.createElement('td');
+  td.textContent = text;
+  return td;
+}
+
+function formatDuration(seconds) {
+  if (seconds === null || seconds === undefined) return '-';
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  return `${mins}min ${secs}s`;
+}
+
+function setBadge(kind, text) {
+  progressBadgeEl.textContent = text;
+  progressBadgeEl.className = 'badge' + (kind ? ' ' + kind : '');
+}
+
+function resetSteps() {
+  stepEls.forEach((el) => el.classList.remove('active', 'done', 'error'));
+}
+
+function updateSteps(activeIndex) {
+  stepEls.forEach((el, idx) => {
+    el.classList.remove('active', 'done', 'error');
+    if (idx < activeIndex) el.classList.add('done');
+    else if (idx === activeIndex) el.classList.add('active');
+  });
+}
+
+function markStepsError() {
+  stepEls.forEach((el) => {
+    if (el.classList.contains('active')) {
+      el.classList.remove('active');
+      el.classList.add('error');
+    }
+  });
+}
+
+function markStepsDone() {
+  stepEls.forEach((el) => {
+    el.classList.remove('active', 'error');
+    el.classList.add('done');
+  });
 }
 
 async function loadOperations() {
@@ -187,9 +242,24 @@ loginBtn.addEventListener('click', async () => {
 });
 
 // Chamado pelo Python (api.py) a cada etapa da automacao, em tempo
-// real, enquanto run_extraction ainda esta rodando.
+// real, enquanto run_extraction ainda esta rodando. Mapeia a frase
+// recebida pra uma das 4 etapas do painel "Andamento".
 window.updateProgress = function (text) {
-  showStatus(runStatus, text, '');
+  progressDetailEl.textContent = text;
+  const lower = text.toLowerCase();
+
+  if (lower.startsWith('falhou')) {
+    markStepsError();
+    setBadge('error', 'Falha');
+    return;
+  }
+
+  const stepIndex = PROGRESS_STEPS.findIndex((def) => def.match(lower));
+  if (stepIndex === -1) return;
+
+  setBadge('running', 'Em andamento');
+  updateSteps(stepIndex);
+  progressPercentEl.textContent = `${Math.round(((stepIndex + 1) / PROGRESS_STEPS.length) * 100)}%`;
 };
 
 dateRangeMode.addEventListener('change', () => {
@@ -223,15 +293,30 @@ runBtn.addEventListener('click', async () => {
 
   runBtn.disabled = true;
   runBtn.textContent = 'Executando...';
-  showStatus(runStatus, 'Executando a automacao, aguarde...', '');
+  resetSteps();
+  setBadge('running', 'Em andamento');
+  progressDetailEl.textContent = 'Iniciando a extracao...';
+  progressPercentEl.textContent = '0%';
   try {
     const result = await pywebview.api.run_extraction(operationSelect.value, dateRange, groupBySelect.value);
+    if (result.success) {
+      markStepsDone();
+      setBadge('success', 'Concluida');
+      progressPercentEl.textContent = '100%';
+    } else {
+      markStepsError();
+      setBadge('error', 'Falha');
+    }
+    progressDetailEl.textContent = result.message;
     showStatus(runStatus, result.message, result.success ? 'success' : 'error');
+    await loadHistoryTable();
   } catch (err) {
+    markStepsError();
+    setBadge('error', 'Falha');
     showStatus(runStatus, 'Erro inesperado: ' + err.message, 'error');
   } finally {
     runBtn.disabled = false;
-    runBtn.textContent = 'Executar';
+    runBtn.textContent = '▶ Iniciar extracao';
   }
 });
 

@@ -120,8 +120,15 @@ class Api:
             date_range=date_range,
             group_by=group_by,
         )
-        if result.get("success") and result.get("file_path"):
-            history_store.add_entry(OPERATIONS[operation_key]["label"], result["file_path"])
+        history_store.add_entry({
+            "operation": result.get("operation_label", OPERATIONS[operation_key]["label"]),
+            "period_label": result.get("period_label"),
+            "group_by": result.get("group_by"),
+            "status": "success" if result.get("success") else "error",
+            "duration_seconds": result.get("duration_seconds"),
+            "file_path": result.get("file_path"),
+            "message": result.get("message"),
+        })
         return result
 
     # ---------------- Historico ----------------
