@@ -60,7 +60,8 @@ label {
 
 select, input {
   width: 100%;
-  padding: 10px;
+  height: 46px;
+  padding: 0 14px;
   border-radius: 8px;
   border: 1px solid var(--input-border);
   background: var(--input-bg);
@@ -70,7 +71,12 @@ select, input {
 }
 
 button {
-  padding: 12px 20px;
+  height: 46px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: none;
   border-radius: 8px;
   background: var(--yellow);
@@ -260,6 +266,8 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .last-run-status.empty { color: var(--text-muted); }
 .last-run-status.empty::before { background: var(--text-muted); }
+.last-run-status.error { color: #f87171; }
+.last-run-status.error::before { background: #f87171; }
 
 .page-wide-wrap {
   width: 100%;

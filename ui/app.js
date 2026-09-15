@@ -82,9 +82,10 @@ async function loadLastRun() {
     return;
   }
   const last = history[0];
+  const ok = last.status ? last.status === 'success' : true;
   lastRunValueEl.textContent = `${last.operation} - ${new Date(last.timestamp).toLocaleString('pt-BR')}`;
-  lastRunStatusEl.textContent = 'Concluida';
-  lastRunStatusEl.className = 'last-run-status';
+  lastRunStatusEl.textContent = ok ? 'Concluida' : 'Falha';
+  lastRunStatusEl.className = 'last-run-status' + (ok ? '' : ' error');
 }
 
 navItems.forEach((btn) => {
@@ -113,7 +114,10 @@ async function loadHistoryTable() {
     row.appendChild(makeCell(formatDuration(entry.duration_seconds)));
 
     const statusCell = document.createElement('td');
-    const ok = entry.status === 'success';
+    // Entradas gravadas antes deste campo existir nao tem "status", mas
+    // so eram criadas quando a extracao dava certo - entao a ausencia do
+    // campo conta como sucesso, nao falha.
+    const ok = entry.status ? entry.status === 'success' : true;
     const pill = document.createElement('span');
     pill.className = 'status-pill ' + (ok ? 'success' : 'error');
     pill.textContent = ok ? 'Concluida' : 'Falha';
