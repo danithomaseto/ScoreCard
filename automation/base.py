@@ -240,44 +240,41 @@ def select_custom_date_range(frame, from_date, to_date, from_time=None, to_time=
     o campo do Summary espera). from_time/to_time no formato HH:MM:SS;
     se omitidos, cobre o dia inteiro (00:00:00 ate 23:59:59).
 
-    ATENCAO: esta funcao ainda nao foi validada contra o site real —
-    foi escrita a partir de um screenshot, sem ver o HTML de verdade
-    (o mesmo tipo de suposicao que already causou varias rodadas de
-    ajuste no login e nos comboboxes). Assim que tivermos uma gravacao
-    do Playwright Codegen interagindo com esses campos, esta funcao
-    deve ser substituida pelos seletores exatos gravados.
+    Seletores confirmados via Playwright Codegen contra o site real
+    (o radio tem um id fixo e nomeado — deve ser estavel entre sessoes;
+    os 4 campos de data/hora usam ids numericos do ExtJS, que na
+    pratica se mostraram estaveis pra esta tela especifica, igual os
+    botoes Export/Ok. Mantemos um fallback por texto do label, caso
+    algum dia mudem.)
     """
     from_time = from_time or "00:00:00"
     to_time = to_time or "23:59:59"
 
     radio_selectors = [
+        lambda f: f.locator("#customdaterange_radio-inputEl"),
         lambda f: f.get_by_label("Custom Date Range", exact=False),
-        lambda f: f.get_by_text("Custom Date Range", exact=True),
     ]
     if not _click_first_match(frame, radio_selectors, timeout=5000):
         raise RuntimeError("Nao foi possivel selecionar 'Custom Date Range'.")
 
-    def fill_group(label, date_value, time_value):
-        label_locator = frame.get_by_text(label, exact=False).first
+    def fill_field(field_id, label_fallback, value, field_desc):
+        selectors = [lambda f, fid=field_id: f.locator(fid)]
+        if label_fallback:
+            selectors.append(
+                lambda f, lbl=label_fallback: f.get_by_text(lbl, exact=False)
+                .first.locator("xpath=following::input[1]")
+            )
+        if not _fill_first_match(frame, selectors, value):
+            raise RuntimeError(f"Nao foi possivel preencher {field_desc}.")
         try:
-            label_locator.wait_for(state="visible", timeout=5000)
-        except Exception as exc:
-            raise RuntimeError(f"Nao foi possivel localizar o campo '{label}': {exc}")
+            frame.locator(field_id).press("Tab", timeout=2000)
+        except Exception:
+            pass  # o Tab so ajuda a confirmar o valor; nao e fatal se falhar
 
-        try:
-            date_input = label_locator.locator("xpath=following::input[1]")
-            date_input.fill(date_value, timeout=5000)
-        except Exception as exc:
-            raise RuntimeError(f"Nao foi possivel preencher a data em '{label}': {exc}")
-
-        try:
-            time_input = label_locator.locator("xpath=following::input[2]")
-            time_input.fill(time_value, timeout=5000)
-        except Exception as exc:
-            raise RuntimeError(f"Nao foi possivel preencher a hora em '{label}': {exc}")
-
-    fill_group("From Date", from_date, from_time)
-    fill_group("To Date", to_date, to_time)
+    fill_field("#datefield-1138-inputEl", "From Date", from_date, "a data 'From Date'")
+    fill_field("#timefield-1139-inputEl", None, from_time, "a hora de 'From Date'")
+    fill_field("#datefield-1142-inputEl", "To Date", to_date, "a data 'To Date'")
+    fill_field("#timefield-1143-inputEl", None, to_time, "a hora de 'To Date'")
 
 
 def export_report(page, frame, download_dir, operation_key, export_format="EXCEL"):
