@@ -9,7 +9,7 @@ import os
 import webview
 
 from automation import generic
-from config.operations import OPERATIONS
+from config.operations import GROUP_BY_OPTIONS, OPERATIONS
 import settings_store
 
 
@@ -46,6 +46,9 @@ class Api:
     def get_operations(self):
         return [{"key": key, "label": cfg["label"]} for key, cfg in OPERATIONS.items()]
 
+    def get_group_by_options(self):
+        return GROUP_BY_OPTIONS
+
     # ---------------- Pasta do SharePoint ----------------
 
     def get_sharepoint_folder(self):
@@ -77,12 +80,15 @@ class Api:
 
     # ---------------- Extracao ----------------
 
-    def run_extraction(self, operation_key, date_range=None):
+    def run_extraction(self, operation_key, date_range=None, group_by=None):
         if not self.is_logged_in():
             return {"success": False, "message": "Faca login antes de executar."}
 
         if operation_key not in OPERATIONS:
             return {"success": False, "message": "Operacao invalida."}
+
+        if group_by and group_by not in GROUP_BY_OPTIONS:
+            return {"success": False, "message": "Opcao de 'Group By 1' invalida."}
 
         folder_check = self.validate_sharepoint_folder()
         if not folder_check["valid"]:
@@ -111,5 +117,6 @@ class Api:
             password=self._password,
             on_progress=on_progress,
             date_range=date_range,
+            group_by=group_by,
         )
         return result

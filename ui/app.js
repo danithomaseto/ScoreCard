@@ -12,6 +12,7 @@ const dateRangeMode = document.getElementById('date-range-mode');
 const customDateFields = document.getElementById('custom-date-fields');
 const fromDateInput = document.getElementById('from-date');
 const toDateInput = document.getElementById('to-date');
+const groupBySelect = document.getElementById('group-by');
 const runBtn = document.getElementById('run-btn');
 const runStatus = document.getElementById('run-status');
 
@@ -36,6 +37,7 @@ async function showApp() {
   loginView.hidden = true;
   appView.hidden = false;
   await loadOperations();
+  await loadGroupByOptions();
 }
 
 async function loadOperations() {
@@ -47,6 +49,19 @@ async function loadOperations() {
     opt.textContent = op.label;
     operationSelect.appendChild(opt);
   }
+}
+
+async function loadGroupByOptions() {
+  const options = await pywebview.api.get_group_by_options();
+  groupBySelect.innerHTML = '';
+  for (const value of options) {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = value;
+    groupBySelect.appendChild(opt);
+  }
+  // "User ID" e o padrao usado ate hoje em todas as operacoes.
+  groupBySelect.value = 'User ID';
 }
 
 async function ensureFolderConfigured() {
@@ -134,7 +149,7 @@ runBtn.addEventListener('click', async () => {
   runBtn.textContent = 'Executando...';
   showStatus(runStatus, 'Executando a automacao, aguarde...', '');
   try {
-    const result = await pywebview.api.run_extraction(operationSelect.value, dateRange);
+    const result = await pywebview.api.run_extraction(operationSelect.value, dateRange, groupBySelect.value);
     showStatus(runStatus, result.message, result.success ? 'success' : 'error');
   } catch (err) {
     showStatus(runStatus, 'Erro inesperado: ' + err.message, 'error');

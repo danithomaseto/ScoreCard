@@ -9,6 +9,41 @@ SharePoint sincronizada via OneDrive) onde o relatorio dessa operacao e
 salvo. Precisa bater com o nome da pasta que aparece no SharePoint.
 """
 
+# Opcoes reais do combobox "Group By 1" do Summary, na mesma ordem em
+# que aparecem no dropdown do site. Usado pra popular o select da tela
+# e como lista de valores validos vindos da UI.
+GROUP_BY_OPTIONS = [
+    "Aisle Area",
+    "Aisle Area Desc.",
+    "Client",
+    "Customer",
+    "Fiscal Month",
+    "Fiscal Week",
+    "Job Code",
+    "Job Code Desc.",
+    "Learning Curve",
+    "Month",
+    "Observation State",
+    "Reference ID",
+    "Report By Hour",
+    "Report Date",
+    "Report Group",
+    "Route Number",
+    "Shift",
+    "Shift Category",
+    "Supervisor",
+    "User",
+    "User Group",
+    "User ID",
+    "User Name",
+    "User Pin",
+    "Warehouse",
+    "Week",
+    "Work Area",
+    "Work Category",
+    "Work Team",
+]
+
 OPERATIONS = {
     "hugo_boss": {
         "label": "Hugo Boss",

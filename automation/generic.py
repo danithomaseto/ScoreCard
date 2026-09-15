@@ -29,6 +29,7 @@ def run(
     password=None,
     on_progress=None,
     date_range=None,
+    group_by=None,
 ):
     """Executa a automacao completa (login + extracao do relatorio) para
     qualquer operacao cadastrada em config/operations.py.
@@ -41,6 +42,9 @@ def run(
     atualizar a tela do app em tempo real). date_range, se informado, e
     um dict {"from_date": "yyyy-mm-dd", "to_date": "yyyy-mm-dd"} pra usar
     um periodo especifico em vez do padrao (Ultima semana) da operacao.
+    group_by, se informado, e o texto exato de uma das opcoes de "Group
+    By 1" (config.operations.GROUP_BY_OPTIONS) escolhida na tela, usado
+    no lugar do padrao "User ID" da operacao.
     """
     config = OPERATIONS[operation_key]
 
@@ -97,12 +101,14 @@ def run(
             log("preenchendo Date Range...")
             select_combobox(frame, "Date Range", config["date_range_type_text"])
 
-        log("preenchendo Group By 1...")
+        group_by_option = group_by or config["group_by_option"]
+        group_by_type_text = group_by if group_by else config["group_by_type_text"]
+        log(f"preenchendo Group By 1 ({group_by_option})...")
         select_combobox(
             frame,
             "Group By 1",
-            config["group_by_type_text"],
-            option_text=config["group_by_option"],
+            group_by_type_text,
+            option_text=group_by_option,
         )
 
         log("exportando e baixando o arquivo...")
