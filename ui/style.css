@@ -271,7 +271,6 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .page-wide-wrap {
   width: 100%;
-  max-width: 1100px;
 }
 
 .page-heading { font-size: 24px; margin: 0 0 4px; color: var(--text); }
