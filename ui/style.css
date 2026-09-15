@@ -120,7 +120,12 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
 #login-view:not([hidden]) { display: flex; }
-#app-view:not([hidden]) { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* Altura travada na viewport (e nao "min-height") de proposito: e o que
+   faz o .content-area ser a unica parte que rola. Com min-height, o
+   app-view crescia junto com o conteudo e quem rolava era a pagina
+   inteira, levando a barra lateral junto. */
+#app-view:not([hidden]) { display: flex; flex-direction: column; height: 100vh; }
 
 .topbar-dhl {
   background: var(--yellow);
@@ -158,6 +163,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   flex-direction: column;
   gap: 6px;
   padding: 22px 12px 14px;
+  overflow-y: auto;
 }
 
 .nav-item {
