@@ -318,7 +318,22 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   margin-bottom: 20px;
 }
 
-.params-card { flex: 1.3; max-width: none; }
+/* Coluna flex + "margin-top: auto" no botao: os campos ficam no topo e
+   o botao encosta na base, entao a sobra de altura (o card acompanha a
+   altura do painel de etapas, que e mais alto) some em vez de virar um
+   bloco vazio embaixo. */
+.params-card {
+  flex: 1.3;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.params-card #run-btn {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
 .progress-card { flex: 1; max-width: none; }
 .history-card { width: 100%; max-width: none; }
 
@@ -399,7 +414,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .step {
   display: flex;
   gap: 12px;
-  padding-bottom: 20px;
+  padding-bottom: 14px;
   position: relative;
 }
 .step:last-child { padding-bottom: 0; }
