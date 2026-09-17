@@ -223,7 +223,12 @@ async function ensureFolderConfigured() {
   return false;
 }
 
-loginBtn.addEventListener('click', async () => {
+document.getElementById('login-form').addEventListener('submit', async (event) => {
+  // Botao e type="submit" dentro de um <form>, entao apertar Enter em
+  // qualquer campo (inclusive Senha) dispara isso, igual clicar em
+  // Entrar - sem o preventDefault o navegador tentaria recarregar a
+  // pagina.
+  event.preventDefault();
   const username = loginUsername.value.trim();
   const password = loginPassword.value;
   loginStatus.hidden = true;

@@ -11,11 +11,13 @@
   <div class="card">
     <h2>Score Card</h2>
     <p class="subtitle">Entre com seu usuario e senha do Summary.</p>
-    <label for="login-username">Usuario</label>
-    <input id="login-username" type="text" autocomplete="username">
-    <label for="login-password">Senha</label>
-    <input id="login-password" type="password" autocomplete="current-password">
-    <button id="login-btn">Entrar</button>
+    <form id="login-form">
+      <label for="login-username">Usuario</label>
+      <input id="login-username" type="text" autocomplete="username">
+      <label for="login-password">Senha</label>
+      <input id="login-password" type="password" autocomplete="current-password">
+      <button id="login-btn" type="submit">Entrar</button>
+    </form>
     <div id="login-status" class="status error" hidden></div>
   </div>
 </div>
