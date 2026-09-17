@@ -71,6 +71,10 @@ def main():
         height=700,
         min_size=(820, 600),
         resizable=True,
+        # Cor de fundo mostrada por uma fracao de segundo antes da
+        # pagina terminar de carregar, pra combinar com o tema escuro
+        # em vez do branco padrao do pywebview.
+        background_color="#0b0e1a",
     )
     api.set_window(window)
     webview.start()
