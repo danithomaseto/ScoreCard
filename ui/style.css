@@ -38,7 +38,7 @@ body {
      imagem original e bem clara/amarela, sem isso o texto do card
      sumiria contra o fundo. */
   background:
-    linear-gradient(180deg, rgba(11, 14, 26, 0.55), rgba(11, 14, 26, 0.88)),
+    linear-gradient(180deg, rgba(11, 14, 26, 0.25), rgba(11, 14, 26, 0.45)),
     url("assets/dhl-login-bg.png") center / cover no-repeat;
 }
 
