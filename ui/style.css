@@ -33,6 +33,15 @@ body {
   padding: 16px;
 }
 
+#login-view {
+  /* Camada escura por cima da foto pra manter o card legivel - a
+     imagem original e bem clara/amarela, sem isso o texto do card
+     sumiria contra o fundo. */
+  background:
+    linear-gradient(180deg, rgba(11, 14, 26, 0.55), rgba(11, 14, 26, 0.88)),
+    url("assets/dhl-login-bg.png") center / cover no-repeat;
+}
+
 .card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
