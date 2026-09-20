@@ -10,6 +10,7 @@ const operationSelect = document.getElementById('operation');
 const fromDateInput = document.getElementById('from-date');
 const toDateInput = document.getElementById('to-date');
 const groupBySelect = document.getElementById('group-by');
+const periodOptionEls = document.querySelectorAll('#period-options .period-option');
 const runBtn = document.getElementById('run-btn');
 const runStatus = document.getElementById('run-status');
 
@@ -103,7 +104,7 @@ async function loadHistoryTable() {
   if (!history.length) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 6;
+    cell.colSpan = 7;
     cell.className = 'empty-history-msg';
     cell.textContent = 'Nenhuma extracao registrada ainda.';
     row.appendChild(cell);
@@ -114,6 +115,7 @@ async function loadHistoryTable() {
     const row = document.createElement('tr');
     row.appendChild(makeCell(new Date(entry.timestamp).toLocaleString('pt-BR')));
     row.appendChild(makeCell(entry.operation || '-'));
+    row.appendChild(makeCell(entry.period_type || '-'));
     row.appendChild(makeCell(entry.period_label || '-'));
     row.appendChild(makeCell(entry.group_by || '-'));
     row.appendChild(makeCell(formatDuration(entry.duration_seconds)));
@@ -202,6 +204,18 @@ async function loadGroupByOptions() {
   }
   // "User ID" e o padrao usado ate hoje em todas as operacoes.
   groupBySelect.value = 'User ID';
+}
+
+periodOptionEls.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    periodOptionEls.forEach((el) => el.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+function getSelectedPeriod() {
+  const active = document.querySelector('#period-options .period-option.active');
+  return active ? active.dataset.period : 'week';
 }
 
 async function ensureFolderConfigured() {
@@ -305,7 +319,7 @@ runBtn.addEventListener('click', async () => {
   progressDetailEl.textContent = 'Iniciando a extracao...';
   progressPercentEl.textContent = '0%';
   try {
-    const result = await pywebview.api.run_extraction(operationSelect.value, dateRange, groupBySelect.value);
+    const result = await pywebview.api.run_extraction(operationSelect.value, dateRange, groupBySelect.value, getSelectedPeriod());
     if (result.success) {
       markStepsDone();
       setBadge('success', 'Concluida');

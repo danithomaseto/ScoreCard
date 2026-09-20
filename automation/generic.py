@@ -31,6 +31,7 @@ def run(
     on_progress=None,
     date_range=None,
     group_by=None,
+    period=None,
 ):
     """Executa a automacao completa (login + extracao do relatorio) para
     qualquer operacao cadastrada em config/operations.py.
@@ -45,7 +46,10 @@ def run(
     um periodo especifico em vez do padrao (Ultima semana) da operacao.
     group_by, se informado, e o texto exato de uma das opcoes de "Group
     By 1" (config.operations.GROUP_BY_OPTIONS) escolhida na tela, usado
-    no lugar do padrao "User ID" da operacao.
+    no lugar do padrao "User ID" da operacao. period ("week" ou "month")
+    define em qual subpasta da operacao o arquivo e salvo - "Week" ou
+    "Month" - pra separar os dados usados no calculo dos indicadores
+    semanais dos mensais.
     """
     config = OPERATIONS[operation_key]
 
@@ -63,8 +67,10 @@ def run(
             "message": f"A pasta configurada nao existe ou nao foi definida: {base_dir}",
         }
 
+    period_folder = "Month" if (period or "week").lower() == "month" else "Week"
+
     folder = config.get("sharepoint_folder") or config["label"]
-    download_dir = os.path.join(base_dir, folder)
+    download_dir = os.path.join(base_dir, folder, period_folder)
 
     if date_range:
         period_label = (
@@ -91,6 +97,7 @@ def run(
         "operation_label": config["label"],
         "period_label": period_label,
         "group_by": group_by_option,
+        "period_type": period_folder,
     }
 
     try:

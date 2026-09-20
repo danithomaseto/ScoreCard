@@ -81,7 +81,7 @@ class Api:
 
     # ---------------- Extracao ----------------
 
-    def run_extraction(self, operation_key, date_range=None, group_by=None):
+    def run_extraction(self, operation_key, date_range=None, group_by=None, period=None):
         if not self.is_logged_in():
             return {"success": False, "message": "Faca login antes de executar."}
 
@@ -90,6 +90,9 @@ class Api:
 
         if group_by and group_by not in GROUP_BY_OPTIONS:
             return {"success": False, "message": "Opcao de 'Group By 1' invalida."}
+
+        if period and period not in ("week", "month"):
+            return {"success": False, "message": "Periodo do indicador invalido."}
 
         folder_check = self.validate_sharepoint_folder()
         if not folder_check["valid"]:
@@ -119,11 +122,13 @@ class Api:
             on_progress=on_progress,
             date_range=date_range,
             group_by=group_by,
+            period=period,
         )
         history_store.add_entry({
             "operation": result.get("operation_label", OPERATIONS[operation_key]["label"]),
             "period_label": result.get("period_label"),
             "group_by": result.get("group_by"),
+            "period_type": result.get("period_type"),
             "status": "success" if result.get("success") else "error",
             "duration_seconds": result.get("duration_seconds"),
             "file_path": result.get("file_path"),

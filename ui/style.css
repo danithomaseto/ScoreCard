@@ -364,9 +364,6 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   border: 1px solid var(--yellow);
   border-radius: 8px;
   background: rgba(255, 204, 0, 0.06);
-  /* Mesma proporcao dos cards de fonte da referencia (3 por linha),
-     mesmo tendo hoje uma unica fonte de dados. */
-  max-width: calc(33.333% - 7px);
 }
 
 .source-icon {
@@ -384,6 +381,38 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .source-option strong { display: block; font-size: 13px; color: var(--text); }
 .source-option span { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.period-options {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.period-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  min-width: 0;
+}
+
+.period-option:hover { border-color: var(--yellow-dark); }
+
+.period-option.active {
+  border-color: var(--yellow);
+  background: rgba(255, 204, 0, 0.06);
+}
+
+.period-option strong { display: block; font-size: 13px; color: var(--text); }
+.period-option span { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
 .badge {
   display: inline-flex;

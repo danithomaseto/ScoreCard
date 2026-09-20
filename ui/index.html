@@ -105,12 +105,35 @@
             <div class="card params-card">
               <div class="section-title">Parametros da extracao</div>
 
-              <label>Fonte de dados</label>
-              <div class="source-option">
-                <div class="source-icon">🖧</div>
+              <div class="field-row">
                 <div>
-                  <strong>BlueYonder</strong>
-                  <span>Sistema RP (Summary)</span>
+                  <label>Fonte de dados</label>
+                  <div class="source-option">
+                    <div class="source-icon">🖧</div>
+                    <div>
+                      <strong>BlueYonder</strong>
+                      <span>Sistema RP (Summary)</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label>Periodo do indicador</label>
+                  <div class="period-options" id="period-options">
+                    <button type="button" class="period-option active" data-period="week">
+                      <div class="source-icon">📆</div>
+                      <div>
+                        <strong>Week</strong>
+                        <span>Indicadores semanais</span>
+                      </div>
+                    </button>
+                    <button type="button" class="period-option" data-period="month">
+                      <div class="source-icon">🗓️</div>
+                      <div>
+                        <strong>Month</strong>
+                        <span>Indicadores mensais</span>
+                      </div>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -221,6 +244,7 @@
                   <tr>
                     <th>Data/Hora</th>
                     <th>Operacao</th>
+                    <th>Tipo</th>
                     <th>Periodo</th>
                     <th>Group By 1</th>
                     <th>Duracao</th>
