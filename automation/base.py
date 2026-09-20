@@ -8,6 +8,7 @@ um <iframe> cujo nome muda a cada sessao (tem um token/timestamp), entao
 localizamos o frame por um trecho fixo do nome em vez do nome completo.
 """
 
+import glob
 import os
 from datetime import datetime
 
@@ -314,4 +315,16 @@ def export_report(page, frame, download_dir, operation_key, export_format="EXCEL
     filename = f"ScoreCard_{operation_key}_{timestamp}{extension}"
     dest_path = os.path.join(download_dir, filename)
     download.save_as(dest_path)
+
+    # Mantem so o relatorio mais recente desta operacao na pasta: apaga
+    # os anteriores gerados por este app (mesmo prefixo), sem mexer em
+    # nenhum outro arquivo que o usuario tenha colocado ali.
+    old_files_pattern = os.path.join(download_dir, f"ScoreCard_{operation_key}_*")
+    for old_file in glob.glob(old_files_pattern):
+        if os.path.abspath(old_file) != os.path.abspath(dest_path):
+            try:
+                os.remove(old_file)
+            except OSError:
+                pass  # nao deixa uma falha de limpeza derrubar a extracao
+
     return dest_path
