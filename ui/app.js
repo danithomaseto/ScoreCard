@@ -388,6 +388,54 @@ window.updateMultiProgress = function (data) {
   multiProgressDetailEl.textContent = `${data.index + 1} de ${data.total} - ${data.operation_label}`;
 };
 
+// yyyy-mm-dd no fuso local. Nao da pra usar toISOString() aqui: ele
+// converte pra UTC e, dependendo da hora, joga a data um dia pra tras.
+function toInputDate(date) {
+  const mes = String(date.getMonth() + 1).padStart(2, '0');
+  const dia = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${mes}-${dia}`;
+}
+
+// Semana passada = segunda a domingo da semana anterior a atual.
+function lastWeekRange() {
+  const hoje = new Date();
+  const diasDesdeSegunda = (hoje.getDay() + 6) % 7;
+  const inicio = new Date(hoje);
+  inicio.setDate(hoje.getDate() - diasDesdeSegunda - 7);
+  const fim = new Date(inicio);
+  fim.setDate(inicio.getDate() + 6);
+  return [inicio, fim];
+}
+
+// Mes passado = do dia 1 ao ultimo dia do mes anterior.
+function lastMonthRange() {
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+  const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+  return [inicio, fim];
+}
+
+// Os atalhos tambem ajustam Week/Month, que e a combinacao esperada em
+// cada caso (e da pra trocar depois clicando no outro card).
+document.querySelectorAll('[data-date-shortcuts]').forEach((group) => {
+  const isMulti = group.dataset.dateShortcuts === 'multi';
+  const fromInput = isMulti ? multiFromDateInput : fromDateInput;
+  const toInput = isMulti ? multiToDateInput : toDateInput;
+  const periodButtons = isMulti ? multiPeriodOptionEls : periodOptionEls;
+
+  group.querySelectorAll('button[data-range]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const mensal = btn.dataset.range === 'last-month';
+      const [inicio, fim] = mensal ? lastMonthRange() : lastWeekRange();
+      fromInput.value = toInputDate(inicio);
+      toInput.value = toInputDate(fim);
+
+      const alvo = mensal ? 'month' : 'week';
+      periodButtons.forEach((el) => el.classList.toggle('active', el.dataset.period === alvo));
+    });
+  });
+});
+
 function getSelectedPeriod() {
   const active = document.querySelector('#period-options .period-option.active');
   return active ? active.dataset.period : 'week';
