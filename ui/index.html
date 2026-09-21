@@ -45,6 +45,14 @@
         </svg>
         <span>Extrair Dados</span>
       </button>
+      <button class="nav-item" data-page="multi">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/>
+          <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/>
+          <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>
+        </svg>
+        <span>Extrair Multiplos</span>
+      </button>
       <button class="nav-item" data-page="headcount">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -252,6 +260,112 @@
                   </tr>
                 </thead>
                 <tbody id="history-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="page-multi" class="page" hidden>
+        <div class="page-wide-wrap">
+          <h2 class="page-heading">Extrair Multiplos</h2>
+          <p class="subtitle">Selecione varias operacoes e extraia todas em sequencia, usando os mesmos filtros.</p>
+
+          <div class="extract-layout">
+            <div class="card params-card">
+              <div class="section-title">Parametros da extracao</div>
+
+              <div class="field-row">
+                <div>
+                  <label>Fonte de dados</label>
+                  <div class="source-option">
+                    <div class="source-icon">🖧</div>
+                    <div>
+                      <strong>BlueYonder</strong>
+                      <span>Sistema RP (Summary)</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label>Periodo do indicador</label>
+                  <div class="period-options" id="multi-period-options">
+                    <button type="button" class="period-option active" data-period="week">
+                      <div class="source-icon">📆</div>
+                      <div>
+                        <strong>Week</strong>
+                        <span>Indicadores semanais</span>
+                      </div>
+                    </button>
+                    <button type="button" class="period-option" data-period="month">
+                      <div class="source-icon">🗓️</div>
+                      <div>
+                        <strong>Month</strong>
+                        <span>Indicadores mensais</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ops-header">
+                <label>Operacoes</label>
+                <div class="ops-actions">
+                  <button type="button" class="link-btn" id="multi-select-all">Selecionar todas</button>
+                  <button type="button" class="link-btn" id="multi-clear">Limpar</button>
+                </div>
+              </div>
+              <div class="ops-list" id="multi-operations"></div>
+
+              <div class="field-row">
+                <div>
+                  <label for="multi-from-date">Data inicial</label>
+                  <input type="date" id="multi-from-date">
+                </div>
+                <div>
+                  <label for="multi-to-date">Data final</label>
+                  <input type="date" id="multi-to-date">
+                </div>
+              </div>
+
+              <label for="multi-group-by">Group By 1</label>
+              <select id="multi-group-by"></select>
+
+              <button id="multi-run-btn">▶ Iniciar extracao</button>
+
+              <div id="multi-run-status" class="status" hidden></div>
+            </div>
+
+            <div class="card progress-card">
+              <div class="progress-header">
+                <div class="section-title">Andamento</div>
+                <span class="badge" id="multi-progress-badge">Aguardando</span>
+              </div>
+              <div class="progress-detail-row">
+                <span id="multi-progress-detail">Nenhuma extracao em andamento</span>
+                <span id="multi-progress-percent">0%</span>
+              </div>
+              <div class="steps" id="multi-progress-steps">
+                <p class="subtitle" id="multi-steps-empty">Selecione as operacoes ao lado para ver a fila aqui.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card history-card">
+            <div class="section-title">Historico de extracoes</div>
+            <div class="table-wrap">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>Data/Hora</th>
+                    <th>Operacao</th>
+                    <th>Tipo</th>
+                    <th>Periodo</th>
+                    <th>Group By 1</th>
+                    <th>Duracao</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="multi-history-table-body"></tbody>
               </table>
             </div>
           </div>

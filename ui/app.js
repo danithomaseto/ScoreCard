@@ -26,6 +26,21 @@ const progressPercentEl = document.getElementById('progress-percent');
 const stepEls = document.querySelectorAll('#progress-steps .step');
 const historyTableBody = document.getElementById('history-table-body');
 
+const multiOperationsEl = document.getElementById('multi-operations');
+const multiSelectAllBtn = document.getElementById('multi-select-all');
+const multiClearBtn = document.getElementById('multi-clear');
+const multiFromDateInput = document.getElementById('multi-from-date');
+const multiToDateInput = document.getElementById('multi-to-date');
+const multiGroupBySelect = document.getElementById('multi-group-by');
+const multiPeriodOptionEls = document.querySelectorAll('#multi-period-options .period-option');
+const multiRunBtn = document.getElementById('multi-run-btn');
+const multiRunStatus = document.getElementById('multi-run-status');
+const multiProgressBadgeEl = document.getElementById('multi-progress-badge');
+const multiProgressDetailEl = document.getElementById('multi-progress-detail');
+const multiProgressPercentEl = document.getElementById('multi-progress-percent');
+const multiStepsEl = document.getElementById('multi-progress-steps');
+const multiHistoryTableBody = document.getElementById('multi-history-table-body');
+
 const navItems = document.querySelectorAll('.nav-item[data-page]');
 const pages = document.querySelectorAll('.page');
 
@@ -72,7 +87,9 @@ async function showPage(pageName) {
   if (pageName === 'home') {
     await loadLastRun();
   } else if (pageName === 'extract') {
-    await loadHistoryTable();
+    await loadHistoryTable(historyTableBody);
+  } else if (pageName === 'multi') {
+    await loadHistoryTable(multiHistoryTableBody);
   } else if (pageName === 'settings') {
     const check = await pywebview.api.validate_sharepoint_folder();
     folderPathEl.textContent = check.valid ? check.folder : 'Nenhuma pasta configurada ainda.';
@@ -98,9 +115,11 @@ navItems.forEach((btn) => {
   btn.addEventListener('click', () => showPage(btn.dataset.page));
 });
 
-async function loadHistoryTable() {
+// As duas abas de extracao mostram o mesmo historico, cada uma com o
+// seu <tbody>.
+async function loadHistoryTable(tbody = historyTableBody) {
   const history = await pywebview.api.get_report_history();
-  historyTableBody.innerHTML = '';
+  tbody.innerHTML = '';
   if (!history.length) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
@@ -108,7 +127,7 @@ async function loadHistoryTable() {
     cell.className = 'empty-history-msg';
     cell.textContent = 'Nenhuma extracao registrada ainda.';
     row.appendChild(cell);
-    historyTableBody.appendChild(row);
+    tbody.appendChild(row);
     return;
   }
   for (const entry of history) {
@@ -131,7 +150,7 @@ async function loadHistoryTable() {
     statusCell.appendChild(pill);
     row.appendChild(statusCell);
 
-    historyTableBody.appendChild(row);
+    tbody.appendChild(row);
   }
 }
 
@@ -184,26 +203,46 @@ function markStepsDone() {
 
 async function loadOperations() {
   const operations = await pywebview.api.get_operations();
+
   operationSelect.innerHTML = '';
+  multiOperationsEl.innerHTML = '';
   for (const op of operations) {
     const opt = document.createElement('option');
     opt.value = op.key;
     opt.textContent = op.label;
     operationSelect.appendChild(opt);
+
+    // Mesma lista, em forma de checkbox, na aba Extrair Multiplos.
+    const item = document.createElement('label');
+    item.className = 'ops-item';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = op.key;
+    checkbox.addEventListener('change', () => {
+      item.classList.toggle('selected', checkbox.checked);
+      refreshMultiQueue();
+    });
+    const name = document.createElement('span');
+    name.textContent = op.label;
+    item.appendChild(checkbox);
+    item.appendChild(name);
+    multiOperationsEl.appendChild(item);
   }
 }
 
 async function loadGroupByOptions() {
   const options = await pywebview.api.get_group_by_options();
-  groupBySelect.innerHTML = '';
-  for (const value of options) {
-    const opt = document.createElement('option');
-    opt.value = value;
-    opt.textContent = value;
-    groupBySelect.appendChild(opt);
+  for (const select of [groupBySelect, multiGroupBySelect]) {
+    select.innerHTML = '';
+    for (const value of options) {
+      const opt = document.createElement('option');
+      opt.value = value;
+      opt.textContent = value;
+      select.appendChild(opt);
+    }
+    // "User ID" e o padrao usado ate hoje em todas as operacoes.
+    select.value = 'User ID';
   }
-  // "User ID" e o padrao usado ate hoje em todas as operacoes.
-  groupBySelect.value = 'User ID';
 }
 
 periodOptionEls.forEach((btn) => {
@@ -212,6 +251,111 @@ periodOptionEls.forEach((btn) => {
     btn.classList.add('active');
   });
 });
+
+multiPeriodOptionEls.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    multiPeriodOptionEls.forEach((el) => el.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+function getSelectedMultiPeriod() {
+  const active = document.querySelector('#multi-period-options .period-option.active');
+  return active ? active.dataset.period : 'week';
+}
+
+function getSelectedOperations() {
+  const selected = [];
+  multiOperationsEl.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+    if (checkbox.checked) {
+      selected.push({ key: checkbox.value, label: checkbox.parentElement.textContent.trim() });
+    }
+  });
+  return selected;
+}
+
+function setMultiChecked(checked) {
+  multiOperationsEl.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+    checkbox.checked = checked;
+    checkbox.parentElement.classList.toggle('selected', checked);
+  });
+  refreshMultiQueue();
+}
+
+multiSelectAllBtn.addEventListener('click', () => setMultiChecked(true));
+multiClearBtn.addEventListener('click', () => setMultiChecked(false));
+
+// Monta a fila do painel "Andamento" com uma linha por operacao
+// selecionada, reaproveitando o visual das etapas da outra aba.
+function refreshMultiQueue() {
+  const selected = getSelectedOperations();
+  multiStepsEl.innerHTML = '';
+
+  if (!selected.length) {
+    const empty = document.createElement('p');
+    empty.className = 'subtitle';
+    empty.textContent = 'Selecione as operacoes ao lado para ver a fila aqui.';
+    multiStepsEl.appendChild(empty);
+    multiProgressDetailEl.textContent = 'Nenhuma extracao em andamento';
+    multiProgressPercentEl.textContent = '0%';
+    return;
+  }
+
+  selected.forEach((op, index) => {
+    const step = document.createElement('div');
+    step.className = 'step';
+    step.dataset.opKey = op.key;
+
+    const number = document.createElement('div');
+    number.className = 'step-number';
+    number.textContent = String(index + 1);
+
+    const content = document.createElement('div');
+    content.className = 'step-content';
+    const title = document.createElement('div');
+    title.className = 'step-title';
+    title.textContent = op.label;
+    const subtitle = document.createElement('div');
+    subtitle.className = 'step-subtitle';
+    subtitle.textContent = 'Na fila';
+    content.appendChild(title);
+    content.appendChild(subtitle);
+
+    step.appendChild(number);
+    step.appendChild(content);
+    multiStepsEl.appendChild(step);
+  });
+
+  multiProgressDetailEl.textContent = `${selected.length} operacao(oes) na fila`;
+  multiProgressPercentEl.textContent = '0%';
+}
+
+function setMultiBadge(kind, text) {
+  multiProgressBadgeEl.textContent = text;
+  multiProgressBadgeEl.className = 'badge' + (kind ? ' ' + kind : '');
+}
+
+// Chamado pelo Python (api.py) a cada etapa de cada operacao da fila.
+window.updateMultiProgress = function (data) {
+  const steps = multiStepsEl.querySelectorAll('.step');
+  const step = steps[data.index];
+  if (!step) return;
+
+  const subtitle = step.querySelector('.step-subtitle');
+  step.classList.remove('active', 'done', 'error');
+
+  if (data.status === 'running') {
+    step.classList.add('active');
+    subtitle.textContent = data.step;
+    multiProgressPercentEl.textContent = `${Math.round((data.index / data.total) * 100)}%`;
+  } else {
+    step.classList.add(data.status === 'success' ? 'done' : 'error');
+    subtitle.textContent = data.status === 'success' ? 'Concluida' : data.step;
+    multiProgressPercentEl.textContent = `${Math.round(((data.index + 1) / data.total) * 100)}%`;
+  }
+
+  multiProgressDetailEl.textContent = `${data.index + 1} de ${data.total} - ${data.operation_label}`;
+};
 
 function getSelectedPeriod() {
   const active = document.querySelector('#period-options .period-option.active');
@@ -338,6 +482,57 @@ runBtn.addEventListener('click', async () => {
   } finally {
     runBtn.disabled = false;
     runBtn.textContent = '▶ Iniciar extracao';
+  }
+});
+
+multiRunBtn.addEventListener('click', async () => {
+  multiRunStatus.hidden = true;
+
+  const selected = getSelectedOperations();
+  if (!selected.length) {
+    showStatus(multiRunStatus, 'Selecione pelo menos uma operacao.', 'error');
+    return;
+  }
+  if (!multiFromDateInput.value || !multiToDateInput.value) {
+    showStatus(multiRunStatus, 'Preencha a Data inicial e a Data final.', 'error');
+    return;
+  }
+  if (multiFromDateInput.value > multiToDateInput.value) {
+    showStatus(multiRunStatus, 'A "Data inicial" nao pode ser depois da "Data final".', 'error');
+    return;
+  }
+  const dateRange = { from_date: multiFromDateInput.value, to_date: multiToDateInput.value };
+
+  const folderOk = await ensureFolderConfigured();
+  if (!folderOk) {
+    showStatus(multiRunStatus, 'E necessario selecionar a pasta do SharePoint antes de executar.', 'error');
+    return;
+  }
+
+  refreshMultiQueue();
+  setMultiBadge('running', 'Em andamento');
+  multiProgressDetailEl.textContent = 'Iniciando a fila...';
+  multiProgressPercentEl.textContent = '0%';
+  multiRunBtn.disabled = true;
+  multiRunBtn.textContent = 'Executando...';
+  try {
+    const result = await pywebview.api.run_multi_extraction(
+      selected.map((op) => op.key),
+      dateRange,
+      multiGroupBySelect.value,
+      getSelectedMultiPeriod(),
+    );
+    setMultiBadge(result.success ? 'success' : 'error', result.success ? 'Concluida' : 'Com falhas');
+    multiProgressPercentEl.textContent = '100%';
+    multiProgressDetailEl.textContent = result.message;
+    showStatus(multiRunStatus, result.message, result.success ? 'success' : 'error');
+    await loadHistoryTable(multiHistoryTableBody);
+  } catch (err) {
+    setMultiBadge('error', 'Falha');
+    showStatus(multiRunStatus, 'Erro inesperado: ' + err.message, 'error');
+  } finally {
+    multiRunBtn.disabled = false;
+    multiRunBtn.textContent = '▶ Iniciar extracao';
   }
 });
 

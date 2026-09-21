@@ -344,7 +344,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   flex-direction: column;
 }
 
-.params-card #run-btn {
+.params-card > button {
   margin-top: auto;
   align-self: flex-start;
 }
@@ -413,6 +413,66 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .period-option strong { display: block; font-size: 13px; color: var(--text); }
 .period-option span { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.ops-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ops-actions { display: flex; gap: 14px; }
+
+.link-btn {
+  height: auto;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  color: var(--yellow);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.link-btn:hover { background: none; text-decoration: underline; }
+
+.ops-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ops-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.ops-item:hover { border-color: var(--yellow-dark); }
+
+.ops-item.selected {
+  border-color: var(--yellow);
+  background: rgba(255, 204, 0, 0.06);
+}
+
+/* A regra global de "input" deixa os campos com 100% de largura e 46px
+   de altura; o checkbox precisa escapar disso. */
+.ops-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  accent-color: var(--yellow);
+}
 
 .badge {
   display: inline-flex;
