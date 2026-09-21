@@ -414,14 +414,30 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .period-option strong { display: block; font-size: 13px; color: var(--text); }
 .period-option span { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-.ops-header {
+.field-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
 }
 
-.ops-actions { display: flex; gap: 14px; }
+.field-actions { display: flex; gap: 14px; }
+
+.run-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.run-actions button {
+  height: 38px;
+  font-size: 13px;
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+.run-actions button:hover { background: var(--input-border); }
 
 .link-btn {
   height: auto;

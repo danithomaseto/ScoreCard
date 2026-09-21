@@ -13,6 +13,7 @@ const groupBySelect = document.getElementById('group-by');
 const periodOptionEls = document.querySelectorAll('#period-options .period-option');
 const runBtn = document.getElementById('run-btn');
 const runStatus = document.getElementById('run-status');
+const runActions = document.getElementById('run-actions');
 
 const logoutBtn = document.getElementById('logout-btn');
 const folderPathEl = document.getElementById('folder-path');
@@ -35,6 +36,7 @@ const multiGroupBySelect = document.getElementById('multi-group-by');
 const multiPeriodOptionEls = document.querySelectorAll('#multi-period-options .period-option');
 const multiRunBtn = document.getElementById('multi-run-btn');
 const multiRunStatus = document.getElementById('multi-run-status');
+const multiRunActions = document.getElementById('multi-run-actions');
 const multiProgressBadgeEl = document.getElementById('multi-progress-badge');
 const multiProgressDetailEl = document.getElementById('multi-progress-detail');
 const multiProgressPercentEl = document.getElementById('multi-progress-percent');
@@ -62,6 +64,35 @@ function showStatus(el, message, kind) {
   el.textContent = message;
   el.className = 'status' + (kind ? ' ' + kind : '');
   el.hidden = false;
+}
+
+// Botoes que aparecem depois de uma extracao: abrir a pasta onde o
+// arquivo caiu e, quando algo falha, o print da tela do erro (que a
+// automacao ja salva, mas ate agora ninguem via).
+function showRunActions(container, { houveSucesso, houveFalha }) {
+  container.innerHTML = '';
+
+  const adicionar = (texto, acao) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = texto;
+    btn.addEventListener('click', async () => {
+      const result = await acao();
+      if (result && !result.success) {
+        alert(result.message || 'Nao foi possivel abrir.');
+      }
+    });
+    container.appendChild(btn);
+  };
+
+  if (houveSucesso) {
+    adicionar('📂 Abrir pasta', () => pywebview.api.open_last_folder());
+  }
+  if (houveFalha) {
+    adicionar('🖼 Ver print do erro', () => pywebview.api.open_error_screenshot());
+  }
+
+  container.hidden = container.childElementCount === 0;
 }
 
 function showLogin() {
@@ -436,6 +467,7 @@ window.updateProgress = function (text) {
 
 runBtn.addEventListener('click', async () => {
   runStatus.hidden = true;
+  runActions.hidden = true;
 
   if (!fromDateInput.value || !toDateInput.value) {
     showStatus(runStatus, 'Preencha a Data inicial e a Data final.', 'error');
@@ -474,6 +506,7 @@ runBtn.addEventListener('click', async () => {
     }
     progressDetailEl.textContent = result.message;
     showStatus(runStatus, result.message, result.success ? 'success' : 'error');
+    showRunActions(runActions, { houveSucesso: result.success, houveFalha: !result.success });
     await loadHistoryTable();
   } catch (err) {
     markStepsError();
@@ -487,6 +520,7 @@ runBtn.addEventListener('click', async () => {
 
 multiRunBtn.addEventListener('click', async () => {
   multiRunStatus.hidden = true;
+  multiRunActions.hidden = true;
 
   const selected = getSelectedOperations();
   if (!selected.length) {
@@ -526,6 +560,10 @@ multiRunBtn.addEventListener('click', async () => {
     multiProgressPercentEl.textContent = '100%';
     multiProgressDetailEl.textContent = result.message;
     showStatus(multiRunStatus, result.message, result.success ? 'success' : 'error');
+    showRunActions(multiRunActions, {
+      houveSucesso: (result.succeeded || 0) > 0,
+      houveFalha: (result.failed || 0) > 0,
+    });
     await loadHistoryTable(multiHistoryTableBody);
   } catch (err) {
     setMultiBadge('error', 'Falha');

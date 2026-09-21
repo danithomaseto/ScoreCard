@@ -108,6 +108,26 @@ def test_login_e_obrigatorio(operations, sharepoint_dir, monkeypatch):
     assert "login" in result["message"].lower()
 
 
+def test_guarda_pasta_do_arquivo_e_print_do_erro(api, operations, isolated_history):
+    """A tela usa esses caminhos nos botoes 'Abrir pasta' e 'Ver print'."""
+    operations("mock", "Mock Co", "MockCo")
+    operations("mock_fail", "Mock Falha", "MockFalha", page="nao-existe.html")
+
+    api.run_extraction("mock", date_range=DATAS, period="week")
+    assert os.path.isdir(api._last_folder)
+    assert os.path.basename(api._last_folder) == "Week"
+
+    api.run_extraction("mock_fail", date_range=DATAS)
+    assert api._last_screenshot and os.path.isfile(api._last_screenshot)
+
+
+def test_abrir_caminho_inexistente_avisa_em_vez_de_quebrar(api):
+    resultado = api.open_last_folder()
+
+    assert resultado["success"] is False
+    assert "nao encontrada" in resultado["message"].lower()
+
+
 def test_credenciais_nunca_sao_persistidas(api, operations, isolated_history):
     """A senha so pode viver em memoria durante a sessao."""
     operations("mock", "Mock Co", "MockCo")

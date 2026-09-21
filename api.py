@@ -5,6 +5,8 @@ chamavel do JavaScript.
 
 import json
 import os
+import subprocess
+import sys
 
 import webview
 
@@ -19,6 +21,11 @@ class Api:
         self._window = None
         self._username = None
         self._password = None
+        # Guardados aqui (em vez de trafegar caminhos pelo JS) pra tela
+        # poder abrir a pasta do ultimo arquivo salvo e o print da
+        # ultima falha.
+        self._last_folder = None
+        self._last_screenshot = None
 
     def set_window(self, window):
         self._window = window
@@ -92,6 +99,10 @@ class Api:
         )
 
     def _record_history(self, operation_key, result):
+        if result.get("file_path"):
+            self._last_folder = os.path.dirname(result["file_path"])
+        if result.get("screenshot"):
+            self._last_screenshot = result["screenshot"]
         history_store.add_entry({
             "operation": result.get("operation_label", OPERATIONS[operation_key]["label"]),
             "period_label": result.get("period_label"),
@@ -206,7 +217,36 @@ class Api:
             message = f"{succeeded} de {total} extracoes concluidas, {failed} com falha."
         else:
             message = f"{succeeded} de {total} extracoes concluidas."
-        return {"success": failed == 0, "message": message}
+        return {
+            "success": failed == 0,
+            "message": message,
+            "succeeded": succeeded,
+            "failed": failed,
+        }
+
+    # ---------------- Abrir arquivos ----------------
+
+    @staticmethod
+    def _open_path(path, descricao):
+        """Abre um arquivo ou pasta no gerenciador do sistema."""
+        if not path or not os.path.exists(path):
+            return {"success": False, "message": f"{descricao} nao encontrada."}
+        try:
+            if sys.platform == "win32":
+                os.startfile(path)
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", path])
+            else:
+                subprocess.Popen(["xdg-open", path])
+        except OSError as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True}
+
+    def open_last_folder(self):
+        return self._open_path(self._last_folder, "Pasta do ultimo relatorio")
+
+    def open_error_screenshot(self):
+        return self._open_path(self._last_screenshot, "Imagem do erro")
 
     # ---------------- Historico ----------------
 
