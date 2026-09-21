@@ -1,0 +1,3 @@
+# Dependencias usadas so para rodar os testes (nao vao para o .exe).
+-r requirements.txt
+pytest==8.3.4

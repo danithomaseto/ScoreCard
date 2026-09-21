@@ -1,0 +1,18 @@
+<!doctype html><html><body>
+<nav>
+  <span>MENU</span>
+  <a href="#" onclick="showFrame(); return false;">Reports</a>
+</nav>
+<div id="frameHolder"></div>
+<script>
+function showFrame() {
+  const iframe = document.createElement('iframe');
+  const ctx = Math.random().toString(36).slice(2);
+  iframe.name = '1stPage:reporting-ReportOpr;Menu:Menu-XYZ;Ctx:' + ctx + '-' + Date.now();
+  iframe.src = 'operations.html';
+  iframe.style.width = '900px';
+  iframe.style.height = '700px';
+  document.getElementById('frameHolder').appendChild(iframe);
+}
+</script>
+</body></html>

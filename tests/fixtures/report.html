@@ -1,0 +1,74 @@
+<!doctype html><html><body>
+<h1>Raw Summary Report</h1>
+
+<label><input type="radio" name="dateRangeMode" id="defaultdaterange_radio-inputEl" checked onclick="toggleMode()"> Default Date Range</label>
+<label><input type="radio" name="dateRangeMode" id="customdaterange_radio-inputEl" onclick="toggleMode()"> Custom Date Range</label>
+
+<div id="defaultBlock">
+  <label for="dateRange">Date Range</label>
+  <input id="dateRange" role="combobox" aria-label="Date Range" value="This Week">
+</div>
+
+<div id="customBlock" style="display:none;">
+  <div>
+    <span>From Date</span>
+    <input id="datefield-1138-inputEl" type="text" value="15/09/2026">
+    <input id="timefield-1139-inputEl" type="text" value="18:39:50">
+  </div>
+  <div>
+    <span>To Date</span>
+    <input id="datefield-1142-inputEl" type="text" value="15/09/2026">
+    <input id="timefield-1143-inputEl" type="text" value="18:39:50">
+  </div>
+</div>
+
+<label for="groupBy">Group By 1*</label>
+<input id="groupBy" role="combobox" aria-label="Group By 1*" value="Shift">
+<div id="groupByOptions"></div>
+<script>
+const GROUP_BY_OPTIONS = [
+  "Aisle Area","Aisle Area Desc.","Client","Customer","Fiscal Month","Fiscal Week",
+  "Job Code","Job Code Desc.","Learning Curve","Month","Observation State",
+  "Reference ID","Report By Hour","Report Date","Report Group","Route Number",
+  "Shift","Shift Category","Supervisor","User","User Group","User ID","User Name",
+  "User Pin","Warehouse","Week","Work Area","Work Category","Work Team"
+];
+document.getElementById('groupBy').addEventListener('keyup', function() {
+  const v = this.value;
+  const box = document.getElementById('groupByOptions');
+  box.innerHTML = '';
+  if (!v) return;
+  const matches = GROUP_BY_OPTIONS.filter(o => o.toLowerCase().startsWith(v.toLowerCase()));
+  for (const match of matches) {
+    const opt = document.createElement('div');
+    opt.setAttribute('role', 'option');
+    opt.textContent = match;
+    opt.onclick = function() {
+      document.getElementById('groupBy').value = match;
+      box.innerHTML = '';
+    };
+    box.appendChild(opt);
+  }
+});
+
+function toggleMode() {
+  const custom = document.getElementById('customdaterange_radio-inputEl').checked;
+  document.getElementById('customBlock').style.display = custom ? 'block' : 'none';
+  document.getElementById('defaultBlock').style.display = custom ? 'none' : 'block';
+}
+</script>
+
+<button id="button-1128" onclick="document.getElementById('exportModal').style.display='block';">Export</button>
+
+<div id="exportModal" style="display:none;">
+  <label><input type="radio" name="fmt" id="excelRadio"> EXCEL</label>
+  <button id="button-1224">Ok</button>
+</div>
+
+<a id="downloadLink" href="dummy.xlsx" download="RawSummaryReport.xlsx" style="display:none;"></a>
+<script>
+document.getElementById('button-1224').addEventListener('click', function() {
+  document.getElementById('downloadLink').click();
+});
+</script>
+</body></html>

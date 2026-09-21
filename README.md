@@ -36,6 +36,22 @@ playwright install chromium
 python main.py
 ```
 
+## Testes
+
+Os testes rodam a automacao de verdade (Playwright + Chromium) contra
+paginas de mock em `tests/fixtures`, que imitam o Summary: login, menu
+Reports, iframe de relatorios, filtros e exportacao. Ou seja, da pra
+validar uma mudanca sem VPN e sem tocar no sistema real.
+
+```bash
+pip install -r requirements-dev.txt
+playwright install chromium
+pytest
+```
+
+Se o seu Chromium estiver em outro lugar, aponte
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE` para o executavel antes de rodar.
+
 ## Gerando o .exe
 
 **Precisa ser feito numa maquina Windows** (o PyInstaller gera o
@@ -114,6 +130,7 @@ aparece sozinha no dropdown, sem precisar mexer em mais nada.
 main.py              # cria a janela, garante que o Chromium existe
 api.py                # metodos chamados pelo JS (login, executar, config)
 settings_store.py     # persiste a pasta do SharePoint em %APPDATA%
+history_store.py      # historico das extracoes em %APPDATA%
 automation/
   base.py              # login, iframe, comboboxes, export (Playwright)
   generic.py            # orquestra o fluxo por operacao
@@ -123,7 +140,12 @@ ui/
   index.html             # login + painel + configuracoes
   style.css
   app.js
+tests/
+  fixtures/              # paginas de mock que imitam o Summary
+  test_automation.py     # fluxo de extracao ponta a ponta
+  test_api.py            # extracao unica, fila multipla e validacoes
 requirements.txt
+requirements-dev.txt      # o de cima + pytest
 build.spec               # config do PyInstaller (modo arquivo unico)
 build.bat                 # script de build de um clique (Windows)
 ```
