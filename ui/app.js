@@ -35,6 +35,7 @@ const multiToDateInput = document.getElementById('multi-to-date');
 const multiGroupBySelect = document.getElementById('multi-group-by');
 const multiPeriodOptionEls = document.querySelectorAll('#multi-period-options .period-option');
 const multiRunBtn = document.getElementById('multi-run-btn');
+const multiStopBtn = document.getElementById('multi-stop-btn');
 const multiRunStatus = document.getElementById('multi-run-status');
 const multiRunActions = document.getElementById('multi-run-actions');
 const multiProgressBadgeEl = document.getElementById('multi-progress-badge');
@@ -380,7 +381,8 @@ window.updateMultiProgress = function (data) {
     subtitle.textContent = data.step;
     multiProgressPercentEl.textContent = `${Math.round((data.index / data.total) * 100)}%`;
   } else {
-    step.classList.add(data.status === 'success' ? 'done' : 'error');
+    const classePorStatus = { success: 'done', cancelled: 'cancelled' };
+    step.classList.add(classePorStatus[data.status] || 'error');
     subtitle.textContent = data.status === 'success' ? 'Concluida' : data.step;
     multiProgressPercentEl.textContent = `${Math.round(((data.index + 1) / data.total) * 100)}%`;
   }
@@ -597,6 +599,9 @@ multiRunBtn.addEventListener('click', async () => {
   multiProgressPercentEl.textContent = '0%';
   multiRunBtn.disabled = true;
   multiRunBtn.textContent = 'Executando...';
+  multiStopBtn.hidden = false;
+  multiStopBtn.disabled = false;
+  multiStopBtn.textContent = 'Parar apos a atual';
   try {
     const result = await pywebview.api.run_multi_extraction(
       selected.map((op) => op.key),
@@ -604,7 +609,10 @@ multiRunBtn.addEventListener('click', async () => {
       multiGroupBySelect.value,
       getSelectedMultiPeriod(),
     );
-    setMultiBadge(result.success ? 'success' : 'error', result.success ? 'Concluida' : 'Com falhas');
+    let badgeTexto = 'Concluida';
+    if (result.cancelled) badgeTexto = 'Interrompida';
+    else if (!result.success) badgeTexto = 'Com falhas';
+    setMultiBadge(result.success ? 'success' : 'error', badgeTexto);
     multiProgressPercentEl.textContent = '100%';
     multiProgressDetailEl.textContent = result.message;
     showStatus(multiRunStatus, result.message, result.success ? 'success' : 'error');
@@ -619,7 +627,17 @@ multiRunBtn.addEventListener('click', async () => {
   } finally {
     multiRunBtn.disabled = false;
     multiRunBtn.textContent = '▶ Iniciar extracao';
+    multiStopBtn.hidden = true;
   }
+});
+
+multiStopBtn.addEventListener('click', async () => {
+  multiStopBtn.disabled = true;
+  multiStopBtn.textContent = 'Parando...';
+  // A operacao em andamento termina normalmente; a fila para antes da
+  // proxima, pra nao deixar um download pela metade.
+  multiProgressDetailEl.textContent = 'Vai parar quando a operacao atual terminar...';
+  await pywebview.api.cancel_multi_extraction();
 });
 
 chooseFolderBtn.addEventListener('click', async () => {

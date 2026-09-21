@@ -72,6 +72,42 @@ def test_falha_no_meio_nao_interrompe_a_fila(api, operations, isolated_history, 
     assert len(isolated_history.get_history()) == 3
 
 
+def test_parar_apos_a_atual_conclui_a_corrente_e_cancela_o_resto(api, operations, isolated_history):
+    operations("mock_a", "Mock A", "MockA")
+    operations("mock_b", "Mock B", "MockB")
+    operations("mock_c", "Mock C", "MockC")
+
+    # Pede a parada durante a primeira operacao, como faria o botao.
+    def pedir_parada(fn, payload):
+        api.eventos.append((fn, payload))
+        if payload["index"] == 0 and payload["status"] == "running":
+            api.cancel_multi_extraction()
+
+    api._emit_js = pedir_parada
+
+    result = api.run_multi_extraction(
+        ["mock_a", "mock_b", "mock_c"], date_range=DATAS, period="week"
+    )
+
+    assert result["succeeded"] == 1, "a operacao em andamento deve terminar normalmente"
+    assert result["cancelled"] == 2, "as seguintes devem ser canceladas"
+    assert result["failed"] == 0
+    assert "cancelada" in result["message"].lower()
+    assert [p["status"] for p in eventos_finais(api)] == ["success", "cancelled", "cancelled"]
+    # So a que rodou entra no historico.
+    assert len(isolated_history.get_history()) == 1
+
+
+def test_parada_anterior_nao_afeta_a_proxima_fila(api, operations):
+    operations("mock_a", "Mock A", "MockA")
+    api.cancel_multi_extraction()
+
+    result = api.run_multi_extraction(["mock_a"], date_range=DATAS, period="week")
+
+    assert result["succeeded"] == 1, "o pedido de parada antigo nao pode vazar pra fila nova"
+    assert result["cancelled"] == 0
+
+
 def test_multipla_sem_operacao_selecionada_avisa(api):
     result = api.run_multi_extraction([], date_range=DATAS)
 

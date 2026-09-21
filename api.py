@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 
 import webview
 
@@ -26,6 +27,9 @@ class Api:
         # ultima falha.
         self._last_folder = None
         self._last_screenshot = None
+        # A fila roda na thread do js_api e o pedido de parada chega por
+        # outra, entao um Event faz a ponte entre as duas.
+        self._cancel_multi = threading.Event()
 
     def set_window(self, window):
         self._window = window
@@ -159,6 +163,13 @@ class Api:
         self._record_history(operation_key, result)
         return result
 
+    def cancel_multi_extraction(self):
+        """Pedido de parada vindo da tela. A operacao em andamento vai
+        ate o fim (interromper o navegador no meio deixaria o download
+        pela metade); a fila para antes da proxima."""
+        self._cancel_multi.set()
+        return {"success": True}
+
     def run_multi_extraction(self, operation_keys, date_range=None, group_by=None, period=None):
         """Roda a mesma extracao para varias operacoes, uma depois da
         outra. Uma falha nao interrompe a fila: as demais continuam e o
@@ -171,13 +182,26 @@ class Api:
         if error:
             return error
 
+        self._cancel_multi.clear()
         headless = os.environ.get("SCORECARD_HEADLESS", "1") != "0"
         base_dir = settings_store.get_sharepoint_folder()
         total = len(operation_keys)
         succeeded = 0
+        cancelled = 0
 
         for index, operation_key in enumerate(operation_keys):
             label = OPERATIONS[operation_key]["label"]
+
+            if self._cancel_multi.is_set():
+                cancelled += 1
+                self._emit_js("updateMultiProgress", {
+                    "index": index,
+                    "total": total,
+                    "operation_label": label,
+                    "step": "Cancelada",
+                    "status": "cancelled",
+                })
+                continue
 
             def on_progress(step, _index=index, _label=label):
                 self._emit_js("updateMultiProgress", {
@@ -212,16 +236,18 @@ class Api:
                 "status": "success" if ok else "error",
             })
 
-        failed = total - succeeded
+        failed = total - succeeded - cancelled
+        message = f"{succeeded} de {total} extracoes concluidas"
         if failed:
-            message = f"{succeeded} de {total} extracoes concluidas, {failed} com falha."
-        else:
-            message = f"{succeeded} de {total} extracoes concluidas."
+            message += f", {failed} com falha"
+        if cancelled:
+            message += f", {cancelled} cancelada(s)"
         return {
-            "success": failed == 0,
-            "message": message,
+            "success": failed == 0 and cancelled == 0,
+            "message": message + ".",
             "succeeded": succeeded,
             "failed": failed,
+            "cancelled": cancelled,
         }
 
     # ---------------- Abrir arquivos ----------------

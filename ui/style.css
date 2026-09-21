@@ -423,6 +423,16 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .field-actions { display: flex; gap: 14px; }
 
+/* O botao de rodar fica ancorado na base do card (ver .params-card >
+   button); aqui a linha inteira assume esse papel, porque na aba
+   multipla ela leva tambem o botao de parar. */
+.multi-run-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+}
+
 .run-actions {
   display: flex;
   flex-wrap: wrap;
@@ -558,6 +568,8 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .step.active .step-number { background: var(--yellow); color: #1d1300; border-color: var(--yellow); }
 .step.done .step-number { background: #22c55e; color: #0b0e1a; border-color: #22c55e; }
 .step.error .step-number { background: #f87171; color: #1d1300; border-color: #f87171; }
+.step.cancelled .step-number { opacity: 0.5; }
+.step.cancelled .step-title { color: var(--text-muted); text-decoration: line-through; }
 
 .step:not(:last-child)::before {
   content: '';

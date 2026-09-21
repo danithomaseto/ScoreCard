@@ -345,7 +345,10 @@
               <label for="multi-group-by">Group By 1</label>
               <select id="multi-group-by"></select>
 
-              <button id="multi-run-btn">▶ Iniciar extracao</button>
+              <div class="multi-run-row">
+                <button id="multi-run-btn">▶ Iniciar extracao</button>
+                <button id="multi-stop-btn" class="secondary" hidden>Parar apos a atual</button>
+              </div>
 
               <div id="multi-run-status" class="status" hidden></div>
               <div id="multi-run-actions" class="run-actions" hidden></div>
