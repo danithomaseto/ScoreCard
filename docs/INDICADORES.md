@@ -621,21 +621,23 @@ Duas saidas:
    funciona se uma pessoa so fizer tudo, extracao e digitacao.
 
 A escolha muda pouco codigo (e o caminho do arquivo), mas muda muito o
-uso. Precisa ser decidida antes da aba Inicio ficar pronta.
+uso. **Fica pra depois, junto com a entrada manual.** Ate la o arquivo
+segue em `%APPDATA%`, como esta na secao 5: enquanto tudo vem da
+extracao, cada maquina se vira sozinha. Trocar depois e mudar o caminho
+e reextrair o que ja estava guardado — nao trava nada agora.
 
 ## 14. Em aberto
 
-**Precisa de decisao sua:**
+**O escopo de agora:** semana e mes com **EFETIVIDADE, HORA DIRETA e
+DISPERSAO**, que e tudo o que sai do export atual. Os seis ja tem lugar
+na tela e no arquivo; os tres que faltam aparecem como `—`.
 
-1. **Onde o `indicators.json` mora** (secao 13.1): pasta do SharePoint,
-   compartilhado, ou local por maquina. Com digitacao manual feita por
-   mais de uma pessoa, o local deixa a tabela partida entre as
-   maquinas.
+**Depois, tudo junto:**
 
-**Depois da semana e do mes, nao agora:**
-
-2. A tela de **entrada manual** do presenteismo e do coverage (secao
-   13), que destrava o **CUBO** junto.
+1. A tela de **entrada manual** do presenteismo e do coverage (secao
+   13), que destrava o **CUBO** por dependencia.
+2. **Onde o `indicators.json` mora** (secao 13.1) — so vira problema
+   quando mais de uma pessoa preencher.
 3. A aba **Headcount**, ainda sem conteudo definido.
 
 A ordem esta decidida: primeiro a semana e o mes com os tres
