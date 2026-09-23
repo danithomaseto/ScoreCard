@@ -104,16 +104,19 @@ zerado (nao ha operacao), o que nao afeta nenhum indicador.
 
 Nesta ordem, que e a ordem da tela:
 
-| # | Indicador | Verde | Vermelho | Azul |
-|---|---|---|---|---|
-| 1 | **CUBO** | 85% a 100% | abaixo de 85% | acima de 100% |
-| 2 | **EFETIVIDADE** | 90% a 110% | abaixo de 90% | acima de 110% |
-| 3 | **HORA DIRETA** | 85% ou mais | abaixo de 85% | — |
-| 4 | **PRESENTEISMO** | 98% ou mais | abaixo de 98% | — |
-| 5 | **DISPERSAO** | 70% ou mais | abaixo de 70% | — |
-| 6 | **COVERAGE** | 92% a 110% | abaixo de 92% | acima de 110% |
+| # | Indicador | Meta | Verde | Vermelho | Azul |
+|---|---|---|---|---|---|
+| 1 | **CUBO** | 85% | 85% a 100% | abaixo de 85% | acima de 100% |
+| 2 | **EFETIVIDADE** | 90% - 110% | 90% a 110% | abaixo de 90% | acima de 110% |
+| 3 | **HORA DIRETA** | 85% | 85% ou mais | abaixo de 85% | — |
+| 4 | **PRESENTEISMO** | 98% | 98% ou mais | abaixo de 98% | — |
+| 5 | **DISPERSAO** | 70% | 70% ou mais | abaixo de 70% | — |
+| 6 | **COVERAGE** | 92% | 92% a 110% | abaixo de 92% | acima de 110% |
 
-As faixas sao iguais para as 12 operacoes.
+A coluna **Meta** e o texto que aparece embaixo do nome de cada
+indicador na tela, pra quem esta na reuniao nao precisar lembrar de
+cabeca. As outras tres sao as faixas de cor. Tudo igual para as 12
+operacoes.
 
 ### 4.1 O que ja da pra calcular e o que nao da
 
