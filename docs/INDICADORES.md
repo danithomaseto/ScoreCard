@@ -133,17 +133,18 @@ O que da pra adiantar no codigo: a formula do cubo, as seis faixas de
 cor e o lugar dos seis na tela e no arquivo guardado. Quando as duas
 definicoes chegarem, entra so o calculo — nada mais muda.
 
-### 4.2 Confirmar: a meta do cubo
+### 4.2 O cubo e o primeiro indicador
 
-Com os numeros da propria amostra, a semana 36 da EFETIVIDADE 96,38% x
-HORA DIRETA 85,37% = 82,28%. Multiplicando ainda pelo presenteismo, o
-cubo so cai: com 98% de presenteismo, 80,63% — abaixo da meta de 85%,
-em vermelho, mesmo com os outros dois indicadores dentro da faixa.
+O CUBO abre a lista e abre a tela: e o numero que resume os outros. A
+ordem da secao 4 e a ordem de exibicao, sempre.
 
-Isso e esperado? Um produto de tres percentuais tende a ficar abaixo de
-cada um deles, entao 85% e uma meta dura por construcao. A semana 37 da
-amostra, puxada pela efetividade de 112,9%, fecha em 106,26% — azul.
-So confirmando que a conta e essa mesmo antes de virar codigo.
+A meta de 85% fica como esta. Vale saber que ela e dura por
+construcao: um produto de tres percentuais fica abaixo de cada um
+deles. Com os numeros da propria amostra, a semana 36 da EFETIVIDADE
+96,38% x HORA DIRETA 85,37% = 82,28%, e multiplicando pelo presenteismo
+so cai — com 98%, fecha em 80,63%, vermelho, mesmo com os outros dois
+dentro da faixa. Ja a semana 37, puxada pela efetividade de 112,9%,
+fecha em 106,26% e sai azul.
 
 ## 5. O que fica guardado
 
@@ -227,7 +228,7 @@ semanas anteriores desapareceria junto.
 ## 6. Aba Inicio
 
 A tela repete o formato do bloco W:Y da planilha: **indicador nas
-linhas, semana nas colunas, mes na ultima coluna**.
+linhas, semana nas colunas, mes no final**.
 
 ```
                   Week 36   Week 37   Week 38   |   Setembro
@@ -240,17 +241,25 @@ DISPERSAO         81,8%     66,7%     ...       |     ...
 COVERAGE             —         —         —      |      —
 ```
 
-1. **Filtros no topo:** operacao e mes, com a ultima escolha lembrada.
-2. As colunas sao as semanas guardadas daquele mes, da mais antiga pra
-   mais recente, e a ultima coluna e o **mes consolidado**.
-3. Cada celula pintada pelas faixas da secao 4. Indicador sem calculo
+1. **Um filtro so: a operacao**, com a ultima escolha lembrada.
+2. Escolhida a operacao, a tela mostra **todas as semanas guardadas
+   dela**, da mais antiga pra mais recente, e depois de um separador os
+   **meses**, tambem em ordem. Sem filtro de periodo: o que esta
+   guardado aparece.
+3. Conforme as semanas se acumulam, a tabela rola na horizontal. Os
+   nomes dos indicadores ficam fixos na primeira coluna, senao rolar
+   pro lado perde a referencia de qual linha e qual.
+4. Cada celula pintada pelas faixas da secao 4. Indicador sem calculo
    aparece como `—` na linha inteira, mantendo a ordem dos seis.
-4. Abaixo da tabela, um bloco separado com os numeros de apoio que
-   alimentam as contas: tempo meta, tempo logado, dentro e fora.
 5. Semana marcada `parcial` ganha um aviso no cabecalho da coluna; o
    mes mostra o intervalo real embaixo do nome.
 6. Sem nada guardado ainda, a tela explica que os numeros aparecem
    depois da primeira extracao — em vez de mostrar tabela vazia.
+
+Na tela ficam **so os seis indicadores**. Os numeros que alimentam as
+contas (tempo meta, tempo logado, dentro, fora) continuam gravados no
+`indicators.json`, mas nao aparecem: a aba principal e pra levar pra
+reuniao, nao pra conferir conta.
 
 Semanas sem extracao simplesmente nao aparecem; nao inventamos coluna
 zerada pra elas.
@@ -343,10 +352,10 @@ anterior a data da extracao (extraindo em 23/09/2026, a chave e
 anotado como vindo do Last Month e nao digitado. Continua valendo a
 regra da secao 5: reextrair o mesmo mes substitui a entrada.
 
-Fica a confirmar: o "Last Month" do relatorio e o mes calendario
-inteiro, do dia 1 ao ultimo dia? Se for, os dois caminhos do mensal
-convivem sem conflito — o Last Month fecha o mes anterior e o intervalo
-digitado acompanha o mes corrente ate o ultimo sabado.
+O "Last Month" do relatorio e o mes calendario inteiro, do dia 1 ao
+ultimo dia. Os dois caminhos do mensal convivem sem conflito: o Last
+Month fecha o mes anterior e o intervalo digitado acompanha o mes
+corrente ate o ultimo sabado.
 
 ### 8.2 Semana passada segue o mesmo caminho
 
@@ -359,10 +368,11 @@ O `date_range_type_text` das 12 operacoes hoje guarda `"Las"`, um
 pedaco de texto que nao diz qual opcao e. Passa a guardar o nome
 completo por periodo: `Last Week` na semana, `Last Month` no mes.
 
-**Rede de protecao:** se o "Last Week" do relatorio nao for
-domingo-sabado, o arquivo vem com duas semanas parciais em vez de uma
-inteira — e a marca `parcial` da secao 5 acusa isso na tela em vez de
-deixar passar um numero errado.
+O "Last Week" do relatorio e domingo-sabado, o mesmo fechamento da
+secao 3. **Rede de protecao mesmo assim:** se algum dia nao for, o
+arquivo vem com duas semanas parciais em vez de uma inteira — e a marca
+`parcial` da secao 5 acusa isso na tela em vez de deixar passar um
+numero errado.
 
 ### 8.3 Dois caminhos de data, sem voltar com o seletor
 
@@ -503,8 +513,8 @@ numero e gravado normalmente e a tela so conta o que aconteceu.
    usando o Default Date Range com o nome completo da opcao, com os
    mocks dos testes acompanhando.
 4. `indicators_store.py` e a gravacao dentro do `api.py`.
-5. Aba Inicio: filtros de operacao e mes, tabela com os seis
-   indicadores nas linhas, semanas nas colunas e o mes no fim.
+5. Aba Inicio: filtro de operacao, tabela com os seis indicadores nas
+   linhas, semanas nas colunas e os meses no fim.
 6. Mes: um grupo unico com a chave vinda dos parametros, reusando o
    mesmo calculo.
 
@@ -532,7 +542,7 @@ discussao.
 | `automation/base.py` | Date Range escolhido pelo nome exato; marcar o radio `Default Date Range`; helper idempotente pro checkbox do segundo nivel |
 | `automation/generic.py` | fluxo por periodo — semana: `Group By 1` = Week + checkbox + `Group By 2`; mes: `Group By 1` = opcao da tela. Modo de data padrao vs digitado. Etapa nova no progresso |
 | `api.py` | calcula e grava depois da extracao; `get_indicators(operacao, mes)`; entrega as faixas de cor pra tela |
-| `ui/index.html` | aba Inicio com filtros de operacao e mes e a tabela dos seis; campos de data desabilitados no modo padrao |
+| `ui/index.html` | aba Inicio com o filtro de operacao e a tabela dos seis; campos de data desabilitados no modo padrao |
 | `ui/app.js` | troca de modo dos atalhos, render da tabela e das cores; `lastWeekRange`/`lastMonthRange` deixam de preencher datas |
 | `ui/style.css` | verde, vermelho e azul das faixas; celula `—` |
 | `tests/fixtures/*.html` | mocks ganham o checkbox do segundo nivel e o `Group By 2` |
@@ -542,16 +552,12 @@ discussao.
 
 **Ordem:** a da secao 11.
 
-**Aberto, sem travar o inicio:** a meta de 85% do cubo (secao 4.2) e se
-o `Last Month` do relatorio e o mes calendario inteiro (secao 8.1) —
-essa da pra ver na primeira extracao real.
+**Aberto, sem travar o inicio:** nada. Ver a secao 13.
 
 **Depois, quando as definicoes chegarem:** o calculo do PRESENTEISMO e
 do COVERAGE, que destrava o CUBO junto.
 
 ## 13. Em aberto
-
-Lista unica do que ainda nao esta resolvido, separada por peso.
 
 **Trava indicador (falta definicao):**
 
@@ -562,32 +568,21 @@ Lista unica do que ainda nao esta resolvido, separada por peso.
    conteudo tambem nunca foi definido. Se for, as tres coisas se
    resolvem juntas.
 
-**Confirmacao, sem travar o inicio:**
-
-4. A meta de 85% do **cubo** (secao 4.2): o produto de tres percentuais
-   fica abaixo de cada um deles por construcao.
-5. O `Last Month` do relatorio e o mes calendario inteiro? Da pra ver
-   na primeira extracao real.
-6. O `Last Week` do relatorio e domingo-sabado? Mesma coisa — e a marca
-   `parcial` acusa sozinha se nao for.
-
-**Proposto por mim, ainda nao confirmado por voce:**
-
-7. O filtro de **mes** na aba Inicio, ao lado do de operacao. Voce
-   pediu o de operacao; o de mes foi acrescimo pra definir quais
-   semanas entram nas colunas.
-8. O bloco de **numeros de apoio** (tempo meta, tempo logado, dentro,
-   fora) abaixo da tabela.
-9. **DISPERSAO vazia** quando o nivel de detalhe nao e User ID (secao
-   7). A alternativa e calcular assim mesmo, com aviso.
-10. A marca **`parcial`** na semana incompleta (secao 5).
-11. `indicators.json` **por maquina**, nao compartilhado no SharePoint
-    (secao 5). Se mais de uma pessoa extrair a mesma operacao, cada uma
-    ve so o proprio historico.
-
 **Tecnico, resolve durante a implementacao:**
 
-12. Um **export real** pra validar o leitor contra um arquivo de
-    verdade (cabecalho, eventual linha de total).
-13. `openpyxl` embarcado no `--onefile`, mantendo o `.exe` como um
-    arquivo so.
+4. Um **export real** pra validar o leitor contra um arquivo de
+   verdade (cabecalho, eventual linha de total).
+5. `openpyxl` embarcado no `--onefile`, mantendo o `.exe` como um
+   arquivo so.
+
+**Decidido, sem pendencia:**
+
+- Meta de 85% do cubo mantida, e o cubo e o primeiro indicador (secao
+  4.2).
+- `Last Month` = mes calendario inteiro (secao 8.1).
+- `Last Week` = domingo-sabado (secao 8.2).
+- Aba Inicio com filtro so de operacao e so os seis indicadores, sem
+  filtro de mes e sem bloco de numeros de apoio (secao 6).
+- DISPERSAO vazia quando o detalhe nao e User ID (secao 7).
+- Marca `parcial` na semana incompleta (secao 5).
+- `indicators.json` por maquina (secao 5).
