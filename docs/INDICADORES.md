@@ -204,9 +204,9 @@ EFETIVIDADE e HORA DIRETA sao razoes de somas, nao medias.
 - `parcial: true` marca a **semana** cujos sete dias nao cabem inteiros
   dentro do intervalo extraido (alguem extraiu de quarta a terca, por
   exemplo). A marca vale so pra semana; no mes, fechar antes do fim do
-  mes e o normal (secao 10). O numero fica gravado, mas a tela sinaliza que aquela
-  semana esta incompleta — senao entra uma semana com menos horas no
-  meio da serie e parece queda de indicador. Uma extracao posterior
+  mes e o normal (secao 10). O numero fica gravado, mas a tela
+  sinaliza que aquela semana esta incompleta — senao entra uma semana
+  com menos horas no meio da serie e parece queda de indicador. Uma extracao posterior
   cobrindo a semana inteira substitui e limpa a marca.
 - `group_by` guarda com qual agrupamento aquela semana foi calculada,
   porque isso muda o significado da DISPERSAO (secao 7).
@@ -507,3 +507,44 @@ numero e gravado normalmente e a tela so conta o que aconteceu.
    indicadores nas linhas, semanas nas colunas e o mes no fim.
 6. Mes: um grupo unico com a chave vinda dos parametros, reusando o
    mesmo calculo.
+
+## 12. Resumo para a implementacao
+
+O que muda em cada arquivo, pra proxima sessao comecar sem reabrir a
+discussao.
+
+**Arquivos novos**
+
+| Arquivo | O que faz |
+|---|---|
+| `indicators/reader.py` | le o `.xlsx`, normaliza os titulos das colunas, aguenta o export com coluna de semana (Week) e sem nenhuma coluna de data (Month), descarta linha invalida |
+| `indicators/weekly.py` | `classify_row`, somas do grupo e `indicators_by_period` — funcoes puras, sem I/O |
+| `indicators/limits.py` | tolerancia +/- 10, ordem dos seis e as faixas de cor da secao 4 |
+| `indicators_store.py` | `indicators.json` em `%APPDATA%\ScoreCard\`, com as regras da secao 5 |
+| `tests/test_indicators.py` | os numeros da secao 1.3 como referencia, mais o caso de tres semanas num arquivo |
+| `tests/fixtures/summary_3semanas.xlsx` | export de exemplo com as tres semanas |
+
+**Arquivos alterados**
+
+| Arquivo | Mudanca |
+|---|---|
+| `config/operations.py` | `date_range_type_text` passa a guardar o nome completo por periodo (`Last Week` / `Last Month`) em vez de `"Las"` |
+| `automation/base.py` | Date Range escolhido pelo nome exato; marcar o radio `Default Date Range`; helper idempotente pro checkbox do segundo nivel |
+| `automation/generic.py` | fluxo por periodo — semana: `Group By 1` = Week + checkbox + `Group By 2`; mes: `Group By 1` = opcao da tela. Modo de data padrao vs digitado. Etapa nova no progresso |
+| `api.py` | calcula e grava depois da extracao; `get_indicators(operacao, mes)`; entrega as faixas de cor pra tela |
+| `ui/index.html` | aba Inicio com filtros de operacao e mes e a tabela dos seis; campos de data desabilitados no modo padrao |
+| `ui/app.js` | troca de modo dos atalhos, render da tabela e das cores; `lastWeekRange`/`lastMonthRange` deixam de preencher datas |
+| `ui/style.css` | verde, vermelho e azul das faixas; celula `—` |
+| `tests/fixtures/*.html` | mocks ganham o checkbox do segundo nivel e o `Group By 2` |
+| `requirements.txt` | entra `openpyxl` |
+| `build.spec` | conferir se o `openpyxl` entra no `--onefile` (hidden imports) e que o `.exe` continua sendo um arquivo so |
+| `README.md` | secao dos indicadores |
+
+**Ordem:** a da secao 11.
+
+**Aberto, sem travar o inicio:** a meta de 85% do cubo (secao 4.2) e se
+o `Last Month` do relatorio e o mes calendario inteiro (secao 8.1) —
+essa da pra ver na primeira extracao real.
+
+**Depois, quando as definicoes chegarem:** o calculo do PRESENTEISMO e
+do COVERAGE, que destrava o CUBO junto.
