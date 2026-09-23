@@ -398,12 +398,15 @@ function toInputDate(date) {
   return `${date.getFullYear()}-${mes}-${dia}`;
 }
 
-// Semana passada = segunda a domingo da semana anterior a atual.
+// Semana passada = domingo a sabado da semana anterior a atual. A
+// semana comeca no domingo pra bater com o fechamento de semana do
+// Summary (o "Medium Level Group" vem com o domingo como data de
+// inicio), senao o intervalo extraido fica desalinhado com a semana
+// dos indicadores.
 function lastWeekRange() {
   const hoje = new Date();
-  const diasDesdeSegunda = (hoje.getDay() + 6) % 7;
   const inicio = new Date(hoje);
-  inicio.setDate(hoje.getDate() - diasDesdeSegunda - 7);
+  inicio.setDate(hoje.getDate() - hoje.getDay() - 7);
   const fim = new Date(inicio);
   fim.setDate(inicio.getDate() + 6);
   return [inicio, fim];

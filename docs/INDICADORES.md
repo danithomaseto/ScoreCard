@@ -1,20 +1,20 @@
 # Calculo dos indicadores - estrutura (quebra semanal)
 
-Documento de desenho, antes de escrever codigo. Registra o que a
-planilha `Logica_Score_Card.xlsx` faz hoje em Excel, como isso vira
-codigo no ScoreCard e quais decisoes ainda estao abertas.
+Documento de desenho, antes de escrever o codigo. Registra o que a
+planilha `Logica_Score_Card.xlsx` faz hoje em Excel, as regras
+confirmadas e como isso vira codigo no ScoreCard.
 
 ## 1. O que a planilha faz hoje
 
-A entrada e o mesmo relatorio que o app ja extrai (`rptLMUserSummaryRaw`,
-o "Summary"), com:
+A entrada e o mesmo relatorio que o app ja extrai
+(`rptLMUserSummaryRaw`, o "Summary"), com:
 
-- **Medium Level Group** (coluna A) = a semana (vem como a data de
-  inicio da semana: 30/08/2026, 06/09/2026, 13/09/2026...)
+- **Medium Level Group** (coluna A) = a semana, vindo como a data de
+  inicio (30/08/2026, 06/09/2026, 13/09/2026...)
 - **Detail Level Group** (coluna B) = o User ID
 
-As colunas A ate S sao o export cru. As colunas T, U e o bloco W:Y sao
-a logica montada a mao.
+**As colunas A ate S sao o export cru. De T pra frente sao formulas
+montadas a mao** — e essa parte que o app passa a fazer.
 
 ### 1.1 Classificacao por pessoa (coluna T, "Dispersao")
 
@@ -24,8 +24,11 @@ senao se Var > 10 ou Var < -10          -> "FORA"
 senao                                   -> "DENTRO"
 ```
 
-`Var` ja vem calculado pelo relatorio (coluna C), em pontos percentuais.
-A tolerancia e +/- 10.
+`Var` ja vem calculado pelo relatorio (coluna C), em pontos
+percentuais. A tolerancia e +/- 10.
+
+Quem cai na primeira regra sai **apenas da dispersao**: continua
+entrando normalmente nas somas dos outros indicadores.
 
 ### 1.2 Indicadores por semana (bloco W:Y, uma coluna por semana)
 
@@ -39,13 +42,13 @@ A tolerancia e +/- 10.
 | Fora | quantidade de pessoas classificadas "FORA" |
 | **DISPERSAO** | Dentro / (Dentro + Fora) |
 
-A soma na semana e feita com `SUMIF` sobre a coluna U, que e
-`WEEKNUM(data)`.
+Nenhuma outra coluna do relatorio e usada: `Units Per Hour`,
+`Unmeasured Pct` e `Indirect Pct` ficam de fora.
 
 ### 1.3 Conferencia
 
 Reproduzi as formulas fora do Excel e bate exatamente com os valores
-que estao salvos na planilha (semana 36):
+salvos na planilha (semana 36):
 
 | | planilha | recalculado |
 |---|---|---|
@@ -58,27 +61,65 @@ que estao salvos na planilha (semana 36):
 Esses numeros entram como **caso de referencia nos testes**: o app so
 esta certo se reproduzir a planilha.
 
-## 2. Estrutura proposta no codigo
+## 2. Semana: como identificar
 
-Quatro camadas, cada uma com uma responsabilidade. A ideia e que a
-parte que calcula nao saiba de arquivo nem de tela, porque e a parte
-que precisa ser testada numero por numero.
+A semana **comeca no domingo** — e a data que vem no "Medium Level
+Group". O numero da semana serve so de rotulo (Week 36, Week 37...) e
+nao entra em nenhum calculo. Para bater com o `WEEKNUM` do Excel
+(domingo como primeiro dia):
+
+```
+dow_jan1 = dia da semana de 1/jan com domingo = 0
+doy      = dia do ano da data
+week     = (doy - 1 + dow_jan1) // 7 + 1
+```
+
+Conferido: 30/08/2026 -> 36, 06/09/2026 -> 37, 13/09/2026 -> 38, como
+na planilha.
+
+O atalho "Semana passada" da tela ja foi ajustado de segunda-domingo
+para **domingo-sabado**, pra extrair exatamente a mesma janela que o
+relatorio fecha. O domingo normalmente vem zerado (nao ha operacao),
+o que nao afeta nenhum indicador.
+
+## 3. Metas e cores
+
+Iguais para as 12 operacoes:
+
+| Indicador | Verde | Vermelho | Azul |
+|---|---|---|---|
+| EFETIVIDADE | 90% a 110% | abaixo de 90% | acima de 110% |
+| HORA DIRETA | 85% ou mais | abaixo de 85% | — |
+| DISPERSAO | 70% ou mais | abaixo de 70% | — |
+
+O azul da efetividade acima de 110% e o caso que aparece na propria
+amostra: a semana 37 fecha em 112,9%, puxada por uma pessoa com `Var`
+de 128.
+
+## 4. Estrutura proposta no codigo
+
+Quatro camadas, cada uma com uma responsabilidade. A parte que calcula
+nao sabe de arquivo nem de tela — e a parte que precisa ser testada
+valor por valor.
 
 ```
 indicators/
   reader.py    le o .xlsx baixado -> lista de linhas (dicts)
-  weekly.py    funcoes puras: classifica linha, calcula a semana
+  weekly.py    funcoes puras: classifica a linha, calcula a semana
+  limits.py    tolerancia (+/- 10) e as faixas de cor da secao 3
 indicators_store.py   guarda o resultado por operacao + semana
 api.py                calcula depois da extracao e entrega pra tela
 ui/ (aba Inicio)      mostra os cards e a tabela
 ```
 
-**`indicators/reader.py`** — abre o arquivo e devolve as linhas com os
+**`indicators/reader.py`** — abre o `.xlsx` e devolve as linhas com os
 nomes de coluna normalizados (minusculo, sem acento, sem quebra de
 linha: `measured direct`, `pd brk`...). O mapeamento e **pelo texto do
 cabecalho, nunca pela letra da coluna** — o "Group By 1" e escolhido na
 tela, entao o conteudo das colunas de agrupamento muda de uma extracao
-pra outra.
+pra outra. Linha sem data de semana ou com valor nao numerico nas
+colunas de calculo e descartada, o que tambem protege de eventual linha
+de total no fim do arquivo.
 
 **`indicators/weekly.py`** — nenhum I/O, so calculo:
 
@@ -95,11 +136,11 @@ operacao + semana. E daqui que sai a comparacao entre semanas.
 **`api.py`** — depois de cada extracao bem-sucedida, calcula e grava.
 Expoe `get_indicators(operacao, periodo)` pra aba Inicio.
 
-## 3. Por que guardar o resultado, e nao recalcular do arquivo
+## 5. Por que guardar o resultado, e nao recalcular do arquivo
 
 A extracao apaga o arquivo anterior da mesma operacao (pedido de
 proposito, pra pasta nao acumular lixo). Se o indicador fosse calculado
-lendo os arquivos da pasta, o historico de semanas anteriores
+lendo os arquivos da pasta, o historico das semanas anteriores
 desapareceria junto. Calculando na hora da extracao e gravando o
 resultado, a pasta continua com um arquivo so e a evolucao semana a
 semana fica preservada.
@@ -109,36 +150,19 @@ extraem a mesma operacao, cada uma ve o seu historico. Se isso virar
 problema, o passo seguinte e gravar tambem um arquivo acumulado na
 pasta da operacao no SharePoint.
 
-## 4. Sobre o mensal
+## 6. Sobre o mensal
 
 EFETIVIDADE e HORA DIRETA sao razoes de somas, **nao medias das
-semanas**. O mes nao pode ser a media dos quatro indicadores semanais —
-tem que ser recalculado somando as colunas do periodo inteiro. O mesmo
+semanas**. O mes nao pode ser a media dos indicadores semanais — tem
+que ser recalculado somando as colunas do periodo inteiro. O mesmo
 codigo de `weekly.py` serve, mudando so o conjunto de linhas de
 entrada; e por isso que a separacao Week/Month das pastas importa.
 
-## 5. Decisoes abertas
+## 7. Ordem de implementacao
 
-1. **Em que dia comeca a semana?** A planilha usa `WEEKNUM`, que no
-   Excel comeca a semana no **domingo** (30/08/2026 e domingo = semana
-   36). Os atalhos de data do app hoje usam **segunda a domingo**. As
-   duas convencoes nao coincidem — se o Summary fecha a semana no
-   domingo, o atalho "Semana passada" esta pegando uma janela
-   desalinhada. Proposta: usar como chave a propria data que vem no
-   "Medium Level Group" e ajustar o atalho pra domingo-sabado.
-2. **Um export real do relatorio.** Precisa pra confirmar tres coisas:
-   se o arquivo baixado e `.xlsx` de verdade (define a biblioteca de
-   leitura), se existe linha de total/subtotal no final (se existir e
-   nao for descartada, tudo dobra) e se ha cabecalho antes da linha das
-   colunas.
-3. **Pessoa sem medicao.** Quem tem `Goal = 0` fica fora da dispersao,
-   mas continua entrando na HORA DIRETA atraves de `Total` e `PD Brk`.
-   Na amostra nao muda nada (o `Total` tambem e 0), mas alguem logado
-   so em tempo indireto derrubaria o indicador. Confirmar se e isso que
-   se espera.
-4. **Tolerancia e metas.** O +/- 10 e igual pras 12 operacoes ou muda
-   por cliente? E quais sao as metas de EFETIVIDADE, HORA DIRETA e
-   DISPERSAO, pra tela poder pintar verde/vermelho?
-5. **Indicadores extras.** O relatorio ja traz `Units Per Hour`,
-   `Unmeasured Pct` e `Indirect Pct` prontos, que hoje nao sao usados.
-   Entram no Score Card ou ficam de fora?
+1. `indicators/weekly.py` + `limits.py`, com os testes usando os
+   numeros da secao 1.3 como referencia.
+2. `indicators/reader.py`, validado contra um export real.
+3. `indicators_store.py` e a gravacao dentro do `api.py`.
+4. Aba Inicio: cards com as cores da secao 3, tabela de semanas e
+   detalhe por pessoa com DENTRO/FORA.
