@@ -118,8 +118,13 @@ As faixas sao iguais para as 12 operacoes.
 ### 4.1 O que ja da pra calcular e o que nao da
 
 Das colunas do Summary saem tres: EFETIVIDADE, HORA DIRETA e DISPERSAO
-(secao 1.2). **PRESENTEISMO e COVERAGE ficam sem calculo por
-enquanto** — a definicao vem depois.
+(secao 1.2). **PRESENTEISMO e COVERAGE vem de fora** — nao estao neste
+export, sao outra fonte, e a definicao vem depois.
+
+Isso nao e so "depois": muda o desenho. Os dois nao chegam pela
+extracao, entao precisam de um caminho proprio pra entrar no
+`indicators.json`, e a gravacao da extracao nao pode atropelar o que
+eles ja tiverem escrito (secao 5).
 
 **CUBO = EFETIVIDADE x HORA DIRETA x PRESENTEISMO.** Como depende do
 presenteismo, **ele tambem nao sai enquanto o presenteismo nao existir**
@@ -202,6 +207,13 @@ EFETIVIDADE e HORA DIRETA sao razoes de somas, nao medias.
 - Extrair de novo um periodo que ja tem resultado **substitui** as
   semanas contidas no novo arquivo. As semanas que nao estao no arquivo
   ficam intactas.
+- **A substituicao e parcial, por origem do dado.** A extracao so
+  reescreve o que sai do export — as somas, EFETIVIDADE, HORA DIRETA,
+  DISPERSAO e os campos de controle. `presenteismo` e `coverage` vem de
+  outra fonte (secao 4.1) e **sao preservados** na regravacao; o `cubo`
+  e recalculado com o presenteismo que ja estava la. Sem essa regra,
+  reextrair uma semana pra corrigir um numero apagaria calado os dois
+  indicadores externos e derrubaria o cubo junto.
 - `parcial: true` marca a **semana** cujos sete dias nao cabem inteiros
   dentro do intervalo extraido (alguem extraiu de quarta a terca, por
   exemplo). A marca vale so pra semana; no mes, fechar antes do fim do
@@ -422,7 +434,11 @@ indicators_by_week(linhas)         -> {data_da_semana: week_totals}
 ```
 
 **`indicators_store.py`** — mesmo padrao do `history_store.py`, com as
-regras de substituicao da secao 5.
+regras de substituicao da secao 5. Duas portas de entrada separadas:
+uma pra extracao (grava o que veio do export) e outra pros indicadores
+externos (grava presenteismo e coverage numa semana ou mes que ja
+existe, e recalcula o cubo). Nenhuma das duas sobrescreve o territorio
+da outra.
 
 **`api.py`** — depois de cada extracao bem-sucedida, calcula, grava e
 avisa a tela. Expoe `get_indicators(operacao, periodo)` pra aba Inicio.
@@ -559,14 +575,17 @@ do COVERAGE, que destrava o CUBO junto.
 
 ## 13. Em aberto
 
-**Trava indicador (falta definicao):**
+**Depois da semana e do mes, nao agora:**
 
-1. Calculo do **PRESENTEISMO** — sem formula. Trava o presenteismo e,
-   por dependencia, o **CUBO**.
-2. Calculo do **COVERAGE** — sem formula.
-3. A origem dos dois provavelmente e a aba **Headcount**, cujo
-   conteudo tambem nunca foi definido. Se for, as tres coisas se
-   resolvem juntas.
+1. **PRESENTEISMO** e **COVERAGE** — vem de fora, nao deste export.
+   Fonte e formula a definir.
+2. O **CUBO** sai junto com o presenteismo, por dependencia.
+3. A aba **Headcount**, possivel origem dos dois.
+
+A ordem esta decidida: primeiro a semana e o mes com os tres
+indicadores que saem do export atual; os outros tres entram depois, por
+uma porta separada no store (secao 9), sem refazer nada do que ja
+estiver pronto.
 
 **Tecnico, resolve durante a implementacao:**
 
