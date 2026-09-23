@@ -248,6 +248,43 @@ Detalhes que a implementacao precisa respeitar:
 - As paginas de mock dos testes precisam ganhar o checkbox e o
   `Group By 2` pra continuarem cobrindo o fluxo real.
 
+### 8.1 Mes passado usa o Date Range do proprio relatorio
+
+Pro mes fechado, **nao se preenche data nenhuma**: usa-se o bloco
+"DATE RANGE CRITERIA" do relatorio.
+
+1. Marcar o radio **Default Date Range** (o fluxo de datas digitadas
+   marca "Custom Date Range", entao voltar pro padrao e um passo
+   explicito, nao um estado que sobra da execucao anterior).
+2. `Date Range` = **Last Month**.
+
+Hoje o codigo ja tem esse caminho, mas ele digita so `"Las"` no
+combobox e confirma com Enter, sem dizer qual opcao quer. Isso pega a
+primeira que o filtro deixar na lista — pode ser "Last Week", "Last
+Month" ou "Last Year", conforme o que o relatorio oferecer. Tem que
+passar o nome completo e clicar na opcao pelo nome exato, como ja e
+feito no Group By.
+
+**Efeito no que fica guardado:** com o Last Month quem define o
+intervalo e o relatorio, nao a tela. A chave do mes passa a ser o mes
+anterior a data da extracao (extraindo em 23/09/2026, a chave e
+`2026-08`) e o intervalo gravado e o mes calendario correspondente,
+anotado como vindo do Last Month e nao digitado. Continua valendo a
+regra da secao 5: reextrair o mesmo mes substitui a entrada.
+
+Fica a confirmar: o "Last Month" do relatorio e o mes calendario
+inteiro, do dia 1 ao ultimo dia? Se for, os dois caminhos do mensal
+convivem sem conflito — o Last Month fecha o mes anterior e o intervalo
+digitado acompanha o mes corrente ate o ultimo sabado.
+
+### 8.2 E a semana passada?
+
+O mesmo combobox costuma ter "Last Week". Usar o Default Date Range
+tambem na semana resolveria de vez o alinhamento discutido na secao 3:
+em vez de a tela calcular domingo-sabado e torcer pra bater, o proprio
+relatorio aplicaria o fechamento de semana dele. A decidir — hoje a
+semana continua com datas digitadas.
+
 ## 9. Estrutura no codigo
 
 Quatro camadas. A parte que calcula nao sabe de arquivo nem de tela — e
@@ -324,10 +361,11 @@ Consequencias:
   so, impossivel de separar depois. A chave gravada e o mes da data
   inicial; se o intervalo atravessar a virada de mes, a tela avisa
   antes de gravar.
-- **O atalho "Mes passado"** hoje preenche o dia 1 ate o ultimo dia do
-  mes anterior, o que nao bate com a convencao acima. Ou vira "do dia 1
-  ate o ultimo sabado fechado", ou sai da aba — a decidir. Nao muda
-  nada no calculo, so na comodidade de preencher.
+- **O atalho "Mes passado" deixa de preencher datas.** Ele passa a
+  marcar o Default Date Range com `Last Month`, pela secao 8.1: os
+  campos de data ficam vazios e desabilitados, e quem define o periodo
+  e o relatorio. O intervalo digitado na tela continua sendo o caminho
+  pro mes corrente, ate o ultimo sabado fechado.
 
 ## 11. Ordem de implementacao
 
