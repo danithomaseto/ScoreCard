@@ -118,8 +118,9 @@ As faixas sao iguais para as 12 operacoes.
 ### 4.1 O que ja da pra calcular e o que nao da
 
 Das colunas do Summary saem tres: EFETIVIDADE, HORA DIRETA e DISPERSAO
-(secao 1.2). **PRESENTEISMO e COVERAGE vem de fora** — nao estao neste
-export, sao outra fonte, e a definicao vem depois.
+(secao 1.2). **PRESENTEISMO e COVERAGE sao digitados a mao** — nao
+saem de calculo nenhum: uma pessoa preenche o valor de cada semana e de
+cada mes (secao 13).
 
 Isso nao e so "depois": muda o desenho. Os dois nao chegam pela
 extracao, entao precisam de um caminho proprio pra entrar no
@@ -435,10 +436,10 @@ indicators_by_week(linhas)         -> {data_da_semana: week_totals}
 
 **`indicators_store.py`** — mesmo padrao do `history_store.py`, com as
 regras de substituicao da secao 5. Duas portas de entrada separadas:
-uma pra extracao (grava o que veio do export) e outra pros indicadores
-externos (grava presenteismo e coverage numa semana ou mes que ja
-existe, e recalcula o cubo). Nenhuma das duas sobrescreve o territorio
-da outra.
+uma pra extracao (grava o que veio do export) e outra pra entrada
+manual (grava presenteismo e coverage numa semana ou mes, criando a
+entrada se ela ainda nao existir, e recalcula o cubo). Nenhuma das duas
+sobrescreve o territorio da outra.
 
 **`api.py`** — depois de cada extracao bem-sucedida, calcula, grava e
 avisa a tela. Expoe `get_indicators(operacao, periodo)` pra aba Inicio.
@@ -573,14 +574,69 @@ discussao.
 **Depois, quando as definicoes chegarem:** o calculo do PRESENTEISMO e
 do COVERAGE, que destrava o CUBO junto.
 
-## 13. Em aberto
+## 13. Presenteismo e coverage: entrada manual
+
+Os dois nao sao calculados: **uma pessoa digita o numero** de cada
+semana e de cada mes, por operacao. Com o presenteismo preenchido, o
+CUBO sai sozinho — e por isso que os tres andam juntos.
+
+**Onde se digita.** Na propria aba Inicio, clicando na celula da linha
+do presenteismo ou do coverage, na coluna da semana. E onde a pessoa ja
+esta olhando o numero faltando; mandar ela pra outra tela pra voltar
+depois so cria passo. Ao salvar, a linha do CUBO se completa na hora.
+
+**Regras:**
+
+- Valor em percentual, aceitando virgula ou ponto. Fora de 0 a 200% a
+  tela pergunta antes de gravar — nao bloqueia, so confere, porque
+  digito trocado e o erro mais comum de campo manual.
+- Da pra digitar **antes da extracao**. Se a semana ainda nao existe no
+  arquivo, ela e criada so com os campos manuais e os calculados ficam
+  como `—` ate a extracao chegar. Os dois caminhos funcionam em
+  qualquer ordem.
+- Reextrair **nao apaga** o que foi digitado (secao 5).
+- Cada valor guarda quando foi preenchido. Numero digitado a mao sem
+  data de quando vira duvida em reuniao tres semanas depois.
+
+### 13.1 Onde o arquivo mora: isso precisa ser decidido
+
+Ate aqui o `indicators.json` ficava em `%APPDATA%\ScoreCard\`, **por
+maquina** — decisao registrada na secao 5 quando tudo vinha da
+extracao. Com preenchimento manual feito por mais de uma pessoa, isso
+deixa de funcionar:
+
+> voce extrai a semana na sua maquina; outra pessoa digita o
+> presenteismo na dela. Nenhuma das duas tem a tabela inteira, e o CUBO
+> nao fecha em lugar nenhum.
+
+Duas saidas:
+
+1. **Guardar na pasta do SharePoint** (recomendado). A pasta ja esta
+   configurada e ja sincroniza pelo OneDrive, entao todo mundo le e
+   escreve o mesmo arquivo. Risco: duas pessoas salvando ao mesmo tempo
+   geram copia de conflito do OneDrive. Da pra reduzir com um arquivo
+   por operacao — a escrita e rara e curta, dificilmente duas caem no
+   mesmo instante.
+2. **Manter local** e aceitar que cada maquina tem a sua parte. So
+   funciona se uma pessoa so fizer tudo, extracao e digitacao.
+
+A escolha muda pouco codigo (e o caminho do arquivo), mas muda muito o
+uso. Precisa ser decidida antes da aba Inicio ficar pronta.
+
+## 14. Em aberto
+
+**Precisa de decisao sua:**
+
+1. **Onde o `indicators.json` mora** (secao 13.1): pasta do SharePoint,
+   compartilhado, ou local por maquina. Com digitacao manual feita por
+   mais de uma pessoa, o local deixa a tabela partida entre as
+   maquinas.
 
 **Depois da semana e do mes, nao agora:**
 
-1. **PRESENTEISMO** e **COVERAGE** — vem de fora, nao deste export.
-   Fonte e formula a definir.
-2. O **CUBO** sai junto com o presenteismo, por dependencia.
-3. A aba **Headcount**, possivel origem dos dois.
+2. A tela de **entrada manual** do presenteismo e do coverage (secao
+   13), que destrava o **CUBO** junto.
+3. A aba **Headcount**, ainda sem conteudo definido.
 
 A ordem esta decidida: primeiro a semana e o mes com os tres
 indicadores que saem do export atual; os outros tres entram depois, por
@@ -604,4 +660,4 @@ estiver pronto.
   filtro de mes e sem bloco de numeros de apoio (secao 6).
 - DISPERSAO vazia quando o detalhe nao e User ID (secao 7).
 - Marca `parcial` na semana incompleta (secao 5).
-- `indicators.json` por maquina (secao 5).
+- Presenteismo e coverage digitados na propria aba Inicio (secao 13).
