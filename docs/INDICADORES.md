@@ -100,18 +100,50 @@ fechamento de semana e o Summary. Quando o intervalo e digitado na mao,
 vale o domingo-sabado que ja esta no codigo. O domingo normalmente vem
 zerado (nao ha operacao), o que nao afeta nenhum indicador.
 
-## 4. Metas e cores
+## 4. Os seis indicadores, metas e cores
 
-Iguais para as 12 operacoes:
+Nesta ordem, que e a ordem da tela:
 
-| Indicador | Verde | Vermelho | Azul |
-|---|---|---|---|
-| EFETIVIDADE | 90% a 110% | abaixo de 90% | acima de 110% |
-| HORA DIRETA | 85% ou mais | abaixo de 85% | — |
-| DISPERSAO | 70% ou mais | abaixo de 70% | — |
+| # | Indicador | Verde | Vermelho | Azul |
+|---|---|---|---|---|
+| 1 | **CUBO** | 85% a 100% | abaixo de 85% | acima de 100% |
+| 2 | **EFETIVIDADE** | 90% a 110% | abaixo de 90% | acima de 110% |
+| 3 | **HORA DIRETA** | 85% ou mais | abaixo de 85% | — |
+| 4 | **PRESENTEISMO** | 98% ou mais | abaixo de 98% | — |
+| 5 | **DISPERSAO** | 70% ou mais | abaixo de 70% | — |
+| 6 | **COVERAGE** | 92% a 110% | abaixo de 92% | acima de 110% |
 
-O azul da efetividade acima de 110% aparece na propria amostra: a
-semana 37 fecha em 112,9%, puxada por uma pessoa com `Var` de 128.
+As faixas sao iguais para as 12 operacoes.
+
+### 4.1 O que ja da pra calcular e o que nao da
+
+Das colunas do Summary saem tres: EFETIVIDADE, HORA DIRETA e DISPERSAO
+(secao 1.2). **PRESENTEISMO e COVERAGE ficam sem calculo por
+enquanto** — a definicao vem depois.
+
+**CUBO = EFETIVIDADE x HORA DIRETA x PRESENTEISMO.** Como depende do
+presenteismo, **ele tambem nao sai enquanto o presenteismo nao existir**
+— sao dois indicadores parados, nao um.
+
+Na tela, indicador sem calculo aparece como `—`, com a coluna e a
+ordem ja no lugar. Nada de zero: zero e um numero ruim, traco e
+"ainda nao temos".
+
+O que da pra adiantar no codigo: a formula do cubo, as seis faixas de
+cor e o lugar dos seis na tela e no arquivo guardado. Quando as duas
+definicoes chegarem, entra so o calculo — nada mais muda.
+
+### 4.2 Confirmar: a meta do cubo
+
+Com os numeros da propria amostra, a semana 36 da EFETIVIDADE 96,38% x
+HORA DIRETA 85,37% = 82,28%. Multiplicando ainda pelo presenteismo, o
+cubo so cai: com 98% de presenteismo, 80,63% — abaixo da meta de 85%,
+em vermelho, mesmo com os outros dois indicadores dentro da faixa.
+
+Isso e esperado? Um produto de tres percentuais tende a ficar abaixo de
+cada um deles, entao 85% e uma meta dura por construcao. A semana 37 da
+amostra, puxada pela efetividade de 112,9%, fecha em 106,26% — azul.
+So confirmando que a conta e essa mesmo antes de virar codigo.
 
 ## 5. O que fica guardado
 
@@ -137,9 +169,12 @@ de data (secao 10):
         "soma_pd_brk": 6.19,
         "dentro": 9,
         "fora": 2,
+        "cubo": null,
         "efetividade": 0.9638,
         "hora_direta": 0.8537,
+        "presenteismo": null,
         "dispersao": 0.8182,
+        "coverage": null,
         "parcial": false,
         "group_by": "User ID",
         "origem": "last_week",
@@ -149,6 +184,11 @@ de data (secao 10):
   }
 }
 ```
+
+Os seis indicadores ficam gravados na ordem da secao 4, com `null`
+naqueles que ainda nao tem calculo. Assim o arquivo ja nasce no formato
+final e nao precisa de migracao quando o presenteismo e o coverage
+chegarem.
 
 **Por que guardar as somas, e nao so os percentuais:** com as somas
 gravadas da pra montar qualquer agrupamento depois (ultimas 4 semanas,
@@ -186,21 +226,48 @@ semanas anteriores desapareceria junto.
 
 ## 6. Aba Inicio
 
-1. **Filtro de operacao** no topo (uma operacao por vez, com a ultima
-   escolha lembrada).
-2. Ao escolher, a tela carrega **todas as semanas guardadas daquela
-   operacao**, da mais recente pra mais antiga: uma linha por semana,
-   colunas `Semana | Tempo meta | Tempo logado | Efetividade | Hora
-   direta | Dentro | Fora | Dispersao`, com os tres indicadores
-   pintados pelas faixas da secao 4.
-3. Acima da tabela, tres cards com a **semana mais recente** e a
-   variacao em relacao a semana anterior.
-4. Semana marcada `parcial` aparece com um aviso na linha.
-5. Sem nada guardado ainda, a tela explica que os numeros aparecem
+A tela repete o formato do bloco W:Y da planilha: **indicador nas
+linhas, semana nas colunas, mes na ultima coluna**.
+
+```
+                  Week 36   Week 37   Week 38   |   Setembro
+                  (30/08)   (06/09)   (13/09)   |  (01 a 19/09)
+CUBO                 —         —         —      |      —
+EFETIVIDADE       96,4%    112,9%     ...       |     ...
+HORA DIRETA       85,4%     96,1%     ...       |     ...
+PRESENTEISMO         —         —         —      |      —
+DISPERSAO         81,8%     66,7%     ...       |     ...
+COVERAGE             —         —         —      |      —
+```
+
+1. **Filtros no topo:** operacao e mes, com a ultima escolha lembrada.
+2. As colunas sao as semanas guardadas daquele mes, da mais antiga pra
+   mais recente, e a ultima coluna e o **mes consolidado**.
+3. Cada celula pintada pelas faixas da secao 4. Indicador sem calculo
+   aparece como `—` na linha inteira, mantendo a ordem dos seis.
+4. Abaixo da tabela, um bloco separado com os numeros de apoio que
+   alimentam as contas: tempo meta, tempo logado, dentro e fora.
+5. Semana marcada `parcial` ganha um aviso no cabecalho da coluna; o
+   mes mostra o intervalo real embaixo do nome.
+6. Sem nada guardado ainda, a tela explica que os numeros aparecem
    depois da primeira extracao — em vez de mostrar tabela vazia.
 
-Semanas sem extracao simplesmente nao aparecem; nao inventamos linha
+Semanas sem extracao simplesmente nao aparecem; nao inventamos coluna
 zerada pra elas.
+
+**O mes nao e a soma das semanas da tela, e isso e proposital.** Sao
+duas extracoes diferentes, com intervalos que nao coincidem: o mes
+comeca no dia 1, que quase sempre cai no meio de uma semana. Em
+setembro de 2026 o mes vai de 01 a 19/09, enquanto a semana 36 comeca
+em 30/08 — os quatro primeiros dias dela sao de agosto e nao entram no
+mes. Por isso os numeros das colunas nao fecham com o da ultima, e a
+tela nao deve sugerir que fechariam.
+
+**A decidir:** a que mes pertence a semana que atravessa a virada. A
+proposta e agrupar **pela data de inicio** (a semana de 30/08 aparece
+em agosto), que e simples de explicar e nunca repete a mesma semana em
+dois meses. A alternativa e mostra-la nos dois. E escolha de
+apresentacao, facil de trocar depois.
 
 ## 7. Restricao: DISPERSAO exige o detalhe em User ID
 
@@ -398,15 +465,18 @@ Consequencias:
 
 ## 11. Ordem de implementacao
 
-1. `indicators/weekly.py` + `limits.py`, com os testes usando os
-   numeros da secao 1.3 como referencia e a planilha de exemplo (tres
-   semanas num arquivo) como caso de agrupamento.
+1. `indicators/weekly.py` + `limits.py`, com os seis indicadores na
+   ordem da secao 4 (dois sem calculo, o cubo esperando o
+   presenteismo), as seis faixas de cor e os testes usando os numeros
+   da secao 1.3 como referencia e a planilha de exemplo (tres semanas
+   num arquivo) como caso de agrupamento.
 2. `indicators/reader.py`, validado contra um export real.
 3. Os filtros da secao 8: `Group By 1` fixo em Week, checkbox do
    segundo nivel, `Group By 2` editavel e os dois atalhos de data
    usando o Default Date Range com o nome completo da opcao, com os
    mocks dos testes acompanhando.
 4. `indicators_store.py` e a gravacao dentro do `api.py`.
-5. Aba Inicio: filtro de operacao, cards e tabela de semanas.
+5. Aba Inicio: filtros de operacao e mes, tabela com os seis
+   indicadores nas linhas, semanas nas colunas e o mes no fim.
 6. Mes: um grupo unico com a chave vinda dos parametros, reusando o
    mesmo calculo.
