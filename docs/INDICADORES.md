@@ -159,9 +159,10 @@ EFETIVIDADE e HORA DIRETA sao razoes de somas, nao medias.
 - Extrair de novo um periodo que ja tem resultado **substitui** as
   semanas contidas no novo arquivo. As semanas que nao estao no arquivo
   ficam intactas.
-- `parcial: true` marca a semana cujos sete dias nao cabem inteiros
+- `parcial: true` marca a **semana** cujos sete dias nao cabem inteiros
   dentro do intervalo extraido (alguem extraiu de quarta a terca, por
-  exemplo). O numero fica gravado, mas a tela sinaliza que aquela
+  exemplo). A marca vale so pra semana; no mes, fechar antes do fim do
+  mes e o normal (secao 10). O numero fica gravado, mas a tela sinaliza que aquela
   semana esta incompleta — senao entra uma semana com menos horas no
   meio da serie e parece queda de indicador. Uma extracao posterior
   cobrindo a semana inteira substitui e limpa a marca.
@@ -303,18 +304,30 @@ Consequencias:
   um grupo unico: as mesmas somas, a mesma classificacao DENTRO/FORA e
   os mesmos tres indicadores, so com uma linha de resultado em vez de
   varias. Nao ha soma de semanas nem media de percentuais envolvida.
-- **O intervalo precisa ser exatamente um mes.** Como nao existe coluna
-  de data, uma extracao de tres meses viraria um bloco consolidado so,
-  impossivel de separar depois. A chave gravada e o mes da data
-  inicial; se o intervalo nao cobrir um mes calendario inteiro, a
-  entrada fica marcada como `parcial` com o intervalo real visivel. O
-  atalho "Mes passado" ja entrega o dia 1 ao ultimo dia, que e o caso
-  normal.
-- **Mes calendario ou fiscal** e a unica coisa em aberto. O relatorio
-  tem `Month` e `Fiscal Month` como opcoes, o que sugere que os dois
-  existem, mas no mensal o agrupamento e User ID — quem define o
-  periodo e o intervalo de datas da tela. Se o mes fiscal da operacao
-  nao comecar no dia 1, o atalho "Mes passado" precisa de ajuste.
+- **O intervalo e escolhido a cada extracao, na tela.** Nao ha regra
+  automatica de fechamento: quem extrai digita o periodo. A convencao
+  usada na pratica e **do dia 1 ate o ultimo sabado**, porque a semana
+  fecha no sabado — em setembro de 2026, extraindo no dia 23, o mes vai
+  de 01/09 a 19/09. O mes nao termina no ultimo dia do mes, e isso e o
+  comportamento normal, nao uma falha.
+- **Por isso o mes nao usa a marca `parcial`.** Fechar antes do fim do
+  mes e a regra, nao a excecao; marcar aviso em todo mes seria ruido. O
+  que a entrada guarda e o **intervalo real extraido** (`de` e `ate`),
+  e a tela mostra o mes com esse intervalo ao lado: "setembro (01 a
+  19/09)". Assim da pra ver de imediato ate onde o numero vai.
+- **Reextrair o mesmo mes com um intervalo maior substitui a entrada**,
+  pela regra da secao 5. E o fluxo esperado: durante o mes a mesma
+  chave (`2026-09`) vai sendo atualizada a cada semana fechada, sempre
+  cobrindo mais dias.
+- **Uma chave por mes, um mes por extracao.** Como nao existe coluna de
+  data, um intervalo cobrindo dois meses viraria um bloco consolidado
+  so, impossivel de separar depois. A chave gravada e o mes da data
+  inicial; se o intervalo atravessar a virada de mes, a tela avisa
+  antes de gravar.
+- **O atalho "Mes passado"** hoje preenche o dia 1 ate o ultimo dia do
+  mes anterior, o que nao bate com a convencao acima. Ou vira "do dia 1
+  ate o ultimo sabado fechado", ou sai da aba — a decidir. Nao muda
+  nada no calculo, so na comodidade de preencher.
 
 ## 11. Ordem de implementacao
 
