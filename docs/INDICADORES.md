@@ -257,7 +257,11 @@ DISPERSAO         81,8%     66,7%     ...       |     ...
 COVERAGE             —         —         —      |      —
 ```
 
-1. **Um filtro so: a operacao**, com a ultima escolha lembrada.
+1. **Um filtro so: a operacao**, com a ultima escolha lembrada. O nome
+   da operacao escolhida aparece no canto da tabela, na celula vazia
+   acima dos nomes dos indicadores, e troca junto com o filtro. Assim a
+   tabela diz de quem ela e, inclusive num print levado pra reuniao,
+   onde o filtro nao aparece.
 2. Escolhida a operacao, a tela mostra **todas as semanas guardadas
    dela**, da mais antiga pra mais recente, e depois de um separador os
    **meses**, tambem em ordem. Sem filtro de periodo: o que esta
