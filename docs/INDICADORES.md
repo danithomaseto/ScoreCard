@@ -473,6 +473,13 @@ O caso concreto: **uma semana completa que atravessa a virada do mes**
 comum, e tem que passar sem nenhum atrito. O mesmo vale pra qualquer
 intervalo digitado na aba de extracao.
 
+A razao de fundo: **o numero da semana vai pra reuniao**, entao ele
+precisa ser o da semana inteira. Um limite de calendario que obrigasse
+a cortar no dia 31 entregaria uma semana pela metade — exatamente o
+numero errado pra apresentar. E tambem por isso que a marca `parcial`
+existe: ela nao e burocracia, e o aviso de que aquele numero ainda nao
+esta pronto pra levar pra reuniao.
+
 Isso nao conflita com o mensal comecar no dia 1: sao coisas separadas.
 O mes e extraido a parte, filtrando do dia 1, e nunca e montado a
 partir das semanas — entao uma semana que pega dias de dois meses nao
