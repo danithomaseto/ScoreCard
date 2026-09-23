@@ -548,3 +548,46 @@ essa da pra ver na primeira extracao real.
 
 **Depois, quando as definicoes chegarem:** o calculo do PRESENTEISMO e
 do COVERAGE, que destrava o CUBO junto.
+
+## 13. Em aberto
+
+Lista unica do que ainda nao esta resolvido, separada por peso.
+
+**Trava indicador (falta definicao):**
+
+1. Calculo do **PRESENTEISMO** — sem formula. Trava o presenteismo e,
+   por dependencia, o **CUBO**.
+2. Calculo do **COVERAGE** — sem formula.
+3. A origem dos dois provavelmente e a aba **Headcount**, cujo
+   conteudo tambem nunca foi definido. Se for, as tres coisas se
+   resolvem juntas.
+
+**Confirmacao, sem travar o inicio:**
+
+4. A meta de 85% do **cubo** (secao 4.2): o produto de tres percentuais
+   fica abaixo de cada um deles por construcao.
+5. O `Last Month` do relatorio e o mes calendario inteiro? Da pra ver
+   na primeira extracao real.
+6. O `Last Week` do relatorio e domingo-sabado? Mesma coisa — e a marca
+   `parcial` acusa sozinha se nao for.
+
+**Proposto por mim, ainda nao confirmado por voce:**
+
+7. O filtro de **mes** na aba Inicio, ao lado do de operacao. Voce
+   pediu o de operacao; o de mes foi acrescimo pra definir quais
+   semanas entram nas colunas.
+8. O bloco de **numeros de apoio** (tempo meta, tempo logado, dentro,
+   fora) abaixo da tabela.
+9. **DISPERSAO vazia** quando o nivel de detalhe nao e User ID (secao
+   7). A alternativa e calcular assim mesmo, com aviso.
+10. A marca **`parcial`** na semana incompleta (secao 5).
+11. `indicators.json` **por maquina**, nao compartilhado no SharePoint
+    (secao 5). Se mais de uma pessoa extrair a mesma operacao, cada uma
+    ve so o proprio historico.
+
+**Tecnico, resolve durante a implementacao:**
+
+12. Um **export real** pra validar o leitor contra um arquivo de
+    verdade (cabecalho, eventual linha de total).
+13. `openpyxl` embarcado no `--onefile`, mantendo o `.exe` como um
+    arquivo so.
