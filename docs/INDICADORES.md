@@ -94,10 +94,11 @@ week     = (doy - 1 + dow_jan1) // 7 + 1
 Conferido: 30/08/2026 -> 36, 06/09/2026 -> 37, 13/09/2026 -> 38, como
 na planilha.
 
-O atalho "Semana passada" da tela ja foi ajustado de segunda-domingo
-para **domingo-sabado**, pra extrair exatamente a mesma janela que o
-relatorio fecha. O domingo normalmente vem zerado (nao ha operacao), o
-que nao afeta nenhum indicador.
+O atalho "Semana passada" nao calcula mais datas: ele usa o Default
+Date Range do proprio relatorio (secao 8.2), entao quem aplica o
+fechamento de semana e o Summary. Quando o intervalo e digitado na mao,
+vale o domingo-sabado que ja esta no codigo. O domingo normalmente vem
+zerado (nao ha operacao), o que nao afeta nenhum indicador.
 
 ## 4. Metas e cores
 
@@ -141,6 +142,7 @@ de data (secao 10):
         "dispersao": 0.8182,
         "parcial": false,
         "group_by": "User ID",
+        "origem": "last_week",
         "extraido_em": "2026-09-23T14:05:00"
       }
     }
@@ -168,6 +170,9 @@ EFETIVIDADE e HORA DIRETA sao razoes de somas, nao medias.
   cobrindo a semana inteira substitui e limpa a marca.
 - `group_by` guarda com qual agrupamento aquela semana foi calculada,
   porque isso muda o significado da DISPERSAO (secao 7).
+- `origem` diz de onde veio o periodo: `last_week` / `last_month`
+  (definido pelo relatorio) ou `digitado` (intervalo da tela). Serve
+  pra explicar na tela por que um periodo cobre os dias que cobre.
 
 **Limite conhecido:** o `indicators.json` e por maquina. Se duas
 pessoas extraem a mesma operacao, cada uma ve o seu historico. Se isso
@@ -277,13 +282,37 @@ inteiro, do dia 1 ao ultimo dia? Se for, os dois caminhos do mensal
 convivem sem conflito — o Last Month fecha o mes anterior e o intervalo
 digitado acompanha o mes corrente ate o ultimo sabado.
 
-### 8.2 E a semana passada?
+### 8.2 Semana passada segue o mesmo caminho
 
-O mesmo combobox costuma ter "Last Week". Usar o Default Date Range
-tambem na semana resolveria de vez o alinhamento discutido na secao 3:
-em vez de a tela calcular domingo-sabado e torcer pra bater, o proprio
-relatorio aplicaria o fechamento de semana dele. A decidir — hoje a
-semana continua com datas digitadas.
+O atalho "Semana passada" usa o mesmo mecanismo: **Default Date Range**
+com `Date Range` = **Last Week**. Com isso o fechamento de semana e o
+do proprio Summary, e nao uma conta feita na tela torcendo pra bater —
+que era o risco discutido na secao 3.
+
+O `date_range_type_text` das 12 operacoes hoje guarda `"Las"`, um
+pedaco de texto que nao diz qual opcao e. Passa a guardar o nome
+completo por periodo: `Last Week` na semana, `Last Month` no mes.
+
+**Rede de protecao:** se o "Last Week" do relatorio nao for
+domingo-sabado, o arquivo vem com duas semanas parciais em vez de uma
+inteira — e a marca `parcial` da secao 5 acusa isso na tela em vez de
+deixar passar um numero errado.
+
+### 8.3 Dois caminhos de data, sem voltar com o seletor
+
+Os dois atalhos passam a ser, na pratica, uma troca de modo:
+
+- Clicar em "Semana passada" ou "Mes passado" -> **modo padrao do
+  relatorio**: os campos de data ficam vazios e desabilitados, com um
+  aviso do que vai ser usado ("periodo definido pelo relatorio: Last
+  Week").
+- Digitar qualquer data -> **modo intervalo**, exatamente como hoje.
+
+Assim nao volta o seletor "Ultima semana / Periodo especifico" que foi
+tirado da tela: os botoes que ja existem e que a pessoa ja usa e que
+definem o modo. A validacao de "datas obrigatorias" precisa afrouxar —
+hoje ela barra a extracao sem data, e no modo padrao isso passa a ser
+valido.
 
 ## 9. Estrutura no codigo
 
@@ -374,8 +403,9 @@ Consequencias:
    semanas num arquivo) como caso de agrupamento.
 2. `indicators/reader.py`, validado contra um export real.
 3. Os filtros da secao 8: `Group By 1` fixo em Week, checkbox do
-   segundo nivel e `Group By 2` editavel, com os mocks dos testes
-   acompanhando.
+   segundo nivel, `Group By 2` editavel e os dois atalhos de data
+   usando o Default Date Range com o nome completo da opcao, com os
+   mocks dos testes acompanhando.
 4. `indicators_store.py` e a gravacao dentro do `api.py`.
 5. Aba Inicio: filtro de operacao, cards e tabela de semanas.
 6. Mes: um grupo unico com a chave vinda dos parametros, reusando o
