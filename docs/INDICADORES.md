@@ -13,6 +13,11 @@ A entrada e o mesmo relatorio que o app ja extrai
   inicio (30/08/2026, 06/09/2026, 13/09/2026...)
 - **Detail Level Group** (coluna B) = o User ID
 
+Esse layout e o resultado de **Group By 1 = Week** e **Group By 2 =
+User ID** no Summary (secao 8). Os titulos das colunas nao mudam com a
+escolha: continuam "Medium Level Group" e "Detail Level Group", so o
+conteudo muda. E por isso que o leitor se ancora nesses titulos.
+
 **As colunas A ate S sao o export cru. De T pra frente sao formulas
 montadas a mao** — e essa parte que o app passa a fazer.
 
@@ -188,19 +193,54 @@ semanas anteriores desapareceria junto.
 Semanas sem extracao simplesmente nao aparecem; nao inventamos linha
 zerada pra elas.
 
-## 7. Restricao: DISPERSAO exige Group By 1 = User ID
+## 7. Restricao: DISPERSAO exige Group By 2 = User ID
 
-DENTRO e FORA sao **contagem de linhas**. Com Group By 1 = User ID cada
+DENTRO e FORA sao **contagem de linhas**. Com Group By 2 = User ID cada
 linha e uma pessoa, que e o que a planilha faz. Se a extracao usar
-outro agrupamento ("Shift", "Work Area"...), a contagem passa a ser de
-turnos ou areas e o percentual perde o significado.
+outro agrupamento no segundo nivel ("Shift", "Work Area"...), a
+contagem passa a ser de turnos ou areas e o percentual perde o
+significado.
 
 Definicao: EFETIVIDADE e HORA DIRETA sao calculadas sempre (sao somas
 de horas, nao dependem do agrupamento); a DISPERSAO so e gravada quando
-o agrupamento foi User ID. Nos outros casos fica vazia, com o motivo
+o segundo nivel foi User ID. Nos outros casos fica vazia, com o motivo
 visivel na tela.
 
-## 8. Estrutura no codigo
+## 8. Filtros no Summary: Group By 1 fixo em Week
+
+Hoje o app preenche um unico combobox, "Group By 1", com a opcao
+escolhida na tela. **Na opcao Week isso muda:** o primeiro nivel passa
+a ser fixo e o campo editavel vira o segundo nivel.
+
+Sequencia no Summary, depois de abrir o relatorio e antes de exportar:
+
+1. `Group By 1` = **Week** — fixo, nao aparece como escolha na tela.
+2. Marcar o checkbox do segundo nivel de agrupamento
+   (`#groupinglvl2_check-inputEl`). O `Group By 2` fica desabilitado
+   enquanto ele nao estiver marcado.
+3. `Group By 2` = a opcao escolhida na tela, com as mesmas 29 opcoes
+   que existem hoje e `User ID` como padrao das 12 operacoes.
+
+Detalhes que a implementacao precisa respeitar:
+
+- O checkbox tem estado. Se ja estiver marcado de uma execucao
+  anterior, um clique cego **desmarca** e o `Group By 2` volta a ficar
+  inacessivel. Tem que ler o estado antes (ou usar `check()`, que e
+  idempotente).
+- O `Group By 2` e o mesmo tipo de combobox ExtJS do primeiro, entao
+  vale a mesma regra que ja esta no `select_combobox`: digitar tecla
+  por tecla e clicar na opcao pelo nome exato. Confirmar com setas +
+  Enter depende de quantas opcoes o filtro deixou na lista e erra o
+  alvo quando a lista muda.
+- **Isso vale so para a opcao Week.** Na opcao Month o comportamento
+  continua o de hoje (um nivel so, editavel) ate definirmos o mensal
+  na secao 10.
+- Muda a contagem de etapas do painel "Andamento": entra a etapa de
+  marcar o segundo nivel.
+- As paginas de mock dos testes precisam ganhar o checkbox e o
+  `Group By 2` pra continuarem cobrindo o fluxo real.
+
+## 9. Estrutura no codigo
 
 Quatro camadas. A parte que calcula nao sabe de arquivo nem de tela — e
 a parte que precisa ser testada valor por valor.
@@ -237,12 +277,16 @@ regras de substituicao da secao 5.
 **`api.py`** — depois de cada extracao bem-sucedida, calcula, grava e
 avisa a tela. Expoe `get_indicators(operacao, periodo)` pra aba Inicio.
 
-## 9. Mes (depois da semana)
+## 10. Mes (depois da semana)
 
 Mesmo codigo, entrada diferente: o agrupamento passa a ser o mes e o
 resultado vai pra `"month"` no mesmo arquivo. Duas coisas a confirmar
 quando chegarmos la:
 
+- Se o `Group By 1` tambem vira fixo no mensal (em `Month` ou
+  `Fiscal Month`) com o `Group By 2` editavel, igual ao que a secao 8
+  define pra semana. E o mais provavel, mas so entra depois de
+  confirmado.
 - O que o Medium Level Group traz na extracao mensal — mes ou ainda
   semana? Isso define se o mes vem pronto do relatorio ou se e montado
   somando as semanas.
@@ -253,12 +297,15 @@ quando chegarmos la:
 
 Em nenhuma hipotese o mes e a media dos indicadores semanais.
 
-## 10. Ordem de implementacao
+## 11. Ordem de implementacao
 
 1. `indicators/weekly.py` + `limits.py`, com os testes usando os
    numeros da secao 1.3 como referencia e a planilha de exemplo (tres
    semanas num arquivo) como caso de agrupamento.
 2. `indicators/reader.py`, validado contra um export real.
-3. `indicators_store.py` e a gravacao dentro do `api.py`.
-4. Aba Inicio: filtro de operacao, cards e tabela de semanas.
-5. Mes, com as duas confirmacoes da secao 9.
+3. Os filtros da secao 8: `Group By 1` fixo em Week, checkbox do
+   segundo nivel e `Group By 2` editavel, com os mocks dos testes
+   acompanhando.
+4. `indicators_store.py` e a gravacao dentro do `api.py`.
+5. Aba Inicio: filtro de operacao, cards e tabela de semanas.
+6. Mes, com as confirmacoes da secao 10.
