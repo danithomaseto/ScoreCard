@@ -280,6 +280,48 @@ reuniao, nao pra conferir conta.
 Semanas sem extracao simplesmente nao aparecem; nao inventamos coluna
 zerada pra elas.
 
+### 6.1 Copiar os numeros
+
+A tabela tem que sair da tela pra apresentacao sem redigitacao. Dois
+botoes, nenhum menu:
+
+- **Copiar** em cada cabecalho de coluna: os seis numeros daquela
+  semana (ou do mes), de cima pra baixo, na ordem da secao 4.
+- **Copiar tabela** no topo do card: a grade inteira, semanas e meses.
+
+**So as porcentagens, sem rotulo nenhum.** Nem nome de indicador, nem
+nome de semana: quem cola ja tem esses textos na apresentacao, e o
+rotulo junto so atrapalha.
+
+**Formato: TSV** — tabulacao entre colunas, quebra de linha entre
+linhas. E o formato que o Excel e o PowerPoint entendem como grade: no
+Excel cada valor cai numa celula; numa tabela do PowerPoint, colar
+distribui os valores pelas celulas. Uma coluna sozinha vira seis
+linhas, uma por indicador.
+
+```
+96,4%   112,9%  101,9%  106,6%
+85,4%   96,1%   96,4%   96,2%
+```
+
+**Indicador sem numero vira celula vazia**, nao `—` nem `0`. A grade
+continua com seis linhas e nada sai do lugar quando o presenteismo
+entrar depois.
+
+**Valor igual ao da tela** (`96,4%`, com virgula e sinal de porcento):
+o que e apresentado e o que foi conferido. Se um dia precisar do numero
+puro pra fazer conta no Excel, e mudar uma linha.
+
+**Como copiar, no ambiente do app:** `navigator.clipboard.writeText`
+quando disponivel, com o truque do `<textarea>` escondido +
+`document.execCommand('copy')` como reserva. O WebView2 do Windows
+aceita o primeiro em contexto seguro, mas o segundo cobre o caso de
+nao aceitar. Nenhuma dependencia nova, nada passa pelo Python.
+
+**O botao confirma**: vira "Copiado" por dois segundos. Copia e uma
+acao sem retorno visivel — sem confirmacao, a pessoa clica de novo sem
+saber se funcionou.
+
 **O mes nao e a soma das semanas da tela, e isso e proposital.** Sao
 duas extracoes diferentes, com intervalos que nao coincidem: o mes
 comeca no dia 1, que quase sempre cai no meio de uma semana. Em
@@ -534,7 +576,8 @@ numero e gravado normalmente e a tela so conta o que aconteceu.
    mocks dos testes acompanhando.
 4. `indicators_store.py` e a gravacao dentro do `api.py`.
 5. Aba Inicio: filtro de operacao, tabela com os seis indicadores nas
-   linhas, semanas nas colunas e os meses no fim.
+   linhas, semanas nas colunas, os meses no fim e os botoes de copiar
+   (secao 6.1).
 6. Mes: um grupo unico com a chave vinda dos parametros, reusando o
    mesmo calculo.
 
@@ -563,7 +606,7 @@ discussao.
 | `automation/generic.py` | fluxo por periodo — semana: `Group By 1` = Week + checkbox + `Group By 2`; mes: `Group By 1` = opcao da tela. Modo de data padrao vs digitado. Etapa nova no progresso |
 | `api.py` | calcula e grava depois da extracao; `get_indicators(operacao, mes)`; entrega as faixas de cor pra tela |
 | `ui/index.html` | aba Inicio com o filtro de operacao e a tabela dos seis; campos de data desabilitados no modo padrao |
-| `ui/app.js` | troca de modo dos atalhos, render da tabela e das cores; `lastWeekRange`/`lastMonthRange` deixam de preencher datas |
+| `ui/app.js` | troca de modo dos atalhos, render da tabela e das cores; copiar em TSV (secao 6.1); `lastWeekRange`/`lastMonthRange` deixam de preencher datas |
 | `ui/style.css` | verde, vermelho e azul das faixas; celula `—` |
 | `tests/fixtures/*.html` | mocks ganham o checkbox do segundo nivel e o `Group By 2` |
 | `requirements.txt` | entra `openpyxl` |
