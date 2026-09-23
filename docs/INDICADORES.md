@@ -263,11 +263,10 @@ em 30/08 — os quatro primeiros dias dela sao de agosto e nao entram no
 mes. Por isso os numeros das colunas nao fecham com o da ultima, e a
 tela nao deve sugerir que fechariam.
 
-**A decidir:** a que mes pertence a semana que atravessa a virada. A
-proposta e agrupar **pela data de inicio** (a semana de 30/08 aparece
-em agosto), que e simples de explicar e nunca repete a mesma semana em
-dois meses. A alternativa e mostra-la nos dois. E escolha de
-apresentacao, facil de trocar depois.
+A semana que atravessa a virada do mes aparece **no mes da sua data de
+inicio**: a semana de 30/08 fica em agosto, inteira, e nao e partida
+nem repetida em setembro. Isso nao afeta o numero do mes, que vem de
+uma extracao propria comecando no dia 1 e nao le as semanas.
 
 ## 7. Restricao: DISPERSAO exige o detalhe em User ID
 
@@ -455,13 +454,34 @@ Consequencias:
 - **Uma chave por mes, um mes por extracao.** Como nao existe coluna de
   data, um intervalo cobrindo dois meses viraria um bloco consolidado
   so, impossivel de separar depois. A chave gravada e o mes da data
-  inicial; se o intervalo atravessar a virada de mes, a tela avisa
-  antes de gravar.
+  inicial. Na pratica o mensal sempre comeca no dia 1, entao isso nao
+  aparece; se um dia aparecer, a tela **avisa e grava assim mesmo** —
+  ver secao 10.1.
 - **O atalho "Mes passado" deixa de preencher datas.** Ele passa a
   marcar o Default Date Range com `Last Month`, pela secao 8.1: os
   campos de data ficam vazios e desabilitados, e quem define o periodo
   e o relatorio. O intervalo digitado na tela continua sendo o caminho
   pro mes corrente, ate o ultimo sabado fechado.
+
+### 10.1 Nenhuma validacao de data bloqueia a extracao
+
+Regra geral: os avisos de periodo sao **avisos**, nunca travas. Quem
+esta extraindo e quem sabe o que quer puxar.
+
+O caso concreto: **uma semana completa que atravessa a virada do mes**
+— do dia 29 de um mes ao dia 4 do outro — e um periodo legitimo e
+comum, e tem que passar sem nenhum atrito. O mesmo vale pra qualquer
+intervalo digitado na aba de extracao.
+
+Isso nao conflita com o mensal comecar no dia 1: sao coisas separadas.
+O mes e extraido a parte, filtrando do dia 1, e nunca e montado a
+partir das semanas — entao uma semana que pega dias de dois meses nao
+contamina numero nenhum. Ela e guardada pela data de inicio dela e
+pronto.
+
+Onde ainda cabe um aviso (sem travar nada): semana parcial (secao 5) e
+intervalo mensal atravessando a virada (secao 10). Nos dois casos o
+numero e gravado normalmente e a tela so conta o que aconteceu.
 
 ## 11. Ordem de implementacao
 
