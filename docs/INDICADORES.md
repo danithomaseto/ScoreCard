@@ -116,7 +116,10 @@ semana 37 fecha em 112,9%, puxada por uma pessoa com `Var` de 128.
 
 Calculado na hora da extracao e gravado em
 `%APPDATA%\ScoreCard\indicators.json`, indexado por **operacao ->
-periodo -> semana**:
+periodo -> chave do periodo**. A chave da semana e a data que vem no
+arquivo (`2026-08-30`); a do mes e o proprio mes (`2026-09`), que vem
+dos parametros da extracao, porque no mensal o arquivo nao traz coluna
+de data (secao 10):
 
 ```json
 {
@@ -193,24 +196,28 @@ semanas anteriores desapareceria junto.
 Semanas sem extracao simplesmente nao aparecem; nao inventamos linha
 zerada pra elas.
 
-## 7. Restricao: DISPERSAO exige Group By 2 = User ID
+## 7. Restricao: DISPERSAO exige o detalhe em User ID
 
-DENTRO e FORA sao **contagem de linhas**. Com Group By 2 = User ID cada
-linha e uma pessoa, que e o que a planilha faz. Se a extracao usar
-outro agrupamento no segundo nivel ("Shift", "Work Area"...), a
-contagem passa a ser de turnos ou areas e o percentual perde o
-significado.
+DENTRO e FORA sao **contagem de linhas**. Com User ID no nivel de
+detalhe cada linha e uma pessoa, que e o que a planilha faz. Com outro
+agrupamento ("Shift", "Work Area"...) a contagem passa a ser de turnos
+ou areas e o percentual perde o significado.
+
+O nivel de detalhe muda conforme o periodo: na semana e o `Group By 2`
+(porque o `Group By 1` fica fixo em Week), no mes e o `Group By 1`
+(porque ele e o unico nivel). A regra e a mesma nos dois casos.
 
 Definicao: EFETIVIDADE e HORA DIRETA sao calculadas sempre (sao somas
 de horas, nao dependem do agrupamento); a DISPERSAO so e gravada quando
-o segundo nivel foi User ID. Nos outros casos fica vazia, com o motivo
-visivel na tela.
+o nivel de detalhe foi User ID. Nos outros casos fica vazia, com o
+motivo visivel na tela.
 
-## 8. Filtros no Summary: Group By 1 fixo em Week
+## 8. Filtros no Summary: diferentes na semana e no mes
 
 Hoje o app preenche um unico combobox, "Group By 1", com a opcao
 escolhida na tela. **Na opcao Week isso muda:** o primeiro nivel passa
-a ser fixo e o campo editavel vira o segundo nivel.
+a ser fixo em Week e o campo editavel vira o segundo nivel. **Na opcao
+Month continua exatamente como hoje**, um nivel so.
 
 Sequencia no Summary, depois de abrir o relatorio e antes de exportar:
 
@@ -232,9 +239,9 @@ Detalhes que a implementacao precisa respeitar:
   por tecla e clicar na opcao pelo nome exato. Confirmar com setas +
   Enter depende de quantas opcoes o filtro deixou na lista e erra o
   alvo quando a lista muda.
-- **Isso vale so para a opcao Week.** Na opcao Month o comportamento
-  continua o de hoje (um nivel so, editavel) ate definirmos o mensal
-  na secao 10.
+- **Isso vale so para a opcao Week.** Na opcao Month e `Group By 1` =
+  a opcao da tela (`User ID` nas 12 operacoes), sem segundo nivel e sem
+  Week — o relatorio ja vem com o mes consolidado (secao 10).
 - Muda a contagem de etapas do painel "Andamento": entra a etapa de
   marcar o segundo nivel.
 - As paginas de mock dos testes precisam ganhar o checkbox e o
@@ -277,25 +284,37 @@ regras de substituicao da secao 5.
 **`api.py`** — depois de cada extracao bem-sucedida, calcula, grava e
 avisa a tela. Expoe `get_indicators(operacao, periodo)` pra aba Inicio.
 
-## 10. Mes (depois da semana)
+## 10. Mes: relatorio consolidado, sem quebra de semana
 
-Mesmo codigo, entrada diferente: o agrupamento passa a ser o mes e o
-resultado vai pra `"month"` no mesmo arquivo. Duas coisas a confirmar
-quando chegarmos la:
+No mensal o `Group By 1` e **User ID** e nao existe segundo nivel nem
+agrupamento por Week. O relatorio vem com o **mes consolidado**: uma
+linha por pessoa com os totais do periodo inteiro.
 
-- Se o `Group By 1` tambem vira fixo no mensal (em `Month` ou
-  `Fiscal Month`) com o `Group By 2` editavel, igual ao que a secao 8
-  define pra semana. E o mais provavel, mas so entra depois de
-  confirmado.
-- O que o Medium Level Group traz na extracao mensal — mes ou ainda
-  semana? Isso define se o mes vem pronto do relatorio ou se e montado
-  somando as semanas.
-- Mes calendario ou mes fiscal. As semanas nao fecham no dia 1, entao
-  os dois nao dao o mesmo numero. O relatorio tem `Fiscal Month` e
-  `Month` como opcoes de agrupamento, o que sugere que a distincao
-  importa.
+Consequencias:
 
-Em nenhuma hipotese o mes e a media dos indicadores semanais.
+- **O arquivo nao traz coluna de data.** A unica coluna de agrupamento
+  e o User ID. Entao a chave do mes vem dos **parametros da extracao**
+  (o intervalo de datas digitado na tela), nao do conteudo do arquivo —
+  ao contrario da semana, onde a data vem pronta no arquivo.
+- **O leitor precisa aguentar as duas formas do export**: com coluna de
+  semana (Week) e sem nenhuma coluna de data (Month). Mais um motivo
+  pra mapear pelo titulo da coluna e nao pela letra.
+- **O calculo nao muda.** Como o relatorio ja vem consolidado, o mes e
+  um grupo unico: as mesmas somas, a mesma classificacao DENTRO/FORA e
+  os mesmos tres indicadores, so com uma linha de resultado em vez de
+  varias. Nao ha soma de semanas nem media de percentuais envolvida.
+- **O intervalo precisa ser exatamente um mes.** Como nao existe coluna
+  de data, uma extracao de tres meses viraria um bloco consolidado so,
+  impossivel de separar depois. A chave gravada e o mes da data
+  inicial; se o intervalo nao cobrir um mes calendario inteiro, a
+  entrada fica marcada como `parcial` com o intervalo real visivel. O
+  atalho "Mes passado" ja entrega o dia 1 ao ultimo dia, que e o caso
+  normal.
+- **Mes calendario ou fiscal** e a unica coisa em aberto. O relatorio
+  tem `Month` e `Fiscal Month` como opcoes, o que sugere que os dois
+  existem, mas no mensal o agrupamento e User ID — quem define o
+  periodo e o intervalo de datas da tela. Se o mes fiscal da operacao
+  nao comecar no dia 1, o atalho "Mes passado" precisa de ajuste.
 
 ## 11. Ordem de implementacao
 
@@ -308,4 +327,5 @@ Em nenhuma hipotese o mes e a media dos indicadores semanais.
    acompanhando.
 4. `indicators_store.py` e a gravacao dentro do `api.py`.
 5. Aba Inicio: filtro de operacao, cards e tabela de semanas.
-6. Mes, com as confirmacoes da secao 10.
+6. Mes: um grupo unico com a chave vinda dos parametros, reusando o
+   mesmo calculo.
