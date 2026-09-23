@@ -282,35 +282,35 @@ zerada pra elas.
 
 ### 6.1 Copiar os numeros
 
-A tabela tem que sair da tela pra apresentacao sem redigitacao. Dois
-botoes, nenhum menu:
-
-- **Copiar** em cada cabecalho de coluna: os seis numeros daquela
-  semana (ou do mes), de cima pra baixo, na ordem da secao 4.
-- **Copiar tabela** no topo do card: a grade inteira, semanas e meses.
+A tabela tem que sair da tela pra apresentacao sem redigitacao. Um
+botao **Copiar** em cada cabecalho de coluna, e so: copia os seis
+numeros daquela semana (ou do mes), de cima pra baixo, na ordem da
+secao 4. Nao ha copiar a tabela inteira — o que se leva pra reuniao e
+uma coluna por vez.
 
 **So as porcentagens, sem rotulo nenhum.** Nem nome de indicador, nem
 nome de semana: quem cola ja tem esses textos na apresentacao, e o
 rotulo junto so atrapalha.
 
-**Formato: TSV** — tabulacao entre colunas, quebra de linha entre
-linhas. E o formato que o Excel e o PowerPoint entendem como grade: no
-Excel cada valor cai numa celula; numa tabela do PowerPoint, colar
-distribui os valores pelas celulas. Uma coluna sozinha vira seis
-linhas, uma por indicador.
+**Formato: um valor por linha**, seis linhas. Colando no Excel, cada
+valor cai numa celula, descendo a coluna na ordem dos indicadores:
 
 ```
-96,4%   112,9%  101,9%  106,6%
-85,4%   96,1%   96,4%   96,2%
+(cubo, vazio)
+96,4%
+85,4%
+(presenteismo, vazio)
+81,8%
+(coverage, vazio)
 ```
 
-**Indicador sem numero vira celula vazia**, nao `—` nem `0`. A grade
-continua com seis linhas e nada sai do lugar quando o presenteismo
-entrar depois.
+**Indicador sem numero vira linha vazia**, nao `—` nem `0`. Assim as
+seis posicoes ficam preservadas e nada sobe de lugar; um traco viraria
+celula de texto no meio dos numeros.
 
 **Valor igual ao da tela** (`96,4%`, com virgula e sinal de porcento):
 o que e apresentado e o que foi conferido. Se um dia precisar do numero
-puro pra fazer conta no Excel, e mudar uma linha.
+puro pra fazer conta, e mudar uma linha.
 
 **Como copiar, no ambiente do app:** `navigator.clipboard.writeText`
 quando disponivel, com o truque do `<textarea>` escondido +
