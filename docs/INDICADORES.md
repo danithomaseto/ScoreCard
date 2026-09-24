@@ -231,6 +231,10 @@ EFETIVIDADE e HORA DIRETA sao razoes de somas, nao medias.
   (definido pelo relatorio) ou `digitado` (intervalo da tela). Serve
   pra explicar na tela por que um periodo cobre os dias que cobre.
 
+**As pastas ja estao como o desenho previa:** dentro da pasta de cada
+operacao no SharePoint existem `Week` e `Month`, e e de la que sai cada
+tipo de export. Isso ja esta implementado e conferido no ambiente real.
+
 **Limite conhecido:** o `indicators.json` e por maquina. Se duas
 pessoas extraem a mesma operacao, cada uma ve o seu historico. Se isso
 virar problema, o passo seguinte e gravar tambem um arquivo acumulado
@@ -499,19 +503,63 @@ No mensal o `Group By 1` e **User ID** e nao existe segundo nivel nem
 agrupamento por Week. O relatorio vem com o **mes consolidado**: uma
 linha por pessoa com os totais do periodo inteiro.
 
-Consequencias:
+Confirmado pela planilha `Logica_Score_Card_-_Mes.xlsx`: a coluna A e
+`Detail Level Group` com o User ID direto, e nao existe nenhuma coluna
+de data.
 
-- **O arquivo nao traz coluna de data.** A unica coluna de agrupamento
-  e o User ID. Entao a chave do mes vem dos **parametros da extracao**
-  (o intervalo de datas digitado na tela), nao do conteudo do arquivo —
-  ao contrario da semana, onde a data vem pronta no arquivo.
-- **O leitor precisa aguentar as duas formas do export**: com coluna de
-  semana (Week) e sem nenhuma coluna de data (Month). Mais um motivo
-  pra mapear pelo titulo da coluna e nao pela letra.
-- **O calculo nao muda.** Como o relatorio ja vem consolidado, o mes e
-  um grupo unico: as mesmas somas, a mesma classificacao DENTRO/FORA e
-  os mesmos tres indicadores, so com uma linha de resultado em vez de
-  varias. Nao ha soma de semanas nem media de percentuais envolvida.
+### 10.1 As colunas mudam de lugar entre os dois
+
+Sem o `Medium Level Group`, **tudo anda uma posicao pra esquerda**:
+
+| Coluna | Semana | Mes |
+|---|---|---|
+| Medium Level Group (semana) | A | nao existe |
+| Detail Level Group (User ID) | B | A |
+| Var | C | B |
+| Goal | D | C |
+| Measured Direct | E | D |
+| Unmeasured Signon Direct | G | F |
+| Unmeasured Insert Direct | I | H |
+| PD Brk | K | J |
+| Total | L | K |
+
+E a prova de que o leitor tem que se ancorar no **titulo** da coluna e
+nunca na letra: o mesmo relatorio, com um agrupamento a menos, ja
+entrega o layout deslocado. Lendo por letra, o mensal calcularia
+efetividade com a coluna errada e entregaria um numero plausivel e
+falso — o pior tipo de erro.
+
+**Como o leitor sabe qual e qual:** existe coluna `Medium Level Group`
+-> export semanal, agrupa por ela; nao existe -> export mensal, um
+grupo so.
+
+### 10.2 As formulas sao as mesmas
+
+A planilha do mes usa `SUM(C:C)` onde a da semana usa
+`SUMIF($U:$U, semana, $D:$D)`. Fora isso, tudo igual: mesma
+classificacao DENTRO/FORA com tolerancia +/- 10, mesmas somas, mesmos
+tres indicadores. Somar a coluna inteira e o mesmo que somar um grupo
+so.
+
+**Conferencia** (recalculado fora do Excel, bate com a planilha):
+
+| | planilha | recalculado |
+|---|---|---|
+| tempo meta | 1.407,65 | 1.407,65 |
+| tempo logado | 1.402,52 | 1.402,52 |
+| EFETIVIDADE | 100,37% | 100,37% |
+| HORA DIRETA | 92,99% | 92,99% |
+| DISPERSAO | 60,00% (9 / 15) | 60,00% |
+
+Segundo caso de referencia dos testes, ao lado do semanal da secao 1.3:
+um cobre o agrupamento por semana, o outro o consolidado sem data.
+
+### 10.3 Consequencias
+
+- **A chave do mes vem dos parametros da extracao** (o intervalo de
+  datas digitado na tela, ou o mes anterior quando se usa o Last
+  Month), nao do conteudo do arquivo — ao contrario da semana, onde a
+  data vem pronta.
 - **O intervalo e escolhido a cada extracao, na tela.** Nao ha regra
   automatica de fechamento: quem extrai digita o periodo. A convencao
   usada na pratica e **do dia 1 ate o ultimo sabado**, porque a semana
@@ -532,14 +580,14 @@ Consequencias:
   so, impossivel de separar depois. A chave gravada e o mes da data
   inicial. Na pratica o mensal sempre comeca no dia 1, entao isso nao
   aparece; se um dia aparecer, a tela **avisa e grava assim mesmo** —
-  ver secao 10.1.
+  ver secao 10.4.
 - **O atalho "Mes passado" deixa de preencher datas.** Ele passa a
   marcar o Default Date Range com `Last Month`, pela secao 8.1: os
   campos de data ficam vazios e desabilitados, e quem define o periodo
   e o relatorio. O intervalo digitado na tela continua sendo o caminho
   pro mes corrente, ate o ultimo sabado fechado.
 
-### 10.1 Nenhuma validacao de data bloqueia a extracao
+### 10.4 Nenhuma validacao de data bloqueia a extracao
 
 Regra geral: os avisos de periodo sao **avisos**, nunca travas. Quem
 esta extraindo e quem sabe o que quer puxar.
@@ -563,7 +611,7 @@ contamina numero nenhum. Ela e guardada pela data de inicio dela e
 pronto.
 
 Onde ainda cabe um aviso (sem travar nada): semana parcial (secao 5) e
-intervalo mensal atravessando a virada (secao 10). Nos dois casos o
+intervalo mensal atravessando a virada (secao 10.3). Nos dois casos o
 numero e gravado normalmente e a tela so conta o que aconteceu.
 
 ## 11. Ordem de implementacao
@@ -594,12 +642,13 @@ discussao.
 
 | Arquivo | O que faz |
 |---|---|
-| `indicators/reader.py` | le o `.xlsx`, normaliza os titulos das colunas, aguenta o export com coluna de semana (Week) e sem nenhuma coluna de data (Month), descarta linha invalida |
+| `indicators/reader.py` | le o `.xlsx`, normaliza os titulos das colunas, distingue o export semanal do mensal pela presenca do `Medium Level Group` (secao 10.1), descarta linha invalida |
 | `indicators/weekly.py` | `classify_row`, somas do grupo e `indicators_by_period` — funcoes puras, sem I/O |
 | `indicators/limits.py` | tolerancia +/- 10, ordem dos seis e as faixas de cor da secao 4 |
 | `indicators_store.py` | `indicators.json` em `%APPDATA%\ScoreCard\`, com as regras da secao 5 |
 | `tests/test_indicators.py` | os numeros da secao 1.3 como referencia, mais o caso de tres semanas num arquivo |
 | `tests/fixtures/summary_3semanas.xlsx` | export de exemplo com as tres semanas |
+| `tests/fixtures/summary_mes.xlsx` | export mensal de exemplo, sem coluna de data |
 
 **Arquivos alterados**
 
@@ -697,9 +746,7 @@ estiver pronto.
 
 **Tecnico, resolve durante a implementacao:**
 
-4. Um **export real** pra validar o leitor contra um arquivo de
-   verdade (cabecalho, eventual linha de total).
-5. `openpyxl` embarcado no `--onefile`, mantendo o `.exe` como um
+4. `openpyxl` embarcado no `--onefile`, mantendo o `.exe` como um
    arquivo so.
 
 **Decidido, sem pendencia:**
