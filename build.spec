@@ -88,9 +88,26 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
+# Tela de abertura: aparece assim que o .exe roda e some quando a janela
+# do app termina de carregar (main.py fecha). No modo arquivo unico a
+# demora e a descompactacao do conteudo — sem ela, o programa parece
+# travado durante esse tempo.
+#
+# Precisa vir DEPOIS da Analysis: o Splash usa binaries e datas dela pra
+# localizar as bibliotecas que desenha a janelinha.
+splash = Splash(
+    "ui/assets/splash.png",
+    binaries=a.binaries,
+    datas=a.datas,
+    text_pos=None,
+    always_on_top=False,
+)
+
 exe = EXE(
     pyz,
     a.scripts,
+    splash,
+    splash.binaries,
     a.binaries,
     a.datas,
     [],
@@ -98,7 +115,11 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    # UPX comprime cada binario e o descompacta em memoria a cada
+    # abertura. Com quase 700 MB de Chromium e Node embutidos, isso
+    # custa mais tempo de abertura do que economiza de espaco — e o
+    # conteudo ja vai compactado dentro do arquivo unico.
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=SHOW_CONSOLE,
@@ -107,4 +128,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon="ui/assets/scorecard.ico",
 )

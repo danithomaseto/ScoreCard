@@ -29,23 +29,48 @@ def resource_path(relative_path):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
 
 
-def ensure_browser_installed():
-    """Na primeira execucao, o Chromium que o Playwright usa ainda nao
-    foi baixado. Detecta isso e baixa automaticamente, sem exigir que o
-    usuario rode nenhum comando — só acontece uma vez, silenciosamente
-    (pode demorar um pouco na primeira vez, dependendo da internet)."""
-    from playwright.sync_api import sync_playwright
+def _chromium_ja_esta_no_pacote():
+    """O .exe leva o Chromium embutido (ver build.spec). Esta funcao so
+    confere se o binario esta no lugar, olhando o disco.
 
-    try:
-        with sync_playwright() as playwright:
-            # channel="chromium" pra checar exatamente o mesmo binario
-            # que automation/base.py vai usar de verdade (o Chromium
-            # completo, nao o chromium-headless-shell).
-            browser = playwright.chromium.launch(headless=True, channel="chromium")
-            browser.close()
+    Antes daqui saia um navegador de verdade, aberto e fechado so pra
+    testar — o que custava alguns segundos em TODA abertura do
+    programa, mesmo com o Chromium ali do lado. Ler o disco responde a
+    mesma pergunta sem pagar esse preco.
+    """
+    if os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE"):
+        return os.path.isfile(os.environ["PLAYWRIGHT_CHROMIUM_EXECUTABLE"])
+
+    raizes = []
+    if hasattr(sys, "_MEIPASS"):
+        raizes.append(os.path.join(sys._MEIPASS, "playwright", "driver", "package",
+                                   ".local-browsers"))
+    local = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
+    if local:
+        raizes.append(local)
+    if os.environ.get("LOCALAPPDATA"):
+        raizes.append(os.path.join(os.environ["LOCALAPPDATA"], "ms-playwright"))
+
+    for raiz in raizes:
+        if not os.path.isdir(raiz):
+            continue
+        for nome in os.listdir(raiz):
+            if not nome.startswith("chromium-"):
+                continue
+            for relativo in (("chrome-win", "chrome.exe"),
+                             ("chrome-linux", "chrome"),
+                             ("chrome-mac", "Chromium.app", "Contents", "MacOS", "Chromium")):
+                if os.path.isfile(os.path.join(raiz, nome, *relativo)):
+                    return True
+    return False
+
+
+def ensure_browser_installed():
+    """Garante que o Chromium existe. No .exe ele vem embutido, entao
+    isso e so uma conferencia de disco; rodando do codigo-fonte sem
+    'playwright install chromium', baixa uma vez."""
+    if _chromium_ja_esta_no_pacote():
         return
-    except Exception:
-        pass
 
     print("Preparando o aplicativo pela primeira vez (baixando componentes)...")
     sys.argv = ["playwright", "install", "chromium"]
@@ -54,6 +79,20 @@ def ensure_browser_installed():
     try:
         playwright_cli_main()
     except SystemExit:
+        pass
+
+
+def fechar_splash():
+    """Fecha a tela de abertura do PyInstaller, se houver. Ela aparece
+    enquanto o .exe descompacta o conteudo (Chromium incluso), que e a
+    parte demorada — sem ela o programa parece travado."""
+    try:
+        import pyi_splash  # so existe dentro do .exe com splash
+    except ImportError:
+        return
+    try:
+        pyi_splash.close()
+    except Exception:
         pass
 
 
@@ -77,6 +116,12 @@ def main():
         background_color="#0b0e1a",
     )
     api.set_window(window)
+    # Fecha a tela de abertura quando a pagina terminar de carregar, e
+    # nao antes: assim nao sobra um intervalo com nada na tela.
+    try:
+        window.events.loaded += fechar_splash
+    except Exception:
+        fechar_splash()
     webview.start()
 
 
