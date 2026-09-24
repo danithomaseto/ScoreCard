@@ -660,7 +660,7 @@ discussao.
 | `api.py` | calcula e grava depois da extracao; `get_indicators(operacao, mes)`; entrega as faixas de cor pra tela |
 | `ui/index.html` | aba Inicio com o filtro de operacao e a tabela dos seis; campos de data desabilitados no modo padrao |
 | `ui/app.js` | troca de modo dos atalhos, render da tabela e das cores; copiar em TSV (secao 6.1); `lastWeekRange`/`lastMonthRange` deixam de preencher datas |
-| `ui/style.css` | verde, vermelho e azul das faixas; celula `—` |
+| `ui/style.css` | verde, vermelho e azul das faixas; celula `—`; cards Week/Month e Fonte de dados (secao 15) |
 | `tests/fixtures/*.html` | mocks ganham o checkbox do segundo nivel e o `Group By 2` |
 | `requirements.txt` | entra `openpyxl` |
 | `build.spec` | conferir se o `openpyxl` entra no `--onefile` (hidden imports) e que o `.exe` continua sendo um arquivo so |
@@ -760,3 +760,51 @@ estiver pronto.
 - DISPERSAO vazia quando o detalhe nao e User ID (secao 7).
 - Marca `parcial` na semana incompleta (secao 5).
 - Presenteismo e coverage digitados na propria aba Inicio (secao 13).
+
+## 15. Ajuste de tela: os cards Week/Month estao apertados
+
+Nao e sobre indicadores, mas entra na mesma leva de mudancas, porque
+mexe nos mesmos arquivos.
+
+**O que acontece.** Os cards "Week" e "Month" do "Periodo do indicador"
+ficam estreitos demais: a legenda quebra em duas linhas e o texto fica
+espremido contra o titulo.
+
+**Medido na tela real**, renderizando `ui/index.html`:
+
+| Viewport | Card de parametros | Cada botao | Altura da legenda |
+|---|---|---|---|
+| 1280px | 553px | 125px | **24px (duas linhas)** |
+| 1440px | 644px | 138px | **24px (duas linhas)** |
+| 1920px | 915px | 422px de grupo, 206px cada | 12px (uma linha) |
+
+**Causa.** Tres divisoes em cima da mesma largura: o card de parametros
+divide a linha com o painel de andamento, dentro dele os campos
+dividem a linha em dois, e dentro dessa metade os dois botoes dividem
+de novo. Sobra `125px` por botao a 1280. Desses, o icone come uns 38px
+com o espacamento, e a legenda "Indicadores semanais" precisa de
+`107px` em 11px pra caber numa linha — entao quebra. So passa de
+1500px de janela e o problema some, o que explica ele nao aparecer
+sempre.
+
+**O ajuste:**
+
+1. **Tirar as legendas** "Indicadores semanais" e "Indicadores
+   mensais". O rotulo do campo ja diz "Periodo do indicador" e o botao
+   ja diz "Week"; a legenda repete e e ela que causa o aperto.
+2. **Subir o titulo** de 13px pra 15px, o mesmo tamanho dos outros
+   campos do formulario. Com a legenda fora, sobra altura pra isso sem
+   o botao crescer.
+3. **Empilhar em vez de espremer**: abaixo de uma largura minima, os
+   dois botoes passam um embaixo do outro. Espremer ate quebrar a
+   palavra e o que acontece hoje.
+4. **Mesmo tratamento no card "Fonte de dados"**, que tem a mesma forma
+   (titulo + legenda) e fica na mesma linha — se so um dos dois mudar,
+   os dois ficam desalinhados.
+
+**De quebra, trocar os emoji por SVG.** Os icones desses cards sao
+emoji no HTML (`🖧`, `📆`, `🗓️`). A barra lateral ja usa SVG de traco,
+e o `🖧` em particular nao existe em varias fontes do Windows — aparece
+como quadrado ou em preto e branco no meio de uma interface que e toda
+monocromatica de traco. Como o ajuste ja mexe nesses cards, e o momento
+de igualar.
