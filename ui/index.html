@@ -91,15 +91,39 @@
 
     <div class="content-area">
       <section id="page-home" class="page" hidden>
-        <div class="home-layout">
-          <div class="card hero-card">
-            <h2>Bem-vindo!</h2>
-            <p class="subtitle">Extraia os dados, processe as informacoes e visualize os indicadores da sua equipe de forma rapida e simples.</p>
+        <div class="page-wide-wrap">
+          <h2 class="page-heading">Inicio</h2>
+          <p class="subtitle">Indicadores por semana, com o mes no final. Atualiza a cada extracao.</p>
+
+          <div class="card filter-card">
+            <div class="filter-field">
+              <label for="home-operation">Operacao</label>
+              <select id="home-operation"></select>
+            </div>
+            <p class="filter-note" id="home-last-run">Nenhuma extracao ainda</p>
           </div>
-          <div class="card last-run-card">
-            <div class="last-run-label">Ultima extracao</div>
-            <div class="last-run-value" id="last-run-value">Nenhuma extracao ainda</div>
-            <div class="last-run-status empty" id="last-run-status">Aguardando</div>
+
+          <div class="card indicators-card">
+            <p class="indicators-empty" id="indicators-empty" hidden>
+              Os indicadores aparecem aqui depois da primeira extracao desta
+              operacao. Cada semana extraida vira uma coluna, e o mes entra
+              no final.
+            </p>
+
+            <div class="table-wrap" id="indicators-wrap">
+              <table class="indicators-table">
+                <thead><tr id="indicators-head"></tr></thead>
+                <tbody id="indicators-body"></tbody>
+              </table>
+            </div>
+
+            <div class="indicators-legend" id="indicators-legend">
+              <span class="legend-item"><span class="legend-dot verde"></span>dentro da meta</span>
+              <span class="legend-item"><span class="legend-dot vermelho"></span>abaixo da meta</span>
+              <span class="legend-item"><span class="legend-dot azul"></span>acima do teto</span>
+              <span class="legend-item"><span class="legend-dash">&mdash;</span>ainda sem numero</span>
+              <span class="legend-note">O mes vem de extracao propria e nao e a soma das semanas.</span>
+            </div>
           </div>
         </div>
       </section>
@@ -117,10 +141,9 @@
                 <div>
                   <label>Fonte de dados</label>
                   <div class="source-option">
-                    <div class="source-icon">🖧</div>
+                    <div class="source-icon"><svg class="source-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></div>
                     <div>
                       <strong>BlueYonder</strong>
-                      <span>Sistema RP (Summary)</span>
                     </div>
                   </div>
                 </div>
@@ -128,17 +151,15 @@
                   <label>Periodo do indicador</label>
                   <div class="period-options" id="period-options">
                     <button type="button" class="period-option active" data-period="week">
-                      <div class="source-icon">📆</div>
+                      <div class="source-icon"><svg class="source-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div>
                       <div>
                         <strong>Week</strong>
-                        <span>Indicadores semanais</span>
                       </div>
                     </button>
                     <button type="button" class="period-option" data-period="month">
-                      <div class="source-icon">🗓️</div>
+                      <div class="source-icon"><svg class="source-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div>
                       <div>
                         <strong>Month</strong>
-                        <span>Indicadores mensais</span>
                       </div>
                     </button>
                   </div>
@@ -227,22 +248,29 @@
                     <div class="step-subtitle">Data inicial e data final escolhidas</div>
                   </div>
                 </div>
-                <div class="step" data-step="groupby">
+                <div class="step" data-step="groupby1">
                   <div class="step-number">7</div>
                   <div class="step-content">
                     <div class="step-title">Aplicando o Group By 1</div>
+                    <div class="step-subtitle">Week na semana, User ID no mes</div>
+                  </div>
+                </div>
+                <div class="step" data-step="groupby2">
+                  <div class="step-number">8</div>
+                  <div class="step-content">
+                    <div class="step-title">Aplicando o Group By 2</div>
                     <div class="step-subtitle">Agrupamento escolhido na tela</div>
                   </div>
                 </div>
                 <div class="step" data-step="export">
-                  <div class="step-number">8</div>
+                  <div class="step-number">9</div>
                   <div class="step-content">
                     <div class="step-title">Exportando em Excel</div>
                     <div class="step-subtitle">Gerando o arquivo no sistema</div>
                   </div>
                 </div>
                 <div class="step" data-step="save">
-                  <div class="step-number">9</div>
+                  <div class="step-number">10</div>
                   <div class="step-content">
                     <div class="step-title">Salvando o arquivo</div>
                     <div class="step-subtitle">Gravando na pasta do SharePoint</div>
@@ -287,10 +315,9 @@
                 <div>
                   <label>Fonte de dados</label>
                   <div class="source-option">
-                    <div class="source-icon">🖧</div>
+                    <div class="source-icon"><svg class="source-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></div>
                     <div>
                       <strong>BlueYonder</strong>
-                      <span>Sistema RP (Summary)</span>
                     </div>
                   </div>
                 </div>
@@ -298,17 +325,15 @@
                   <label>Periodo do indicador</label>
                   <div class="period-options" id="multi-period-options">
                     <button type="button" class="period-option active" data-period="week">
-                      <div class="source-icon">📆</div>
+                      <div class="source-icon"><svg class="source-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div>
                       <div>
                         <strong>Week</strong>
-                        <span>Indicadores semanais</span>
                       </div>
                     </button>
                     <button type="button" class="period-option" data-period="month">
-                      <div class="source-icon">🗓️</div>
+                      <div class="source-icon"><svg class="source-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div>
                       <div>
                         <strong>Month</strong>
-                        <span>Indicadores mensais</span>
                       </div>
                     </button>
                   </div>

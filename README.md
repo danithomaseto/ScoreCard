@@ -52,6 +52,26 @@ pytest
 Se o seu Chromium estiver em outro lugar, aponte
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` para o executavel antes de rodar.
 
+## Indicadores
+
+Depois de cada extracao o app le o arquivo que acabou de baixar,
+calcula os indicadores e guarda o resultado em
+`%APPDATA%\ScoreCard\indicators.json`, por operacao, periodo e semana
+(ou mes). A aba **Inicio** mostra esses numeros: os seis indicadores nas
+linhas, as semanas nas colunas e o mes no final.
+
+O calculo tem que rodar na hora da extracao porque o proximo download
+apaga o arquivo anterior da mesma operacao — quem nao calcular naquele
+momento nao calcula mais.
+
+Tres dos seis saem do relatorio: **EFETIVIDADE**, **HORA DIRETA** e
+**DISPERSAO**. **PRESENTEISMO** e **COVERAGE** serao digitados a mao, e
+o **CUBO** (o produto dos tres primeiros) depende do presenteismo —
+entao os tres aparecem como `—` por enquanto, nunca como zero.
+
+As formulas, as metas e as decisoes de desenho estao em
+[docs/INDICADORES.md](docs/INDICADORES.md).
+
 ## Gerando o .exe
 
 **Precisa ser feito numa maquina Windows** (o PyInstaller gera o
@@ -131,9 +151,15 @@ main.py              # cria a janela, garante que o Chromium existe
 api.py                # metodos chamados pelo JS (login, executar, config)
 settings_store.py     # persiste a pasta do SharePoint em %APPDATA%
 history_store.py      # historico das extracoes em %APPDATA%
+indicators_store.py   # indicadores calculados, por operacao e periodo
 automation/
   base.py              # login, iframe, comboboxes, export (Playwright)
   generic.py            # orquestra o fluxo por operacao
+indicators/
+  reader.py             # le o xlsx baixado pelo titulo das colunas
+  weekly.py             # o calculo em si, sem I/O
+  limits.py             # metas, faixas de cor e tolerancia
+  periodos.py           # numero da semana e rotulos de periodo
 config/
   operations.py         # cadastro das operacoes
 ui/
@@ -141,8 +167,11 @@ ui/
   style.css
   app.js
 tests/
-  fixtures/              # paginas de mock que imitam o Summary
+  fixtures/              # paginas de mock e exports de exemplo
   test_automation.py     # fluxo de extracao ponta a ponta
+  test_filtros.py        # Group By e Date Range na pagina do relatorio
+  test_indicators.py     # calculo conferido contra as planilhas
+  test_indicators_store.py  # gravacao e a tabela da aba Inicio
   test_api.py            # extracao unica, fila multipla e validacoes
 requirements.txt
 requirements-dev.txt      # o de cima + pytest

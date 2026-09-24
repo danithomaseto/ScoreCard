@@ -18,8 +18,13 @@ const runActions = document.getElementById('run-actions');
 const logoutBtn = document.getElementById('logout-btn');
 const folderPathEl = document.getElementById('folder-path');
 const chooseFolderBtn = document.getElementById('choose-folder-btn');
-const lastRunValueEl = document.getElementById('last-run-value');
-const lastRunStatusEl = document.getElementById('last-run-status');
+const homeOperationSelect = document.getElementById('home-operation');
+const homeLastRunEl = document.getElementById('home-last-run');
+const indicatorsHead = document.getElementById('indicators-head');
+const indicatorsBody = document.getElementById('indicators-body');
+const indicatorsWrap = document.getElementById('indicators-wrap');
+const indicatorsEmpty = document.getElementById('indicators-empty');
+const indicatorsLegend = document.getElementById('indicators-legend');
 
 const progressBadgeEl = document.getElementById('progress-badge');
 const progressDetailEl = document.getElementById('progress-detail');
@@ -56,7 +61,11 @@ const PROGRESS_STEPS = [
   { key: 'frame', match: (t) => t.includes('localizando o iframe') },
   { key: 'report', match: (t) => t.includes('abrindo o relatorio') },
   { key: 'period', match: (t) => t.includes('periodo especifico') || t.includes('date range') },
-  { key: 'groupby', match: (t) => t.includes('group by') },
+  // "group by 1" cobre tanto o Week fixo da semana quanto o User ID do
+  // mes; o segundo nivel so existe no fluxo semanal, e quando nao
+  // acontece o passo simplesmente nao acende.
+  { key: 'groupby1', match: (t) => t.includes('group by 1') },
+  { key: 'groupby2', match: (t) => t.includes('segundo nivel') || t.includes('group by 2') },
   { key: 'export', match: (t) => t.includes('exportando e baixando') },
   { key: 'save', match: (t) => t.includes('concluido') },
 ];
@@ -117,7 +126,7 @@ async function showPage(pageName) {
     page.hidden = page.id !== `page-${pageName}`;
   }
   if (pageName === 'home') {
-    await loadLastRun();
+    await loadHome();
   } else if (pageName === 'extract') {
     await loadHistoryTable(historyTableBody);
   } else if (pageName === 'multi') {
@@ -128,20 +137,197 @@ async function showPage(pageName) {
   }
 }
 
+async function loadHome() {
+  await loadLastRun();
+  await loadIndicators();
+}
+
 async function loadLastRun() {
   const history = await pywebview.api.get_report_history();
   if (!history.length) {
-    lastRunValueEl.textContent = 'Nenhuma extracao ainda';
-    lastRunStatusEl.textContent = 'Aguardando';
-    lastRunStatusEl.className = 'last-run-status empty';
+    homeLastRunEl.textContent = 'Nenhuma extracao ainda';
     return;
   }
   const last = history[0];
+  // Entradas gravadas antes deste campo existir nao tem "status", mas so
+  // eram criadas quando a extracao dava certo - entao a ausencia do campo
+  // conta como sucesso, nao falha.
   const ok = last.status ? last.status === 'success' : true;
-  lastRunValueEl.textContent = `${last.operation} - ${new Date(last.timestamp).toLocaleString('pt-BR')}`;
-  lastRunStatusEl.textContent = ok ? 'Concluida' : 'Falha';
-  lastRunStatusEl.className = 'last-run-status' + (ok ? '' : ' error');
+  const quando = new Date(last.timestamp).toLocaleString('pt-BR');
+  homeLastRunEl.textContent = ok
+    ? `Ultima extracao: ${last.operation}, ${quando}`
+    : `Ultima extracao: ${last.operation}, ${quando} (falhou)`;
 }
+
+// O texto e a cor de cada celula vem prontos do Python: as faixas sao
+// regra de negocio, e regra repetida em dois lugares vira duas regras
+// diferentes na primeira mudanca.
+async function loadIndicators() {
+  const operacao = homeOperationSelect.value;
+  if (!operacao) return;
+
+  const tabela = await pywebview.api.get_indicator_table(operacao);
+  const temDados = tabela.colunas.length > 0;
+
+  indicatorsEmpty.hidden = temDados;
+  indicatorsWrap.hidden = !temDados;
+  indicatorsLegend.hidden = !temDados;
+  if (!temDados) return;
+
+  desenharCabecalho(tabela);
+  desenharLinhas(tabela);
+}
+
+function desenharCabecalho(tabela) {
+  indicatorsHead.innerHTML = '';
+
+  // O canto leva o nome da operacao: num print levado pra reuniao o
+  // filtro costuma ficar fora do recorte, e a tabela precisa dizer de
+  // quem ela e.
+  const canto = document.createElement('th');
+  canto.scope = 'col';
+  canto.className = 'indicator-corner';
+  const rotulo = document.createElement('div');
+  rotulo.className = 'corner-label';
+  rotulo.textContent = 'Operacao';
+  const nome = document.createElement('div');
+  nome.className = 'corner-operation';
+  nome.textContent = tabela.operacao;
+  canto.appendChild(rotulo);
+  canto.appendChild(nome);
+  indicatorsHead.appendChild(canto);
+
+  tabela.colunas.forEach((coluna, indice) => {
+    const th = document.createElement('th');
+    th.scope = 'col';
+    th.className = 'indicator-col' + (coluna.periodo === 'month' ? ' month-col' : '');
+
+    const titulo = document.createElement('div');
+    titulo.className = 'col-title';
+    titulo.textContent = coluna.titulo;
+    th.appendChild(titulo);
+
+    const subtitulo = document.createElement('div');
+    subtitulo.className = 'col-subtitle';
+    subtitulo.textContent = coluna.subtitulo;
+    th.appendChild(subtitulo);
+
+    if (coluna.parcial) {
+      const aviso = document.createElement('div');
+      aviso.className = 'col-warning';
+      aviso.textContent = 'semana incompleta';
+      th.appendChild(aviso);
+    }
+
+    th.appendChild(botaoCopiar(indice, coluna.titulo));
+    indicatorsHead.appendChild(th);
+  });
+}
+
+function desenharLinhas(tabela) {
+  indicatorsBody.innerHTML = '';
+  for (const linha of tabela.linhas) {
+    const tr = document.createElement('tr');
+
+    const th = document.createElement('th');
+    th.scope = 'row';
+    th.className = 'indicator-name';
+    const nome = document.createElement('div');
+    nome.className = 'indicator-label';
+    nome.textContent = linha.rotulo;
+    const meta = document.createElement('div');
+    meta.className = 'indicator-meta';
+    meta.textContent = linha.meta;
+    th.appendChild(nome);
+    th.appendChild(meta);
+    tr.appendChild(th);
+
+    linha.celulas.forEach((celula, indice) => {
+      const td = document.createElement('td');
+      const coluna = tabela.colunas[indice];
+      td.className = 'indicator-cell' + (coluna.periodo === 'month' ? ' month-col' : '');
+      if (celula.texto) {
+        const valor = document.createElement('span');
+        valor.className = 'indicator-value ' + (celula.cor || '');
+        valor.textContent = celula.texto;
+        td.appendChild(valor);
+      } else {
+        // Sem numero e traco, nunca zero: zero e um numero ruim, traco
+        // e "ainda nao temos".
+        td.classList.add('sem-numero');
+        td.textContent = '\u2014';
+      }
+      tr.appendChild(td);
+    });
+
+    indicatorsBody.appendChild(tr);
+  }
+}
+
+function botaoCopiar(indice, titulo) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'copy-btn';
+  btn.setAttribute('aria-label', `Copiar os numeros de ${titulo}`);
+  btn.textContent = 'Copiar';
+  btn.addEventListener('click', () => copiarColuna(indice, btn));
+  return btn;
+}
+
+// Um valor por linha, na ordem dos indicadores: colando no Excel cada
+// um cai numa celula, descendo a coluna. Indicador sem numero vira linha
+// vazia, pra nenhum valor subir de lugar.
+function textoDaColuna(indice) {
+  return Array.from(indicatorsBody.querySelectorAll('tr'))
+    .map((tr) => {
+      const celula = tr.querySelectorAll('td')[indice];
+      if (!celula) return '';
+      const valor = celula.querySelector('.indicator-value');
+      return valor ? valor.textContent : '';
+    })
+    .join('\n');
+}
+
+async function copiarColuna(indice, btn) {
+  const texto = textoDaColuna(indice);
+  const copiado = await copiarTexto(texto);
+
+  const original = btn.textContent;
+  btn.textContent = copiado ? 'Copiado' : 'Nao deu';
+  btn.classList.toggle('copiado', copiado);
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.classList.remove('copiado');
+  }, 2000);
+}
+
+async function copiarTexto(texto) {
+  // O WebView2 aceita a area de transferencia do navegador em contexto
+  // seguro; o textarea escondido cobre o caso de nao aceitar.
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(texto);
+      return true;
+    }
+  } catch (err) {
+    // cai no plano B
+  }
+  try {
+    const area = document.createElement('textarea');
+    area.value = texto;
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(area);
+    return ok;
+  } catch (err) {
+    return false;
+  }
+}
+
+homeOperationSelect.addEventListener('change', loadIndicators);
 
 navItems.forEach((btn) => {
   btn.addEventListener('click', () => showPage(btn.dataset.page));
@@ -237,12 +423,16 @@ async function loadOperations() {
   const operations = await pywebview.api.get_operations();
 
   operationSelect.innerHTML = '';
+  homeOperationSelect.innerHTML = '';
   multiOperationsEl.innerHTML = '';
   for (const op of operations) {
     const opt = document.createElement('option');
     opt.value = op.key;
     opt.textContent = op.label;
     operationSelect.appendChild(opt);
+
+    const homeOpt = opt.cloneNode(true);
+    homeOperationSelect.appendChild(homeOpt);
 
     // Mesma lista, em forma de checkbox, na aba Extrair Multiplos.
     const item = document.createElement('label');
