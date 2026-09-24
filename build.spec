@@ -31,15 +31,16 @@ datas += pw_datas
 binaries += pw_binaries
 hiddenimports += pw_hiddenimports
 
-# O openpyxl (leitura do relatorio baixado, pro calculo dos
-# indicadores) carrega parte dos seus modulos por nome, em tempo de
-# execucao. O PyInstaller nao enxerga esse tipo de import sozinho,
-# entao a coleta vai explicita — senao o .exe abre normalmente e so
-# quebra na hora de ler o arquivo.
-xl_datas, xl_binaries, xl_hiddenimports = collect_all("openpyxl")
-datas += xl_datas
-binaries += xl_binaries
-hiddenimports += xl_hiddenimports
+# Leitura do relatorio baixado: o openpyxl le .xlsx e o xlrd le o .xls
+# antigo, que e o que o Summary entrega hoje. Os dois carregam parte
+# dos seus modulos por nome, em tempo de execucao, e o PyInstaller nao
+# enxerga esse tipo de import sozinho — entao a coleta vai explicita.
+# Sem isso o .exe abre normalmente e so quebra na hora de ler.
+for pacote in ("openpyxl", "xlrd"):
+    pk_datas, pk_binaries, pk_hiddenimports = collect_all(pacote)
+    datas += pk_datas
+    binaries += pk_binaries
+    hiddenimports += pk_hiddenimports
 
 
 def find_playwright_chromium():

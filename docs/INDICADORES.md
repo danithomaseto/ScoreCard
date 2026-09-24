@@ -808,3 +808,62 @@ e o `🖧` em particular nao existe em varias fontes do Windows — aparece
 como quadrado ou em preto e branco no meio de uma interface que e toda
 monocromatica de traco. Como o ajuste ja mexe nesses cards, e o momento
 de igualar.
+
+## 16. Onde paramos (24/09/2026)
+
+### Feito e no branch
+
+Tudo das secoes 1 a 15 esta implementado, com 61 testes passando. A
+primeira extracao real aconteceu e apontou uma coisa que nenhuma das
+planilhas mostrava: **o Summary entrega o relatorio em `.xls` antigo**
+(BIFF, gerado pelo JasperReports), nao em `.xlsx`.
+
+O leitor passou a descobrir o formato pelos **primeiros bytes** do
+arquivo, nao pela extensao do nome, e le os dois. O `.xls` que veio da
+extracao real virou fixture (`tests/fixtures/summary_real.xls`, com os
+identificadores das pessoas trocados por codigos).
+
+O que esse arquivo confirmou, e nao precisa mais ser verificado:
+
+- Os titulos das colunas sao exatamente os que o leitor espera.
+- Cabecalho na primeira linha, sem bloco de titulo antes.
+- Sem linha de total no fim.
+- As semanas vem separadas certinho (15, 15 e 16 linhas).
+
+### Proximo passo: a falha do calculo precisa aparecer na tela
+
+**E por onde retomar.** Hoje, quando o calculo nao roda, `api.py`
+guarda o motivo em `result["indicators_message"]` e **ninguem mostra
+esse campo**. A extracao segue como "Concluida", porque o arquivo
+realmente foi salvo — e foi exatamente isso que escondeu o problema do
+`.xls` ate a primeira extracao real.
+
+O que fazer:
+
+1. A tela de extracao mostra o aviso quando ele existe, em vez de so
+   "Concluida".
+2. O historico distingue os tres casos: concluida, concluida sem
+   indicador, e falha.
+3. Um teste cobrindo o caminho: arquivo salvo, calculo recusado, aviso
+   visivel.
+
+### Decidido e fechado
+
+O dia em que a semana comeca **nao importa**. O arquivo real vem com
+semanas de segunda a domingo (31/08, 07/09, 14/09), diferente das
+planilhas de exemplo, que eram de domingo. Nada no calculo depende
+disso — ele agrupa pela data que vem no arquivo — e os rotulos saem
+iguais (Week 36, 37, 38 nos dois casos). O atalho de datas digitadas
+fica como esta.
+
+### Continua em aberto, sem pressa
+
+- Presenteismo e coverage: entrada manual (secao 13), que destrava o
+  cubo.
+- Onde o `indicators.json` mora quando mais de uma pessoa preencher
+  (secao 13.1).
+- Aba Headcount.
+- Tempo de abertura do `.exe`: o teto e a descompactacao dos ~700 MB de
+  Chromium e Node a cada abertura, que vem da regra de um arquivo so.
+  Sair do teto exige o modo pasta ou desempacotar uma vez em
+  `%LOCALAPPDATA%`.

@@ -32,6 +32,12 @@ def mensal():
     return reader.ler(os.path.join(FIXTURES, "summary_mes.xlsx"))
 
 
+@pytest.fixture
+def real():
+    """O formato que o Summary entrega de verdade: .xls antigo."""
+    return reader.ler(os.path.join(FIXTURES, "summary_real.xls"))
+
+
 # ---------------- Leitura ----------------
 
 def test_reconhece_o_export_semanal(semanal):
@@ -54,6 +60,46 @@ def test_reconhece_o_export_mensal(mensal):
     assert primeira["measured_direct"] == 100.78
     assert primeira["pd_brk"] == 2.17
     assert primeira["total"] == 111.26
+
+
+def test_le_o_xls_antigo_que_o_summary_entrega(real):
+    """O relatorio vem em BIFF (.xls), nao em .xlsx: o openpyxl sozinho
+    recusava o arquivo e o calculo morria calado."""
+    assert real["tem_semana"] is True
+    assert len(real["linhas"]) == 46
+
+    primeira = real["linhas"][0]
+    assert primeira["semana"] == "2026-08-31"
+    assert primeira["goal"] == 25.34
+    assert primeira["measured_direct"] == 27.86
+    assert primeira["pd_brk"] == 0.67
+
+
+def test_formato_vem_dos_bytes_e_nao_da_extensao(tmp_path):
+    """Extensao e palpite; assinatura e fato. Um .xlsx renomeado para
+    .xls tem que continuar sendo lido."""
+    import shutil
+
+    disfarcado = tmp_path / "parece_xls.xls"
+    shutil.copy(os.path.join(FIXTURES, "summary_mes.xlsx"), disfarcado)
+
+    assert len(reader.ler(str(disfarcado))["linhas"]) == 16
+
+
+def test_arquivo_que_nao_e_planilha_e_recusado_com_clareza(tmp_path):
+    caminho = tmp_path / "relatorio.xls"
+    caminho.write_text("<html><body>erro do servidor</body></html>", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="planilha"):
+        reader.ler(str(caminho))
+
+
+def test_semanas_do_arquivo_real_saem_agrupadas(real):
+    semanas = weekly.por_semana(real["linhas"], nivel_detalhe="User ID")
+
+    assert list(semanas) == ["2026-08-31", "2026-09-07", "2026-09-14"]
+    assert [s["linhas"] for s in semanas.values()] == [15, 15, 16]
+    assert pct(semanas["2026-08-31"]["efetividade"]) == 82.0
 
 
 def test_arquivo_sem_as_colunas_do_summary_e_recusado(tmp_path):
