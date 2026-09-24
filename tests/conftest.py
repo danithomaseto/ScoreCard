@@ -43,8 +43,6 @@ def mock_operation(label, folder, page="login.html"):
         "label": label,
         "login_url": fixture_url(page),
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": folder,

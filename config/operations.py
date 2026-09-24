@@ -44,6 +44,16 @@ GROUP_BY_OPTIONS = [
     "Work Team",
 ]
 
+# Opcao do "Date Range" (bloco "Default Date Range" do relatorio) usada
+# quando nao se digita um intervalo na tela. O nome vai completo de
+# proposito: digitar so um pedaco ("Las") deixaria o combobox escolher
+# a primeira opcao que sobrar na lista, que pode ser Last Week, Last
+# Month ou Last Year conforme o relatorio.
+DEFAULT_DATE_RANGE = {
+    "week": "Last Week",
+    "month": "Last Month",
+}
+
 OPERATIONS = {
     "hugo_boss": {
         "label": "Hugo Boss",
@@ -51,8 +61,6 @@ OPERATIONS = {
         "username_env": "DHL_USERNAME",
         "password_env": "DHL_PASSWORD",
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "Hugo Boss",
@@ -63,8 +71,6 @@ OPERATIONS = {
         "username_env": "DHL_USERNAME",
         "password_env": "DHL_PASSWORD",
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "Hughes",
@@ -75,8 +81,6 @@ OPERATIONS = {
         "username_env": "DHL_USERNAME",
         "password_env": "DHL_PASSWORD",
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "SWA",
@@ -87,8 +91,6 @@ OPERATIONS = {
         "username_env": "DHL_USERNAME",
         "password_env": "DHL_PASSWORD",
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "Nike",
@@ -99,8 +101,6 @@ OPERATIONS = {
         "username_env": "DHL_USERNAME",
         "password_env": "DHL_PASSWORD",
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "SumUp",
@@ -111,8 +111,6 @@ OPERATIONS = {
         "username_env": "DHL_USERNAME",
         "password_env": "DHL_PASSWORD",
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "Rede",
@@ -123,8 +121,6 @@ OPERATIONS = {
         "username_env": "DHL_USERNAME",
         "password_env": "DHL_PASSWORD",
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "JCB",
@@ -135,8 +131,6 @@ OPERATIONS = {
         "username_env": "DHL_USERNAME",
         "password_env": "DHL_PASSWORD",
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "Lego",
@@ -147,8 +141,6 @@ OPERATIONS = {
         "username_env": "DHL_USERNAME",
         "password_env": "DHL_PASSWORD",
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "SpaceX",
@@ -159,8 +151,6 @@ OPERATIONS = {
         "username_env": "DHL_USERNAME",
         "password_env": "DHL_PASSWORD",
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "HPE",
@@ -171,8 +161,6 @@ OPERATIONS = {
         "username_env": "DHL_USERNAME",
         "password_env": "DHL_PASSWORD",
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "Armani",
@@ -183,8 +171,6 @@ OPERATIONS = {
         "username_env": "DHL_USERNAME",
         "password_env": "DHL_PASSWORD",
         "report_name": "rptLMUserSummaryRaw",
-        "date_range_type_text": "Las",
-        "group_by_type_text": "User",
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "ABB",

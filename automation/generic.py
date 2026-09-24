@@ -1,8 +1,9 @@
 import os
 import time
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 from automation.base import (
+    enable_second_grouping,
     export_report,
     get_report_frame,
     login,
@@ -10,16 +11,32 @@ from automation.base import (
     open_reports_menu,
     select_combobox,
     select_custom_date_range,
+    select_default_date_range,
     open_browser_session,
     take_screenshot,
 )
-from config.operations import OPERATIONS
+from config.operations import DEFAULT_DATE_RANGE, OPERATIONS
 
 
 def _to_site_date_format(iso_date):
     """Converte yyyy-mm-dd (formato do <input type="date"> do navegador)
     pro formato dd/mm/yyyy que o campo do Summary espera."""
     return datetime.strptime(iso_date, "%Y-%m-%d").strftime("%d/%m/%Y")
+
+
+def _month_key(date_range, hoje=None):
+    """Chave do mes (2026-09) no arquivo de indicadores.
+
+    O export mensal nao traz coluna de data nenhuma — o unico
+    agrupamento e o User ID —, entao o mes vem de quem pediu a
+    extracao: do intervalo digitado, ou do mes anterior quando se usa o
+    "Last Month" do relatorio.
+    """
+    if date_range:
+        return date_range["from_date"][:7]
+    hoje = hoje or date.today()
+    ultimo_dia_do_mes_anterior = hoje.replace(day=1) - timedelta(days=1)
+    return ultimo_dia_do_mes_anterior.strftime("%Y-%m")
 
 
 def run(
@@ -72,13 +89,18 @@ def run(
     folder = config.get("sharepoint_folder") or config["label"]
     download_dir = os.path.join(base_dir, folder, period_folder)
 
+    is_month = period_folder == "Month"
+    default_range = DEFAULT_DATE_RANGE["month" if is_month else "week"]
+
     if date_range:
         period_label = (
             f"{_to_site_date_format(date_range['from_date'])} - "
             f"{_to_site_date_format(date_range['to_date'])}"
         )
+        origem = "digitado"
     else:
-        period_label = "Ultima semana"
+        period_label = default_range
+        origem = default_range.lower().replace(" ", "_")
     group_by_option = group_by or config["group_by_option"]
 
     def log(step):
@@ -96,8 +118,14 @@ def run(
         "operation": operation_key,
         "operation_label": config["label"],
         "period_label": period_label,
+        # E sempre o nivel de detalhe (uma linha por pessoa quando e
+        # User ID): Group By 2 na semana, Group By 1 no mes.
         "group_by": group_by_option,
         "period_type": period_folder,
+        "origem": origem,
+        "date_from": date_range["from_date"] if date_range else None,
+        "date_to": date_range["to_date"] if date_range else None,
+        "month_key": _month_key(date_range) if is_month else None,
     }
 
     try:
@@ -121,17 +149,25 @@ def run(
                 to_date=_to_site_date_format(date_range["to_date"]),
             )
         else:
-            log("preenchendo Date Range...")
-            select_combobox(frame, "Date Range", config["date_range_type_text"])
+            log(f"preenchendo Date Range ({default_range})...")
+            select_default_date_range(frame, default_range)
 
-        group_by_type_text = group_by if group_by else config["group_by_type_text"]
-        log(f"preenchendo Group By 1 ({group_by_option})...")
-        select_combobox(
-            frame,
-            "Group By 1",
-            group_by_type_text,
-            option_text=group_by_option,
-        )
+        if is_month:
+            # O mensal vem consolidado: um nivel so, sem quebra por
+            # semana. Uma linha por pessoa com os totais do periodo.
+            log(f"preenchendo Group By 1 ({group_by_option})...")
+            select_combobox(frame, "Group By 1", group_by_option, option_text=group_by_option)
+        else:
+            # Semanal: a quebra por semana fica fixa no primeiro nivel e
+            # o campo escolhido na tela vai pro segundo.
+            log("preenchendo Group By 1 (Week)...")
+            select_combobox(frame, "Group By 1", "Week", option_text="Week")
+
+            log("marcando o segundo nivel de agrupamento...")
+            enable_second_grouping(frame)
+
+            log(f"preenchendo Group By 2 ({group_by_option})...")
+            select_combobox(frame, "Group By 2", group_by_option, option_text=group_by_option)
 
         log("exportando e baixando o arquivo...")
         saved_path = export_report(

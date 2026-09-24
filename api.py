@@ -14,6 +14,8 @@ import webview
 from automation import generic
 from config.operations import GROUP_BY_OPTIONS, OPERATIONS
 import history_store
+from indicators import limits, periodos, reader, weekly
+import indicators_store
 import settings_store
 
 
@@ -118,6 +120,52 @@ class Api:
             "message": result.get("message"),
         })
 
+    def _calcular_indicadores(self, operation_key, result):
+        """Le o arquivo recem-baixado, calcula e grava os indicadores.
+
+        Roda aqui, na hora da extracao, e nao na tela: o proximo
+        download apaga este arquivo, entao quem nao calcular agora nao
+        calcula mais.
+        """
+        if not result.get("success") or not result.get("file_path"):
+            return
+
+        try:
+            lido = reader.ler(result["file_path"])
+        except Exception as exc:  # noqa: BLE001 - arquivo fora do esperado
+            result["indicators_message"] = f"Relatorio salvo, mas nao deu pra calcular: {exc}"
+            return
+
+        nivel_detalhe = result.get("group_by")
+        de, ate = result.get("date_from"), result.get("date_to")
+        meta = {
+            "group_by": nivel_detalhe,
+            "origem": result.get("origem"),
+            "de": de,
+            "ate": ate,
+        }
+
+        if result.get("period_type") == "Month":
+            chave = result.get("month_key")
+            if not chave:
+                return
+            resultados = {chave: weekly.totais(lido["linhas"], nivel_detalhe=nivel_detalhe)}
+            periodo = "month"
+        else:
+            if not lido["tem_semana"]:
+                result["indicators_message"] = (
+                    "Relatorio salvo, mas veio sem a coluna de semana: "
+                    "nao deu pra separar por semana."
+                )
+                return
+            resultados = weekly.por_semana(lido["linhas"], nivel_detalhe=nivel_detalhe)
+            for chave, totais in resultados.items():
+                totais["parcial"] = periodos.semana_parcial(chave, de, ate)
+            periodo = "week"
+
+        indicators_store.salvar_extracao(operation_key, periodo, resultados, meta=meta)
+        result["indicators"] = len(resultados)
+
     def _check_extraction_params(self, group_by, period):
         """Validacoes comuns as duas abas de extracao. Devolve None quando
         esta tudo certo, ou um dict de erro pra devolver pra tela."""
@@ -160,6 +208,7 @@ class Api:
             group_by=group_by,
             period=period,
         )
+        self._calcular_indicadores(operation_key, result)
         self._record_history(operation_key, result)
         return result
 
@@ -223,6 +272,7 @@ class Api:
                 group_by=group_by,
                 period=period,
             )
+            self._calcular_indicadores(operation_key, result)
             self._record_history(operation_key, result)
 
             ok = bool(result.get("success"))
@@ -273,6 +323,72 @@ class Api:
 
     def open_error_screenshot(self):
         return self._open_path(self._last_screenshot, "Imagem do erro")
+
+    # ---------------- Indicadores ----------------
+
+    def get_indicator_table(self, operation_key):
+        """Monta a tabela da aba Inicio ja pronta pra desenhar: os seis
+        indicadores nas linhas, as semanas nas colunas e os meses no
+        fim, com o texto e a cor de cada celula.
+
+        As faixas de cor e a formatacao ficam aqui, no Python, e nao no
+        JavaScript: sao regra de negocio, e regra de negocio repetida em
+        dois lugares vira duas regras diferentes na primeira mudanca.
+        """
+        if operation_key not in OPERATIONS:
+            return {"operacao": "", "colunas": [], "linhas": []}
+
+        guardado = indicators_store.get_indicators(operation_key)
+        colunas = []
+
+        for chave in sorted(guardado.get("week", {})):
+            entrada = guardado["week"][chave]
+            titulo, subtitulo = periodos.rotulo_semana(chave)
+            colunas.append({
+                "chave": chave,
+                "periodo": "week",
+                "titulo": titulo,
+                "subtitulo": subtitulo,
+                "parcial": bool(entrada.get("parcial")),
+                "_entrada": entrada,
+            })
+
+        for chave in sorted(guardado.get("month", {})):
+            entrada = guardado["month"][chave]
+            titulo, subtitulo = periodos.rotulo_mes(chave, entrada.get("de"), entrada.get("ate"))
+            colunas.append({
+                "chave": chave,
+                "periodo": "month",
+                "titulo": titulo,
+                "subtitulo": subtitulo,
+                "parcial": False,
+                "_entrada": entrada,
+            })
+
+        linhas = []
+        for indicador in limits.ORDEM:
+            celulas = []
+            for coluna in colunas:
+                valor = coluna["_entrada"].get(indicador)
+                celulas.append({
+                    "texto": limits.formatar(valor),
+                    "cor": limits.cor(indicador, valor),
+                })
+            linhas.append({
+                "chave": indicador,
+                "rotulo": limits.ROTULOS[indicador],
+                "meta": limits.METAS[indicador],
+                "celulas": celulas,
+            })
+
+        for coluna in colunas:
+            coluna.pop("_entrada")
+
+        return {
+            "operacao": OPERATIONS[operation_key]["label"],
+            "colunas": colunas,
+            "linhas": linhas,
+        }
 
     # ---------------- Historico ----------------
 

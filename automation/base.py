@@ -235,6 +235,77 @@ def select_combobox(frame, label, type_text, option_text=None):
             raise RuntimeError(f"Nao foi possivel confirmar '{label}' com Enter: {exc}")
 
 
+def select_default_date_range(frame, option_text):
+    """Usa o bloco "Default Date Range" do relatorio em vez de digitar
+    datas: marca o radio e escolhe a opcao (Last Week, Last Month...).
+
+    Marcar o radio e um passo explicito de proposito. O caminho das
+    datas digitadas marca o "Custom Date Range", entao contar com o
+    estado que sobrou da execucao anterior daria resultado diferente
+    conforme o que foi feito antes.
+
+    A opcao vai pelo nome exato. Digitar so um pedaco e confirmar com
+    Enter pega a primeira da lista filtrada, que muda conforme o que o
+    relatorio oferece.
+    """
+    radio_selectors = [
+        lambda f: f.locator("#defaultdaterange_radio-inputEl"),
+        lambda f: f.get_by_label("Default Date Range", exact=False),
+    ]
+    if not _click_first_match(frame, radio_selectors, timeout=5000):
+        raise RuntimeError("Nao foi possivel selecionar 'Default Date Range'.")
+
+    select_combobox(frame, "Date Range", option_text, option_text=option_text)
+
+
+def _is_checked(locator):
+    """True, False ou None quando nao da pra saber. O checkbox do ExtJS
+    nem sempre e um <input type=checkbox> de verdade, entao caimos no
+    aria-checked antes de desistir."""
+    try:
+        return locator.is_checked()
+    except Exception:
+        pass
+    try:
+        aria = locator.get_attribute("aria-checked")
+        if aria is not None:
+            return aria.lower() == "true"
+    except Exception:
+        pass
+    return None
+
+
+def enable_second_grouping(frame):
+    """Marca o checkbox do segundo nivel de agrupamento, que habilita o
+    campo "Group By 2".
+
+    Precisa ser idempotente: o checkbox guarda estado entre execucoes e
+    um clique cego no que ja esta marcado **desmarca**, deixando o
+    Group By 2 inacessivel e a extracao com o agrupamento errado.
+    """
+    selectors = [
+        lambda f: f.locator("#groupinglvl2_check-inputEl"),
+        lambda f: f.get_by_role("checkbox", name="Group By 2", exact=False),
+    ]
+
+    for selector in selectors:
+        try:
+            locator = selector(frame)
+            locator.wait_for(state="visible", timeout=4000)
+        except Exception:
+            continue
+
+        if _is_checked(locator) is True:
+            return True  # ja habilitado; clicar aqui desabilitaria
+        try:
+            locator.click()
+        except Exception:
+            continue
+        return True
+
+    raise RuntimeError("Nao foi possivel habilitar o segundo nivel de agrupamento.")
+
+
 def select_custom_date_range(frame, from_date, to_date, from_time=None, to_time=None):
     """Seleciona 'Custom Date Range' e preenche De/Ate, no lugar do
     padrao 'Last Week'. from_date/to_date no formato dd/mm/yyyy (igual

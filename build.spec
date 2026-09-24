@@ -31,6 +31,16 @@ datas += pw_datas
 binaries += pw_binaries
 hiddenimports += pw_hiddenimports
 
+# O openpyxl (leitura do relatorio baixado, pro calculo dos
+# indicadores) carrega parte dos seus modulos por nome, em tempo de
+# execucao. O PyInstaller nao enxerga esse tipo de import sozinho,
+# entao a coleta vai explicita — senao o .exe abre normalmente e so
+# quebra na hora de ler o arquivo.
+xl_datas, xl_binaries, xl_hiddenimports = collect_all("openpyxl")
+datas += xl_datas
+binaries += xl_binaries
+hiddenimports += xl_hiddenimports
+
 
 def find_playwright_chromium():
     """Localiza o Chromium ja baixado nesta maquina (via 'playwright

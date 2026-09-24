@@ -7,6 +7,7 @@
 <div id="defaultBlock">
   <label for="dateRange">Date Range</label>
   <input id="dateRange" role="combobox" aria-label="Date Range" value="This Week">
+  <div id="dateRangeOptions"></div>
 </div>
 
 <div id="customBlock" style="display:none;">
@@ -25,6 +26,15 @@
 <label for="groupBy">Group By 1*</label>
 <input id="groupBy" role="combobox" aria-label="Group By 1*" value="Shift">
 <div id="groupByOptions"></div>
+
+<!-- Segundo nivel: o Group By 2 so fica utilizavel com o checkbox
+     marcado, igual ao Summary. O checkbox guarda estado, entao um
+     clique cego no que ja esta marcado desmarca. -->
+<label><input type="checkbox" id="groupinglvl2_check-inputEl" onclick="toggleLevel2()"> Group By 2</label>
+<label for="groupBy2">Group By 2</label>
+<input id="groupBy2" role="combobox" aria-label="Group By 2" value="" disabled>
+<div id="groupBy2Options"></div>
+
 <script>
 const GROUP_BY_OPTIONS = [
   "Aisle Area","Aisle Area Desc.","Client","Customer","Fiscal Month","Fiscal Week",
@@ -33,23 +43,39 @@ const GROUP_BY_OPTIONS = [
   "Shift","Shift Category","Supervisor","User","User Group","User ID","User Name",
   "User Pin","Warehouse","Week","Work Area","Work Category","Work Team"
 ];
-document.getElementById('groupBy').addEventListener('keyup', function() {
-  const v = this.value;
-  const box = document.getElementById('groupByOptions');
-  box.innerHTML = '';
-  if (!v) return;
-  const matches = GROUP_BY_OPTIONS.filter(o => o.toLowerCase().startsWith(v.toLowerCase()));
-  for (const match of matches) {
-    const opt = document.createElement('div');
-    opt.setAttribute('role', 'option');
-    opt.textContent = match;
-    opt.onclick = function() {
-      document.getElementById('groupBy').value = match;
-      box.innerHTML = '';
-    };
-    box.appendChild(opt);
-  }
-});
+
+const DATE_RANGE_OPTIONS = ["Last Month", "Last Week", "Last Year", "This Month", "This Week"];
+
+function ligarCombo(inputId, boxId, opcoes) {
+  document.getElementById(inputId).addEventListener('keyup', function() {
+    const v = this.value;
+    const box = document.getElementById(boxId);
+    box.innerHTML = '';
+    if (!v) return;
+    const matches = opcoes.filter(o => o.toLowerCase().startsWith(v.toLowerCase()));
+    for (const match of matches) {
+      const opt = document.createElement('div');
+      opt.setAttribute('role', 'option');
+      opt.textContent = match;
+      opt.onclick = function() {
+        document.getElementById(inputId).value = match;
+        box.innerHTML = '';
+      };
+      box.appendChild(opt);
+    }
+  });
+}
+
+ligarCombo('groupBy', 'groupByOptions', GROUP_BY_OPTIONS);
+ligarCombo('groupBy2', 'groupBy2Options', GROUP_BY_OPTIONS);
+ligarCombo('dateRange', 'dateRangeOptions', DATE_RANGE_OPTIONS);
+
+function toggleLevel2() {
+  const ligado = document.getElementById('groupinglvl2_check-inputEl').checked;
+  const campo = document.getElementById('groupBy2');
+  campo.disabled = !ligado;
+  if (!ligado) campo.value = '';
+}
 
 function toggleMode() {
   const custom = document.getElementById('customdaterange_radio-inputEl').checked;
@@ -65,10 +91,16 @@ function toggleMode() {
   <button id="button-1224">Ok</button>
 </div>
 
-<a id="downloadLink" href="dummy.xlsx" download="RawSummaryReport.xlsx" style="display:none;"></a>
+<a id="downloadLink" href="summary_3semanas.xlsx" download="RawSummaryReport.xlsx" style="display:none;"></a>
 <script>
 document.getElementById('button-1224').addEventListener('click', function() {
-  document.getElementById('downloadLink').click();
+  // O arquivo entregue muda com o agrupamento, igual ao Summary: com o
+  // segundo nivel marcado vem o export semanal (com a coluna de
+  // semana); sem ele, o mensal consolidado, sem data nenhuma.
+  const semanal = document.getElementById('groupinglvl2_check-inputEl').checked;
+  const link = document.getElementById('downloadLink');
+  link.href = semanal ? 'summary_3semanas.xlsx' : 'summary_mes.xlsx';
+  link.click();
 });
 </script>
 </body></html>
