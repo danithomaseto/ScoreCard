@@ -69,6 +69,17 @@ Tres dos seis saem do relatorio: **EFETIVIDADE**, **HORA DIRETA** e
 o **CUBO** (o produto dos tres primeiros) depende do presenteismo —
 entao os tres aparecem como `—` por enquanto, nunca como zero.
 
+**PRESENTEISMO** vem da aba **Headcount**: o quadro (HC, dias uteis e
+horas/dia) e digitado ali e as faltas vem de uma planilha de ausencias,
+que nunca sao digitadas. A planilha e filtrada — ferias nao e falta,
+temporario fica de fora e so entram as funcoes que compoem o quadro
+(Log I, Log II, Operador, mais as que forem cadastradas na tela). Cada
+falta e roteada pela data para a semana do mes e para o ciclo da folha
+ponto (dia 13 ao dia 12) ao mesmo tempo.
+
+O botao "Calcular Presenteismo" grava o resultado no indicador da
+operacao, e e isso que faz o **CUBO** aparecer na aba Inicio.
+
 As formulas, as metas e as decisoes de desenho estao em
 [docs/INDICADORES.md](docs/INDICADORES.md).
 
@@ -152,6 +163,8 @@ api.py                # metodos chamados pelo JS (login, executar, config)
 settings_store.py     # persiste a pasta do SharePoint em %APPDATA%
 history_store.py      # historico das extracoes em %APPDATA%
 indicators_store.py   # indicadores calculados, por operacao e periodo
+headcount_store.py    # gestores, quadro e faltas importadas
+headcount.py          # monta a tela de Headcount (filtros, cards, linhas)
 automation/
   base.py              # login, iframe, comboboxes, export (Playwright)
   generic.py            # orquestra o fluxo por operacao
@@ -160,6 +173,8 @@ indicators/
   weekly.py             # o calculo em si, sem I/O
   limits.py             # metas, faixas de cor e tolerancia
   periodos.py           # numero da semana e rotulos de periodo
+  faltas.py             # le a planilha de ausencias e filtra o que conta
+  presenteismo.py       # semanas do mes, ciclos 13->12 e a formula
 config/
   operations.py         # cadastro das operacoes
 ui/
@@ -172,6 +187,7 @@ tests/
   test_filtros.py        # Group By e Date Range na pagina do relatorio
   test_indicators.py     # calculo conferido contra as planilhas
   test_indicators_store.py  # gravacao e a tabela da aba Inicio
+  test_presenteismo.py   # faltas, periodos e o caminho ate o cubo
   test_api.py            # extracao unica, fila multipla e validacoes
 requirements.txt
 requirements-dev.txt      # o de cima + pytest

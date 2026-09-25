@@ -174,3 +174,111 @@ def test_contagem_de_faltas_por_gestor_e_periodo():
     assert presenteismo.contar_faltas(
         lancamentos, gestor="A", inicio="2026-09-07", fim="2026-09-13") == 2
     assert presenteismo.contar_faltas(lancamentos, inicio="2026-09-14") == 1
+
+
+# ---------------- Da tela ate o indicador ----------------
+
+@pytest.fixture
+def app(tmp_path, monkeypatch):
+    """Api com os stores numa pasta temporaria."""
+    import api as api_module
+    import headcount_store
+    import indicators_store
+
+    monkeypatch.setattr(headcount_store, "_caminho", lambda: str(tmp_path / "headcount.json"))
+    monkeypatch.setattr(indicators_store, "_store_path", lambda: str(tmp_path / "indicators.json"))
+    return api_module.Api(), headcount_store, indicators_store
+
+
+def _preparar(app, hc=25):
+    _, headcount_store, _ = app
+    gestor = headcount_store.adicionar_gestor("G05", "hugo_boss")
+    headcount_store.atualizar_gestor(gestor["id"], {"hc": hc})
+    with open(os.path.join(FIXTURES, "faltas_abs.xlsx"), "rb") as fh:
+        import base64
+        conteudo = base64.b64encode(fh.read()).decode()
+    app[0].import_faltas("faltas_abs.xlsx", conteudo)
+    return gestor
+
+
+def test_a_tela_junta_quadro_digitado_e_faltas_da_planilha(app):
+    api_obj = app[0]
+    _preparar(app)
+
+    tela = api_obj.get_headcount("hugo_boss", "semanal", "2026-09", "todas")
+    linha = tela["linhas"][0]
+
+    assert linha["gestor"] == "G05"
+    assert linha["hc"] == 25, "digitado na tela"
+    assert linha["faltas"] == 3, "veio da planilha"
+    assert linha["presenteismo"] == pytest.approx(1 - 24 / (25 * 22 * 8), abs=1e-6)
+
+
+def test_faltas_sao_roteadas_para_a_semana_pela_data(app):
+    api_obj = app[0]
+    _preparar(app)
+
+    # As faltas sao 08, 10 e 14 de setembro: duas na S2, uma na S3.
+    s2 = api_obj.get_headcount("hugo_boss", "semanal", "2026-09", "2026-09-S2")
+    s3 = api_obj.get_headcount("hugo_boss", "semanal", "2026-09", "2026-09-S3")
+    s1 = api_obj.get_headcount("hugo_boss", "semanal", "2026-09", "2026-09-S1")
+
+    assert s2["cards"]["faltas"] == 2
+    assert s3["cards"]["faltas"] == 1
+    assert s1["cards"]["faltas"] == 0
+
+
+def test_aplicar_leva_o_presenteismo_para_o_indicador(app):
+    """E o que destrava o CUBO na aba Inicio."""
+    api_obj, _, indicators_store = app
+    _preparar(app)
+
+    resposta = api_obj.aplicar_presenteismo("hugo_boss", "semanal", "2026-09", "2026-09-S2")
+
+    assert resposta["success"], resposta.get("message")
+    semanas = indicators_store.get_indicators("hugo_boss")["week"]
+    # A chave do indicador e a segunda-feira da semana, como o Summary
+    # identifica a semana.
+    assert "2026-09-07" in semanas
+    assert semanas["2026-09-07"]["presenteismo"] == resposta["presenteismo"]
+
+
+def test_o_cubo_sai_quando_o_presenteismo_chega(app):
+    api_obj, _, indicators_store = app
+    _preparar(app)
+    indicators_store.salvar_extracao("hugo_boss", "week", {
+        "2026-09-07": {"efetividade": 0.9638, "hora_direta": 0.8537},
+    })
+
+    assert indicators_store.get_indicators("hugo_boss")["week"]["2026-09-07"]["cubo"] is None
+
+    api_obj.aplicar_presenteismo("hugo_boss", "semanal", "2026-09", "2026-09-S2")
+
+    entrada = indicators_store.get_indicators("hugo_boss")["week"]["2026-09-07"]
+    assert entrada["cubo"] == pytest.approx(
+        0.9638 * 0.8537 * entrada["presenteismo"], abs=1e-6)
+
+
+def test_aplicar_sem_escolher_operacao_avisa(app):
+    api_obj = app[0]
+    _preparar(app)
+
+    resposta = api_obj.aplicar_presenteismo("todas", "semanal", "2026-09", "todas")
+
+    assert resposta["success"] is False
+    assert "operacao" in resposta["message"].lower()
+
+
+def test_funcao_cadastrada_passa_a_contar(app):
+    """A funcao nova vale ja na releitura, sem precisar reenviar o
+    arquivo."""
+    api_obj, headcount_store, _ = app
+    _preparar(app)
+
+    antes = api_obj.get_headcount("hugo_boss", "semanal", "2026-09", "todas")
+    assert antes["arquivo"]["resumo"]["consideradas"] == 3
+
+    resposta = api_obj.add_funcao("ASSISTENTE DE LOGISTICA")
+
+    assert resposta["success"]
+    assert resposta["resumo"]["consideradas"] == 4, "a linha de assistente passa a entrar"

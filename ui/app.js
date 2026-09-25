@@ -148,6 +148,8 @@ async function showPage(pageName) {
     await loadHistoryTable(historyTableBody);
   } else if (pageName === 'multi') {
     await loadHistoryTable(multiHistoryTableBody);
+  } else if (pageName === 'headcount') {
+    await carregarHeadcount();
   } else if (pageName === 'settings') {
     const check = await pywebview.api.validate_sharepoint_folder();
     folderPathEl.textContent = check.valid ? check.folder : 'Nenhuma pasta configurada ainda.';
@@ -902,3 +904,449 @@ logoutBtn.addEventListener('click', async () => {
 window.addEventListener('pywebviewready', () => {
   showLogin();
 });
+
+// ---------------------------------------------------------------
+// Aba Headcount: calculo de presenteismo
+// ---------------------------------------------------------------
+// O Python entrega a tela montada (filtros, cards, linhas e memoria);
+// aqui so se desenha e se devolvem as acoes. As faltas nunca sao
+// digitadas: vem da planilha.
+
+const hcOperacao = document.getElementById('hc-operacao');
+const hcMes = document.getElementById('hc-mes');
+const hcMesLabel = document.getElementById('hc-mes-label');
+const hcPeriodo = document.getElementById('hc-periodo');
+const hcPeriodoHint = document.getElementById('hc-periodo-hint');
+const hcVisualizacao = document.getElementById('hc-visualizacao');
+const hcCorpo = document.getElementById('hc-corpo');
+const hcTotal = document.getElementById('hc-total');
+const hcVazio = document.getElementById('hc-vazio');
+const hcStatus = document.getElementById('hc-status');
+const hcContador = document.getElementById('hc-contador');
+const hcTabelaTitulo = document.getElementById('hc-tabela-titulo');
+const hcFuncoes = document.getElementById('hc-funcoes');
+const hcDropzone = document.getElementById('hc-dropzone');
+const hcArquivoInput = document.getElementById('hc-arquivo-input');
+const hcArquivoInfo = document.getElementById('hc-arquivo-info');
+
+let hcEstado = { operacao: 'todas', visualizacao: 'semanal', mes: null, periodo_id: null };
+let hcTela = null;
+
+function hcPercentual(valor) {
+  if (valor === null || valor === undefined) return '-';
+  return (valor * 100).toFixed(2).replace('.', ',') + '%';
+}
+
+async function carregarHeadcount() {
+  hcTela = await pywebview.api.get_headcount(
+    hcEstado.operacao, hcEstado.visualizacao, hcEstado.mes, hcEstado.periodo_id);
+
+  hcEstado.mes = hcTela.mes;
+  hcEstado.periodo_id = hcTela.periodo_id;
+
+  desenharFiltrosHc(hcTela);
+  desenharCardsHc(hcTela);
+  desenharTabelaHc(hcTela);
+  desenharFormulaHc(hcTela);
+  desenharArquivoHc(hcTela);
+  desenharFuncoesHc(hcTela);
+}
+
+function preencherSelect(select, itens, selecionado, chave = 'id', rotulo = 'rotulo') {
+  select.innerHTML = '';
+  for (const item of itens) {
+    const opt = document.createElement('option');
+    opt.value = item[chave];
+    opt.textContent = item[rotulo];
+    if (item[chave] === selecionado) opt.selected = true;
+    select.appendChild(opt);
+  }
+}
+
+function desenharFiltrosHc(tela) {
+  preencherSelect(hcOperacao, tela.operacoes, tela.operacao, 'key', 'label');
+
+  const noMes = tela.visualizacao === 'mes';
+  // No Resultado do Mes o periodo e o ciclo da folha ponto, entao o
+  // seletor de mes vira o seletor de ciclo e o de semana nao se aplica.
+  hcMesLabel.textContent = noMes ? 'Periodo da Folha Ponto' : 'Mes vigente';
+  if (noMes) {
+    preencherSelect(hcMes, tela.periodos.map((p) => ({
+      id: p.id, rotulo: `${p.rotulo} · ${p.status}`,
+    })), tela.periodo_id);
+  } else {
+    preencherSelect(hcMes, tela.meses, tela.mes);
+  }
+
+  preencherSelect(hcPeriodo, noMes ? [] : tela.periodos, tela.periodo_id);
+  hcPeriodo.disabled = noMes;
+  hcPeriodoHint.hidden = !noMes;
+
+  for (const botao of hcVisualizacao.querySelectorAll('.seg-opcao')) {
+    botao.classList.toggle('active', botao.dataset.visualizacao === tela.visualizacao);
+  }
+}
+
+function desenharCardsHc(tela) {
+  const c = tela.cards;
+  document.getElementById('hc-card-operacao').textContent = c.operacao;
+  document.getElementById('hc-card-periodo').textContent = c.periodo;
+  document.getElementById('hc-card-hc').textContent = c.hc_total;
+  document.getElementById('hc-card-faltas').textContent = c.faltas;
+  document.getElementById('hc-card-horas').textContent = `${c.horas_perdidas}h perdidas`;
+  document.getElementById('hc-card-presenteismo').textContent = hcPercentual(c.presenteismo);
+  document.getElementById('hc-card-meta').textContent =
+    c.presenteismo === null ? 'Sem HC lancado' : (c.dentro_da_meta ? 'Dentro da meta' : 'Abaixo da meta');
+}
+
+function campoNumero(valor, gestorId, campo, passo) {
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  if (passo) input.step = passo;
+  input.value = valor;
+  input.addEventListener('change', async () => {
+    await pywebview.api.update_gestor(gestorId, { [campo]: input.value });
+    await carregarHeadcount();
+  });
+  return input;
+}
+
+function desenharTabelaHc(tela) {
+  hcTabelaTitulo.textContent = tela.visualizacao === 'mes'
+    ? 'Resultado do mes por gestor · folha ponto'
+    : 'Resultado semanal por gestor';
+  hcContador.textContent = `${tela.linhas.length} linha${tela.linhas.length === 1 ? '' : 's'}`;
+  hcVazio.hidden = tela.linhas.length > 0;
+
+  hcCorpo.innerHTML = '';
+  for (const linha of tela.linhas) {
+    const tr = document.createElement('tr');
+    if (linha.abaixo_da_meta) tr.classList.add('abaixo');
+
+    const tdGestor = document.createElement('td');
+    const caixa = document.createElement('div');
+    caixa.className = 'hc-gestor';
+    const avatar = document.createElement('span');
+    avatar.className = 'hc-avatar';
+    avatar.textContent = linha.iniciais;
+    const nomes = document.createElement('div');
+    const nome = document.createElement('div');
+    nome.className = 'hc-gestor-nome';
+    nome.textContent = linha.gestor;
+    const nota = document.createElement('div');
+    nota.className = 'hc-gestor-nota';
+    nota.textContent = `${linha.usuarios} usuario${linha.usuarios === 1 ? '' : 's'} na planilha`;
+    nomes.appendChild(nome);
+    nomes.appendChild(nota);
+    caixa.appendChild(avatar);
+    caixa.appendChild(nomes);
+    tdGestor.appendChild(caixa);
+    tr.appendChild(tdGestor);
+
+    const tdOperacao = document.createElement('td');
+    const op = document.createElement('div');
+    op.className = 'hc-operacao';
+    op.textContent = linha.operacao;
+    const per = document.createElement('div');
+    per.className = 'hc-periodo';
+    per.textContent = linha.periodo;
+    tdOperacao.appendChild(op);
+    tdOperacao.appendChild(per);
+    tr.appendChild(tdOperacao);
+
+    for (const [campo, passo] of [['hc', '1'], ['dias_uteis', '1'], ['horas_dia', '0.5']]) {
+      const td = document.createElement('td');
+      td.className = 'num';
+      td.appendChild(campoNumero(linha[campo], linha.id, campo, passo));
+      tr.appendChild(td);
+    }
+
+    const tdFaltas = document.createElement('td');
+    tdFaltas.className = 'num';
+    const faltas = document.createElement('span');
+    faltas.className = 'hc-faltas';
+    const valorFaltas = document.createElement('span');
+    valorFaltas.className = 'hc-faltas-valor';
+    valorFaltas.textContent = linha.faltas;
+    const selo = document.createElement('span');
+    selo.className = 'hc-selo';
+    selo.textContent = 'XLS';
+    selo.title = 'Veio da planilha de faltas, nao e digitado';
+    faltas.appendChild(valorFaltas);
+    faltas.appendChild(selo);
+    tdFaltas.appendChild(faltas);
+    tr.appendChild(tdFaltas);
+
+    const tdResultado = document.createElement('td');
+    tdResultado.className = 'num';
+    const resultado = document.createElement('span');
+    resultado.className = 'hc-resultado';
+    const bolinha = document.createElement('span');
+    bolinha.className = 'hc-bolinha';
+    resultado.appendChild(bolinha);
+    resultado.appendChild(document.createTextNode(hcPercentual(linha.presenteismo)));
+    tdResultado.appendChild(resultado);
+    tr.appendChild(tdResultado);
+
+    hcCorpo.appendChild(tr);
+  }
+
+  hcTotal.innerHTML = '';
+  if (!tela.linhas.length) return;
+  const t = tela.total;
+  const tr = document.createElement('tr');
+  const celulas = [
+    'TOTAL CONSOLIDADO',
+    `${t.gestores} gestor${t.gestores === 1 ? '' : 'es'}`,
+    t.hc, t.dias_uteis, t.horas_dia, t.faltas,
+  ];
+  celulas.forEach((texto, indice) => {
+    const td = document.createElement('td');
+    if (indice >= 2) td.className = 'num';
+    td.textContent = texto;
+    tr.appendChild(td);
+  });
+  const tdTotal = document.createElement('td');
+  tdTotal.className = 'num';
+  const pill = document.createElement('span');
+  pill.className = 'hc-total-pill';
+  pill.textContent = hcPercentual(t.presenteismo);
+  tdTotal.appendChild(pill);
+  tr.appendChild(tdTotal);
+  hcTotal.appendChild(tr);
+}
+
+function desenharFormulaHc(tela) {
+  const m = tela.memoria;
+  document.getElementById('hc-mem-disponiveis').textContent = `${m.horas_disponiveis} h`;
+  document.getElementById('hc-mem-perdidas').textContent = `${m.horas_perdidas} h`;
+  document.getElementById('hc-mem-efetivas').textContent = `${m.horas_efetivas} h`;
+  document.getElementById('hc-mem-resultado').textContent = hcPercentual(m.presenteismo);
+  document.getElementById('hc-mem-meta').textContent = hcPercentual(m.meta);
+}
+
+function desenharFuncoesHc(tela) {
+  hcFuncoes.innerHTML = '';
+  hcFuncoes.hidden = !tela.funcoes.length;
+  for (const funcao of tela.funcoes) {
+    const chip = document.createElement('span');
+    chip.className = 'hc-funcao-chip';
+    chip.appendChild(document.createTextNode(funcao));
+    const remover = document.createElement('button');
+    remover.type = 'button';
+    remover.textContent = '×';
+    remover.setAttribute('aria-label', `Remover ${funcao}`);
+    remover.addEventListener('click', async () => {
+      await pywebview.api.remove_funcao(funcao);
+      await carregarHeadcount();
+    });
+    chip.appendChild(remover);
+    hcFuncoes.appendChild(chip);
+  }
+}
+
+function desenharArquivoHc(tela) {
+  const arquivo = tela.arquivo;
+  if (!arquivo) {
+    hcArquivoInfo.innerHTML =
+      '<p class="hc-arquivo-vazio">Sem planilha, as faltas ficam zeradas e o ' +
+      'presenteismo aparece como 100%.</p>';
+    hcStatus.textContent = 'Nenhuma planilha de faltas carregada.';
+    return;
+  }
+
+  const r = arquivo.resumo;
+  const kb = Math.max(1, Math.round(arquivo.tamanho / 1024));
+  const quando = new Date(arquivo.importado_em).toLocaleString('pt-BR');
+
+  const partes = [];
+  partes.push(`<div class="hc-arquivo-nome">${arquivo.nome}</div>`);
+  partes.push(`<div class="hc-arquivo-meta">${kb} KB · lido em ${quando}</div>`);
+  partes.push('<div class="hc-contadores">' +
+    `<span class="hc-contador-item"><strong>${r.linhas}</strong>linhas lidas</span>` +
+    `<span class="hc-contador-item"><strong>${r.consideradas}</strong>faltas validas</span>` +
+    `<span class="hc-contador-item"><strong>${r.gestores}</strong>gestores</span>` +
+    `<span class="hc-contador-item"><strong>${r.dias}</strong>dias faltados</span>` +
+    '</div>');
+
+  // O que foi descartado e tao importante quanto o que entrou: um
+  // filtro derrubando o arquivo inteiro precisa aparecer.
+  const descartes = [];
+  if (r.motivo) descartes.push(`${r.motivo} por motivo (ferias)`);
+  if (r.contrato) descartes.push(`${r.contrato} por contrato (temporario)`);
+  if (r.funcao) descartes.push(`${r.funcao} por funcao fora do quadro`);
+  if (r.sem_data) descartes.push(`${r.sem_data} sem data`);
+  if (descartes.length) {
+    partes.push(`<p class="hc-descartadas">Fora da conta: ${descartes.join(' · ')}.</p>`);
+  }
+
+  if (arquivo.cobertura.length) {
+    partes.push('<div class="hc-cobertura">');
+    for (const item of arquivo.cobertura) {
+      const marca = item.selecionado ? ' selecionado' : '';
+      const status = item.status ? ` · ${item.status}` : '';
+      partes.push(`<span class="hc-cobertura-item${marca}">` +
+        `<span>${item.rotulo}${status}</span>` +
+        `<span>${item.linhas} linhas · ${item.dias} dias</span></span>`);
+    }
+    partes.push('</div>');
+  }
+
+  partes.push('<button type="button" class="secondary" id="hc-remover-arquivo" ' +
+    'style="width:auto;height:38px;padding:0 14px;margin-top:16px;font-size:13px;">Remover</button>');
+
+  hcArquivoInfo.innerHTML = partes.join('');
+  document.getElementById('hc-remover-arquivo').addEventListener('click', async () => {
+    await pywebview.api.clear_faltas();
+    await carregarHeadcount();
+  });
+
+  hcStatus.textContent =
+    `Faltas importadas de ${arquivo.nome} · ${r.linhas} linhas · ultima leitura ${quando}`;
+}
+
+// ---------------- Acoes ----------------
+
+hcOperacao.addEventListener('change', async () => {
+  hcEstado.operacao = hcOperacao.value;
+  await carregarHeadcount();
+});
+
+hcMes.addEventListener('change', async () => {
+  // No Resultado do Mes este seletor escolhe o ciclo, nao o mes.
+  if (hcEstado.visualizacao === 'mes') {
+    hcEstado.periodo_id = hcMes.value;
+  } else {
+    hcEstado.mes = hcMes.value;
+    hcEstado.periodo_id = null;
+  }
+  await carregarHeadcount();
+});
+
+hcPeriodo.addEventListener('change', async () => {
+  hcEstado.periodo_id = hcPeriodo.value;
+  await carregarHeadcount();
+});
+
+hcVisualizacao.addEventListener('click', async (evento) => {
+  const botao = evento.target.closest('.seg-opcao');
+  if (!botao) return;
+  hcEstado.visualizacao = botao.dataset.visualizacao;
+  hcEstado.periodo_id = null;
+  await carregarHeadcount();
+});
+
+function abrirFaixa(qual) {
+  const gestor = document.getElementById('hc-inline-gestor');
+  const funcao = document.getElementById('hc-inline-funcao');
+  gestor.hidden = qual !== 'gestor';
+  funcao.hidden = qual !== 'funcao';
+  const campo = document.getElementById(qual === 'gestor' ? 'hc-novo-gestor' : 'hc-nova-funcao');
+  if (qual) { campo.value = ''; campo.focus(); }
+}
+
+document.getElementById('hc-add-gestor').addEventListener('click', () => abrirFaixa('gestor'));
+document.getElementById('hc-add-funcao').addEventListener('click', () => abrirFaixa('funcao'));
+for (const botao of document.querySelectorAll('[data-cancelar]')) {
+  botao.addEventListener('click', () => abrirFaixa(null));
+}
+
+async function confirmarFaixa(qual, valor) {
+  const resposta = qual === 'gestor'
+    ? await pywebview.api.add_gestor(valor, hcEstado.operacao)
+    : await pywebview.api.add_funcao(valor);
+  if (!resposta.success) {
+    hcStatus.textContent = resposta.message;
+    return;
+  }
+  abrirFaixa(null);
+  await carregarHeadcount();
+  hcStatus.textContent = qual === 'gestor'
+    ? `${valor} cadastrado. O HC sera preenchido aqui; as faltas, na proxima leitura da planilha.`
+    : `${valor} passa a contar como falta. A planilha foi relida com a regra nova.`;
+}
+
+for (const [id, qual] of [['hc-novo-gestor', 'gestor'], ['hc-nova-funcao', 'funcao']]) {
+  document.getElementById(id).addEventListener('keydown', async (evento) => {
+    if (evento.key === 'Enter') {
+      evento.preventDefault();
+      const valor = evento.target.value.trim();
+      if (valor) await confirmarFaixa(qual, valor);
+    } else if (evento.key === 'Escape') {
+      abrirFaixa(null);
+    }
+  });
+}
+
+document.getElementById('hc-limpar').addEventListener('click', async () => {
+  await pywebview.api.clear_faltas();
+  await carregarHeadcount();
+  hcStatus.textContent = 'Faltas removidas. Sem planilha, o presenteismo volta a 100%.';
+});
+
+document.getElementById('hc-calcular').addEventListener('click', async () => {
+  const resposta = await pywebview.api.aplicar_presenteismo(
+    hcEstado.operacao, hcEstado.visualizacao, hcEstado.mes, hcEstado.periodo_id);
+  hcStatus.textContent = resposta.message;
+  if (resposta.success) await carregarHeadcount();
+});
+
+document.getElementById('hc-toggle-formula').addEventListener('click', (evento) => {
+  const corpo = document.getElementById('hc-formula-corpo');
+  corpo.hidden = !corpo.hidden;
+  evento.target.textContent = corpo.hidden ? 'mostrar' : 'ocultar';
+});
+
+document.getElementById('hc-ajuda-faltas').addEventListener('click', () => {
+  hcStatus.textContent =
+    'As faltas vem da planilha de ausencias: uma linha por dia de falta, com ' +
+    'GESTOR_NAME, NOME, FUNCAO, MOTIVO, CONTRACT e ABS_DATE. Ferias, temporarios ' +
+    'e funcoes fora do quadro nao entram.';
+});
+
+// ---------------- Arquivo ----------------
+
+async function enviarArquivoFaltas(arquivo) {
+  if (!arquivo) return;
+  hcStatus.textContent = `Lendo ${arquivo.name}...`;
+
+  const base64 = await new Promise((resolve, reject) => {
+    const leitor = new FileReader();
+    leitor.onload = () => resolve(leitor.result);
+    leitor.onerror = () => reject(leitor.error);
+    // Vai como conteudo e nao como caminho: dentro da janela do app o
+    // navegador nao entrega o caminho do arquivo arrastado.
+    leitor.readAsDataURL(arquivo);
+  });
+
+  const resposta = await pywebview.api.import_faltas(arquivo.name, base64);
+  if (!resposta.success) {
+    hcStatus.textContent = resposta.message;
+    return;
+  }
+  await carregarHeadcount();
+}
+
+hcDropzone.addEventListener('click', () => hcArquivoInput.click());
+hcDropzone.addEventListener('keydown', (evento) => {
+  if (evento.key === 'Enter' || evento.key === ' ') {
+    evento.preventDefault();
+    hcArquivoInput.click();
+  }
+});
+hcArquivoInput.addEventListener('change', () => enviarArquivoFaltas(hcArquivoInput.files[0]));
+
+for (const evento of ['dragenter', 'dragover']) {
+  hcDropzone.addEventListener(evento, (e) => {
+    e.preventDefault();
+    hcDropzone.classList.add('arrastando');
+  });
+}
+for (const evento of ['dragleave', 'drop']) {
+  hcDropzone.addEventListener(evento, (e) => {
+    e.preventDefault();
+    hcDropzone.classList.remove('arrastando');
+  });
+}
+hcDropzone.addEventListener('drop', (e) => enviarArquivoFaltas(e.dataTransfer.files[0]));

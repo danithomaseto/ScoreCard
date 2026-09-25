@@ -51,11 +51,20 @@ FUNCOES_ACEITAS = (
 )
 
 
-def _funcao_conta(funcao):
+def _funcao_conta(funcao, extras=None):
+    """extras sao as funcoes cadastradas na tela de Headcount, somadas
+    aos padroes acima. Servem pra quando aparece um cargo com nome
+    proprio que nenhum padrao pega — sem precisar mexer no codigo."""
     texto = normalizar(funcao)
     if not texto:
         return True  # sem funcao informada, nao da pra excluir
-    return any(padrao.search(texto) for padrao in FUNCOES_ACEITAS)
+    if any(padrao.search(texto) for padrao in FUNCOES_ACEITAS):
+        return True
+    for extra in extras or ():
+        alvo = normalizar(extra)
+        if alvo and alvo in texto:
+            return True
+    return False
 
 
 def _data_iso(valor):
@@ -108,7 +117,7 @@ def _achar_cabecalho(linhas):
     return None
 
 
-def ler(caminho):
+def ler(caminho, funcoes_extras=None):
     """Devolve {"faltas": [...], "resumo": {...}}.
 
     Cada falta e {"gestor", "usuario", "data", "funcao", "motivo",
@@ -164,7 +173,7 @@ def ler(caminho):
         if contrato and contrato not in CONTRATOS_ACEITOS:
             resumo["contrato"] += 1
             continue
-        if not _funcao_conta(campo("funcao")):
+        if not _funcao_conta(campo("funcao"), funcoes_extras):
             resumo["funcao"] += 1
             continue
 

@@ -417,9 +417,175 @@
       </section>
 
       <section id="page-headcount" class="page" hidden>
-        <div class="card wide">
-          <h2>Headcount</h2>
-          <p class="subtitle">Em breve.</p>
+        <div class="page-wide-wrap">
+          <h2 class="page-heading">Calculo de Presenteismo</h2>
+          <p class="subtitle">As faltas vem da planilha de ausencias; o quadro e digitado aqui.</p>
+
+          <!-- Filtros -->
+          <div class="card filtros-card">
+            <div class="filtros-linha">
+              <div class="filtro-campo">
+                <label for="hc-operacao">Operacao</label>
+                <select id="hc-operacao"></select>
+              </div>
+              <div class="filtro-campo">
+                <label for="hc-mes" id="hc-mes-label">Mes vigente</label>
+                <select id="hc-mes"></select>
+              </div>
+              <div class="filtro-campo">
+                <label for="hc-periodo">Semana do mes vigente</label>
+                <select id="hc-periodo"></select>
+                <p class="filtro-hint" id="hc-periodo-hint" hidden>
+                  No Resultado do Mes o periodo e o ciclo da folha ponto, escolhido acima.
+                </p>
+              </div>
+              <div class="filtro-campo">
+                <label>Visualizacao</label>
+                <div class="segmentado" id="hc-visualizacao">
+                  <button type="button" class="seg-opcao active" data-visualizacao="semanal">Semanal</button>
+                  <button type="button" class="seg-opcao" data-visualizacao="mes">Resultado do Mes</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cards de indicadores -->
+          <div class="hc-cards">
+            <div class="hc-card">
+              <div class="hc-card-label">Operacao selecionada</div>
+              <div class="hc-card-valor" id="hc-card-operacao">-</div>
+            </div>
+            <div class="hc-card">
+              <div class="hc-card-label">Periodo</div>
+              <div class="hc-card-valor" id="hc-card-periodo">-</div>
+            </div>
+            <div class="hc-card">
+              <div class="hc-card-label">HC total</div>
+              <div class="hc-card-valor" id="hc-card-hc">0</div>
+            </div>
+            <div class="hc-card">
+              <div class="hc-card-label">Faltas (planilha)</div>
+              <div class="hc-card-valor vermelho" id="hc-card-faltas">0</div>
+              <div class="hc-card-nota" id="hc-card-horas">0h perdidas</div>
+            </div>
+            <div class="hc-card destaque">
+              <div class="hc-card-label">Presenteismo</div>
+              <div class="hc-card-valor" id="hc-card-presenteismo">-</div>
+              <div class="hc-card-nota" id="hc-card-meta">-</div>
+            </div>
+          </div>
+
+          <!-- Tabela por gestor -->
+          <div class="card hc-tabela-card">
+            <div class="hc-tabela-topo">
+              <div>
+                <strong id="hc-tabela-titulo">Resultado por gestor</strong>
+                <span class="hc-contador" id="hc-contador">0 linhas</span>
+              </div>
+              <div class="hc-acoes">
+                <button type="button" class="secondary" id="hc-add-gestor">+ Adicionar Gestor</button>
+                <button type="button" class="secondary" id="hc-add-funcao">+ Adicionar Funcao</button>
+                <button type="button" class="secondary perigo" id="hc-limpar">Limpar Faltas</button>
+                <button type="button" id="hc-calcular">Calcular Presenteismo</button>
+              </div>
+            </div>
+
+            <div class="hc-inline" id="hc-inline-gestor" hidden>
+              <label for="hc-novo-gestor">Nome do gestor</label>
+              <input type="text" id="hc-novo-gestor" placeholder="Como aparece na planilha de faltas">
+              <span class="hc-inline-nota">A operacao vem do filtro. HC e faltas comecam zerados.</span>
+              <button type="button" class="secondary" data-cancelar="gestor">Cancelar</button>
+            </div>
+
+            <div class="hc-inline" id="hc-inline-funcao" hidden>
+              <label for="hc-nova-funcao">Funcao que conta como falta</label>
+              <input type="text" id="hc-nova-funcao" placeholder="Ex.: Operador de Ponte Rolante">
+              <span class="hc-inline-nota">Somada aos padroes ja reconhecidos (Log I, Log II e Operador).</span>
+              <button type="button" class="secondary" data-cancelar="funcao">Cancelar</button>
+            </div>
+
+            <div class="hc-funcoes" id="hc-funcoes" hidden></div>
+
+            <div class="table-wrap">
+              <table class="hc-tabela">
+                <thead>
+                  <tr>
+                    <th scope="col">Gestor</th>
+                    <th scope="col">Operacao · Periodo</th>
+                    <th scope="col" class="num">HC</th>
+                    <th scope="col" class="num">Dias uteis</th>
+                    <th scope="col" class="num">Horas/dia</th>
+                    <th scope="col" class="num">
+                      Faltas (dias)
+                      <button type="button" class="hc-ajuda" id="hc-ajuda-faltas" aria-label="De onde vem as faltas">?</button>
+                    </th>
+                    <th scope="col" class="num">Presenteismo</th>
+                  </tr>
+                </thead>
+                <tbody id="hc-corpo"></tbody>
+                <tfoot id="hc-total"></tfoot>
+              </table>
+            </div>
+
+            <p class="hc-vazio" id="hc-vazio" hidden>
+              Nenhum gestor cadastrado nesta operacao. Use "+ Adicionar Gestor" com o
+              nome exatamente como ele aparece na planilha de faltas.
+            </p>
+
+            <div class="hc-status" id="hc-status">Nenhuma planilha de faltas carregada.</div>
+          </div>
+
+          <!-- Formula -->
+          <div class="card hc-formula-card" id="hc-formula-card">
+            <div class="hc-formula-topo">
+              <strong>Como o numero foi calculado</strong>
+              <button type="button" class="link-btn" id="hc-toggle-formula">ocultar</button>
+            </div>
+            <div class="hc-formula-corpo" id="hc-formula-corpo">
+              <pre class="hc-formula"><code>Presenteismo = 1 &minus; ((Faltas &times; Horas/Dia) &divide; ((HC &times; Dias Uteis) &times; Horas/Dia))</code></pre>
+              <dl class="hc-memoria">
+                <div><dt>Horas disponiveis</dt><dd id="hc-mem-disponiveis">-</dd></div>
+                <div><dt>Horas perdidas</dt><dd id="hc-mem-perdidas">-</dd></div>
+                <div><dt>Horas efetivas</dt><dd id="hc-mem-efetivas">-</dd></div>
+                <div><dt>Resultado</dt><dd id="hc-mem-resultado">-</dd></div>
+                <div><dt>Meta vigente</dt><dd id="hc-mem-meta">-</dd></div>
+              </dl>
+            </div>
+          </div>
+
+          <!-- Arquivo de faltas -->
+          <div class="card hc-arquivo-card">
+            <strong>Lancar arquivo de faltas</strong>
+            <div class="hc-arquivo-colunas">
+              <div>
+                <div class="hc-dropzone" id="hc-dropzone" tabindex="0" role="button"
+                     aria-label="Escolher a planilha de faltas">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="hc-drop-icone">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  <p class="hc-drop-titulo">Arraste a planilha aqui ou clique para escolher</p>
+                  <p class="hc-drop-nota">.xlsx, .xls ou .csv, ate 10 MB</p>
+                  <div class="hc-chips">
+                    <span class="hc-chip">GESTOR_NAME</span>
+                    <span class="hc-chip">NOME</span>
+                    <span class="hc-chip">FUNCAO</span>
+                    <span class="hc-chip">MOTIVO</span>
+                    <span class="hc-chip">CONTRACT</span>
+                    <span class="hc-chip">ABS_DATE</span>
+                  </div>
+                </div>
+                <input type="file" id="hc-arquivo-input" accept=".xlsx,.xls,.csv" hidden>
+              </div>
+
+              <div class="hc-arquivo-info" id="hc-arquivo-info">
+                <p class="hc-arquivo-vazio" id="hc-arquivo-vazio">
+                  Sem planilha, as faltas ficam zeradas e o presenteismo aparece como 100%.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

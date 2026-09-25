@@ -3,18 +3,25 @@ pywebview.api.<metodo>(...). Cada metodo publico aqui vira uma funcao
 chamavel do JavaScript.
 """
 
+import base64
 import json
 import os
 import subprocess
 import sys
+import tempfile
 import threading
 
 import webview
 
+from datetime import date, timedelta
+
 from automation import generic
 from config.operations import GROUP_BY_OPTIONS, OPERATIONS
+import headcount
+import headcount_store
 import history_store
-from indicators import limits, periodos, reader, weekly
+from indicators import faltas as faltas_reader
+from indicators import limits, periodos, presenteismo, reader, weekly
 import indicators_store
 import settings_store
 
@@ -413,6 +420,172 @@ class Api:
             "colunas": colunas,
             "linhas": linhas,
         }
+
+    # ---------------- Headcount / presenteismo ----------------
+
+    def get_headcount(self, operacao=None, visualizacao="semanal", mes=None, periodo_id=None):
+        """O estado inteiro da tela de Headcount, pronto pra desenhar."""
+        return headcount.montar(
+            operacao=operacao or headcount.TODAS,
+            visualizacao=visualizacao or "semanal",
+            mes=mes,
+            periodo_id=periodo_id,
+        )
+
+    def add_gestor(self, nome, operacao):
+        """A operacao vem do filtro ativo; quando ele esta em "todas",
+        cai na primeira da lista, porque um gestor precisa pertencer a
+        alguma."""
+        if operacao in (None, "", headcount.TODAS):
+            operacao = next(iter(OPERATIONS))
+        try:
+            gestor = headcount_store.adicionar_gestor(nome, operacao)
+        except ValueError as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True, "gestor": gestor}
+
+    def update_gestor(self, gestor_id, campos):
+        try:
+            headcount_store.atualizar_gestor(gestor_id, campos or {})
+        except (ValueError, TypeError) as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True}
+
+    def remove_gestor(self, gestor_id):
+        return {"success": headcount_store.remover_gestor(gestor_id)}
+
+    def add_funcao(self, nome):
+        """Uma funcao a mais que passa a contar como falta. Vale na
+        proxima leitura da planilha, entao a importacao e refeita na
+        hora se houver arquivo carregado."""
+        try:
+            funcoes = headcount_store.adicionar_funcao(nome)
+        except ValueError as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True, "funcoes": funcoes, **self._reprocessar_faltas()}
+
+    def remove_funcao(self, nome):
+        funcoes = headcount_store.remover_funcao(nome)
+        return {"success": True, "funcoes": funcoes, **self._reprocessar_faltas()}
+
+    def import_faltas(self, nome_arquivo, conteudo_base64):
+        """Recebe a planilha da tela (arrastada ou escolhida) como
+        conteudo, nao como caminho: dentro da janela do app o navegador
+        nao entrega o caminho do arquivo arrastado."""
+        try:
+            bruto = base64.b64decode((conteudo_base64 or "").split(",")[-1])
+        except Exception:  # noqa: BLE001 - conteudo invalido vindo da tela
+            return {"success": False, "message": "Nao consegui ler o arquivo enviado."}
+
+        if len(bruto) > 10 * 1024 * 1024:
+            return {"success": False, "message": "O arquivo passa de 10 MB."}
+
+        extensao = os.path.splitext(nome_arquivo or "")[1] or ".xlsx"
+        caminho = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix=extensao, delete=False) as fh:
+                fh.write(bruto)
+                caminho = fh.name
+            lido = faltas_reader.ler(caminho, headcount_store.listar_funcoes())
+        except ValueError as exc:
+            return {"success": False, "message": str(exc)}
+        except Exception as exc:  # noqa: BLE001 - arquivo fora do esperado
+            return {"success": False, "message": f"Nao deu pra ler a planilha: {exc}"}
+        finally:
+            if caminho and os.path.exists(caminho):
+                try:
+                    os.remove(caminho)
+                except OSError:
+                    pass
+
+        arquivo = headcount_store.salvar_faltas(nome_arquivo, len(bruto), lido)
+        self._ultimo_arquivo_faltas = (nome_arquivo, bruto)
+        return {"success": True, "resumo": arquivo["resumo"]}
+
+    def _reprocessar_faltas(self):
+        """Refaz a leitura do ultimo arquivo com os filtros atuais."""
+        guardado = getattr(self, "_ultimo_arquivo_faltas", None)
+        if not guardado:
+            return {}
+        nome, bruto = guardado
+        caminho = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                    suffix=os.path.splitext(nome)[1] or ".xlsx", delete=False) as fh:
+                fh.write(bruto)
+                caminho = fh.name
+            lido = faltas_reader.ler(caminho, headcount_store.listar_funcoes())
+        except Exception:  # noqa: BLE001
+            return {}
+        finally:
+            if caminho and os.path.exists(caminho):
+                try:
+                    os.remove(caminho)
+                except OSError:
+                    pass
+        headcount_store.salvar_faltas(nome, len(bruto), lido)
+        return {"resumo": lido["resumo"]}
+
+    def clear_faltas(self):
+        headcount_store.limpar_faltas()
+        self._ultimo_arquivo_faltas = None
+        return {"success": True}
+
+    def save_headcount_config(self, campos):
+        return {"success": True, "config": headcount_store.salvar_config(campos or {})}
+
+    def aplicar_presenteismo(self, operacao=None, visualizacao="semanal", mes=None,
+                             periodo_id=None):
+        """Leva o presenteismo calculado pro indicador, que e o que
+        destrava o CUBO na aba Inicio."""
+        tela = headcount.montar(
+            operacao=operacao or headcount.TODAS,
+            visualizacao=visualizacao or "semanal",
+            mes=mes,
+            periodo_id=periodo_id,
+        )
+        valor = tela["cards"]["presenteismo"]
+        if valor is None:
+            return {"success": False,
+                    "message": "Sem HC ou dias uteis, nao da pra calcular o presenteismo."}
+        if tela["operacao"] == headcount.TODAS:
+            return {"success": False,
+                    "message": "Escolha uma operacao: o indicador e gravado por operacao."}
+
+        gravadas = self._gravar_presenteismo(tela, valor)
+        return {
+            "success": True,
+            "presenteismo": valor,
+            "periodos": gravadas,
+            "message": (f"Presenteismo de {limits.formatar(valor)} aplicado a "
+                        f"{gravadas} periodo(s)."),
+        }
+
+    @staticmethod
+    def _gravar_presenteismo(tela, valor):
+        """Grava pela porta de entrada manual do indicators_store, que
+        preserva o que veio da extracao."""
+        operacao = tela["operacao"]
+        if tela["visualizacao"] == "mes":
+            chave = tela["periodo_id"][:7] if tela["periodo_id"] else None
+            if not chave:
+                return 0
+            indicators_store.salvar_manual(operacao, "month", chave,
+                                           {"presenteismo": valor})
+            return 1
+
+        # No semanal, a chave do indicador e a segunda-feira da semana,
+        # que e como o relatorio do Summary identifica a semana.
+        alvos = [p for p in tela["periodos"] if p["id"] != headcount.TODAS]
+        if tela["periodo_id"] != headcount.TODAS:
+            alvos = [p for p in alvos if p["id"] == tela["periodo_id"]]
+
+        for periodo in alvos:
+            inicio = date.fromisoformat(periodo["inicio"])
+            segunda = inicio - timedelta(days=inicio.weekday())
+            indicators_store.salvar_manual(operacao, "week", segunda.isoformat(),
+                                           {"presenteismo": valor})
+        return len(alvos)
 
     # ---------------- Historico ----------------
 
