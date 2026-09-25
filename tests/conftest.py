@@ -83,3 +83,16 @@ def isolated_history(tmp_path, monkeypatch):
     import history_store
 
     return history_store
+
+
+@pytest.fixture(autouse=True)
+def dados_do_app_isolados(tmp_path, monkeypatch):
+    """Todo teste roda com a pasta de dados do app numa pasta temporaria.
+
+    Os stores (settings, historico, indicadores e headcount) acham o
+    arquivo pelo APPDATA na hora de ler. Sem isto, um teste que monta a
+    aba Inicio leria os gestores e as faltas de verdade de quem roda os
+    testes — e poderia passar ou falhar conforme a maquina.
+    """
+    monkeypatch.setenv("APPDATA", str(tmp_path / "appdata"))
+    monkeypatch.setenv("HOME", str(tmp_path / "appdata"))

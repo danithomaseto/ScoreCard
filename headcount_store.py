@@ -162,18 +162,49 @@ def remover_funcao(nome):
 
 # ---------------- Faltas ----------------
 
-def salvar_faltas(nome_arquivo, tamanho, lido):
-    """Guarda o resultado da planilha importada, ja filtrada."""
+def salvar_faltas(nome_arquivo, tamanho, linhas):
+    """Guarda as linhas da planilha **sem filtro**.
+
+    O filtro roda na leitura (ver arquivo()), com as funcoes cadastradas
+    naquele momento. Guardar ja filtrado congelaria a regra da hora da
+    importacao: uma funcao cadastrada depois so valeria reenviando o
+    arquivo.
+    """
     dados = ler()
     dados["arquivo"] = {
         "nome": nome_arquivo,
         "tamanho": tamanho,
         "importado_em": datetime.now().isoformat(timespec="seconds"),
-        "resumo": lido["resumo"],
-        "faltas": lido["faltas"],
+        "linhas": linhas,
     }
     _gravar(dados)
-    return dados["arquivo"]
+    return arquivo(dados)
+
+
+def arquivo(dados=None):
+    """O arquivo importado com as faltas e o resumo calculados agora,
+    com as funcoes cadastradas agora. None se nao ha arquivo."""
+    from indicators import faltas as faltas_reader
+
+    dados = dados or ler()
+    guardado = dados.get("arquivo")
+    if not guardado:
+        return None
+
+    if "linhas" in guardado:
+        lido = faltas_reader.filtrar(guardado["linhas"], dados.get("funcoes"))
+    else:
+        # Arquivo importado por uma versao anterior, que guardava as
+        # faltas ja filtradas. Continua valendo ate a proxima importacao.
+        lido = {"faltas": guardado.get("faltas", []), "resumo": guardado.get("resumo", {})}
+
+    return {
+        "nome": guardado["nome"],
+        "tamanho": guardado["tamanho"],
+        "importado_em": guardado["importado_em"],
+        "faltas": lido["faltas"],
+        "resumo": lido["resumo"],
+    }
 
 
 def limpar_faltas():
@@ -183,8 +214,8 @@ def limpar_faltas():
 
 
 def faltas():
-    arquivo = ler()["arquivo"]
-    return (arquivo or {}).get("faltas", [])
+    atual = arquivo()
+    return atual["faltas"] if atual else []
 
 
 # ---------------- Configuracao ----------------

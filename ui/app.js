@@ -1028,6 +1028,7 @@ function campoNumero(valor, gestorId, campo, passo) {
   input.addEventListener('change', async () => {
     await pywebview.api.update_gestor(gestorId, { [campo]: input.value });
     await carregarHeadcount();
+    hcStatus.textContent = 'Quadro atualizado. A aba Inicio ja reflete a mudanca.';
   });
   return input;
 }
@@ -1185,6 +1186,14 @@ function desenharArquivoHc(tela) {
   const partes = [];
   partes.push(`<div class="hc-arquivo-nome">${arquivo.nome}</div>`);
   partes.push(`<div class="hc-arquivo-meta">${kb} KB · lido em ${quando}</div>`);
+  if (arquivo.cobre_de && arquivo.cobre_ate) {
+    // A planilha so tem linha em dia com ausencia; o periodo coberto e
+    // deduzido. Mostrar evita a duvida de por que uma semana ficou sem
+    // numero na aba Inicio.
+    const data = (iso) => iso.split('-').reverse().join('/');
+    partes.push(`<div class="hc-arquivo-meta">Cobre de ${data(arquivo.cobre_de)} ` +
+      `a ${data(arquivo.cobre_ate)}</div>`);
+  }
   partes.push('<div class="hc-contadores">' +
     `<span class="hc-contador-item"><strong>${r.linhas}</strong>linhas lidas</span>` +
     `<span class="hc-contador-item"><strong>${r.consideradas}</strong>faltas validas</span>` +
@@ -1285,8 +1294,8 @@ async function confirmarFaixa(qual, valor) {
   abrirFaixa(null);
   await carregarHeadcount();
   hcStatus.textContent = qual === 'gestor'
-    ? `${valor} cadastrado. O HC sera preenchido aqui; as faltas, na proxima leitura da planilha.`
-    : `${valor} passa a contar como falta. A planilha foi relida com a regra nova.`;
+    ? `${valor} cadastrado. Preencha o HC: as faltas ja vem da planilha carregada.`
+    : `${valor} passa a contar como falta, ja nesta planilha e na aba Inicio.`;
 }
 
 for (const [id, qual] of [['hc-novo-gestor', 'gestor'], ['hc-nova-funcao', 'funcao']]) {
@@ -1307,11 +1316,14 @@ document.getElementById('hc-limpar').addEventListener('click', async () => {
   hcStatus.textContent = 'Faltas removidas. Sem planilha, o presenteismo volta a 100%.';
 });
 
+// O presenteismo nao precisa mais ser "aplicado": a aba Inicio calcula
+// na hora, a partir do quadro e das faltas. O botao leva direto pra la,
+// ja na operacao que esta aberta aqui.
 document.getElementById('hc-calcular').addEventListener('click', async () => {
-  const resposta = await pywebview.api.aplicar_presenteismo(
-    hcEstado.operacao, hcEstado.visualizacao, hcEstado.mes, hcEstado.periodo_id);
-  hcStatus.textContent = resposta.message;
-  if (resposta.success) await carregarHeadcount();
+  if (hcEstado.operacao && hcEstado.operacao !== 'todas') {
+    homeOperationSelect.value = hcEstado.operacao;
+  }
+  await showPage('home');
 });
 
 document.getElementById('hc-toggle-formula').addEventListener('click', (evento) => {
@@ -1348,6 +1360,8 @@ async function enviarArquivoFaltas(arquivo) {
     return;
   }
   await carregarHeadcount();
+  hcStatus.textContent =
+    `${arquivo.name} lido. O presenteismo de cada semana e de cada ciclo ja esta na aba Inicio.`;
 }
 
 hcDropzone.addEventListener('click', () => hcArquivoInput.click());

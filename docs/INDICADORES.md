@@ -881,3 +881,32 @@ fica como esta.
   Chromium e Node a cada abertura, que vem da regra de um arquivo so.
   Sair do teto exige o modo pasta ou desempacotar uma vez em
   `%LOCALAPPDATA%`.
+
+## 17. Presenteismo automatico na aba Inicio (25/09/2026)
+
+O presenteismo **nao e mais gravado** por um botao: a aba Inicio calcula
+na hora, a partir do quadro (Headcount) e das faltas, toda vez que abre.
+Qualquer mudanca ja aparece la, e nao sobra numero antigo preso no
+indicador. O CUBO e refeito junto.
+
+- **Semana**: segunda a domingo, a mesma semana do Summary (chave na
+  segunda). Cada semana recebe o valor **dela** — o botao antigo, com
+  "Todas as semanas" marcado, gravava o numero do mes repetido em todas,
+  e esse valor gravado passou a ser ignorado.
+- **Mes**: o ciclo da folha ponto que comeca no dia 13 desse mes. O
+  ciclo em andamento conta so os dias uteis ja decorridos.
+- **Cobertura**: a planilha so tem linha em dia com falta. O periodo
+  coberto vai do dia 13 do ciclo da primeira data (se ela cair ate 7
+  dias depois dele) ate o dia da importacao, e aparece no card do
+  arquivo. Semana ou ciclo com dia util fora da cobertura fica sem
+  numero.
+- **Funcoes**: o arquivo fica guardado sem filtro, e o filtro roda na
+  leitura. Uma funcao cadastrada vale na hora, mesmo com o app reaberto.
+- O ajuste manual de **dias uteis** de um gestor vale so para a tela de
+  Headcount; a aba Inicio usa os dias uteis de cada semana e ciclo.
+- A semana da tela de Headcount e a do mes vigente, cortada na virada
+  (S1 = 01 a 06/09). A da aba Inicio e a semana inteira do Summary
+  (31/08 a 06/09). Numa semana que atravessa o mes os numeros podem
+  diferir, porque os dias sao outros.
+
+O botao da tela de Headcount passou a ser **Ver no Inicio**.

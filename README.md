@@ -77,8 +77,18 @@ temporario fica de fora e so entram as funcoes que compoem o quadro
 falta e roteada pela data para a semana do mes e para o ciclo da folha
 ponto (dia 13 ao dia 12) ao mesmo tempo.
 
-O botao "Calcular Presenteismo" grava o resultado no indicador da
-operacao, e e isso que faz o **CUBO** aparecer na aba Inicio.
+Nada precisa ser "aplicado": a aba Inicio **calcula o presenteismo na
+hora**, do quadro e das faltas, sempre que abre. Por isso qualquer
+mudanca — planilha nova, HC corrigido, gestor ou funcao a mais — ja
+aparece la, e o **CUBO** sai sozinho nas semanas que tem efetividade e
+hora direta. Cada semana (segunda a domingo, a mesma do Summary) recebe
+o valor dela, e o mes e o ciclo da folha que comeca no dia 13.
+
+A planilha so tem linha em dia com falta, entao o periodo que ela cobre
+e deduzido — do dia 13 do ciclo da primeira data ate o dia da
+importacao — e aparece no card do arquivo. Semana com dia util fora
+dessa cobertura fica sem numero: melhor um traco do que um 100%
+inventado.
 
 As formulas, as metas e as decisoes de desenho estao em
 [docs/INDICADORES.md](docs/INDICADORES.md).

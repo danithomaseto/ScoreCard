@@ -228,45 +228,114 @@ def test_faltas_sao_roteadas_para_a_semana_pela_data(app):
     assert s1["cards"]["faltas"] == 0
 
 
-def test_aplicar_leva_o_presenteismo_para_o_indicador(app):
-    """E o que destrava o CUBO na aba Inicio."""
-    api_obj, _, indicators_store = app
-    _preparar(app)
-
-    resposta = api_obj.aplicar_presenteismo("hugo_boss", "semanal", "2026-09", "2026-09-S2")
-
-    assert resposta["success"], resposta.get("message")
-    semanas = indicators_store.get_indicators("hugo_boss")["week"]
-    # A chave do indicador e a segunda-feira da semana, como o Summary
-    # identifica a semana.
-    assert "2026-09-07" in semanas
-    assert semanas["2026-09-07"]["presenteismo"] == resposta["presenteismo"]
+def _celulas(api_obj, indicador):
+    """{chave da coluna: texto da celula} de uma linha da aba Inicio."""
+    tabela = api_obj.get_indicator_table("hugo_boss")
+    linha = next(l for l in tabela["linhas"] if l["chave"] == indicador)
+    return {c["chave"]: cel["texto"] for c, cel in zip(tabela["colunas"], linha["celulas"])}
 
 
-def test_o_cubo_sai_quando_o_presenteismo_chega(app):
-    api_obj, _, indicators_store = app
-    _preparar(app)
-    indicators_store.salvar_extracao("hugo_boss", "week", {
-        "2026-09-07": {"efetividade": 0.9638, "hora_direta": 0.8537},
-    })
-
-    assert indicators_store.get_indicators("hugo_boss")["week"]["2026-09-07"]["cubo"] is None
-
-    api_obj.aplicar_presenteismo("hugo_boss", "semanal", "2026-09", "2026-09-S2")
-
-    entrada = indicators_store.get_indicators("hugo_boss")["week"]["2026-09-07"]
-    assert entrada["cubo"] == pytest.approx(
-        0.9638 * 0.8537 * entrada["presenteismo"], abs=1e-6)
-
-
-def test_aplicar_sem_escolher_operacao_avisa(app):
+def test_importar_ja_leva_cada_semana_ao_inicio(app):
+    """Sem botao nenhum: importou, a aba Inicio ja mostra o presenteismo
+    de cada semana — e o de cada uma, nao um numero do mes repetido."""
     api_obj = app[0]
     _preparar(app)
 
-    resposta = api_obj.aplicar_presenteismo("todas", "semanal", "2026-09", "todas")
+    presenteismo = _celulas(api_obj, "presenteismo")
 
-    assert resposta["success"] is False
-    assert "operacao" in resposta["message"].lower()
+    # 08 e 10/09 caem na semana de 07/09; 14/09 na de 14/09.
+    assert presenteismo["2026-09-07"] == "98,4%"
+    assert presenteismo["2026-09-14"] == "99,2%"
+    assert presenteismo["2026-08-31"] == "100,0%", "semana coberta e sem falta"
+
+
+def test_mes_do_inicio_e_o_ciclo_da_folha(app):
+    """Agosto e o ciclo 13/08 -> 12/09: as faltas de 08 e 10/09 entram
+    nele, a de 14/09 ja e do ciclo seguinte."""
+    api_obj = app[0]
+    _preparar(app)
+
+    presenteismo = _celulas(api_obj, "presenteismo")
+
+    assert presenteismo["2026-08"] == limits_formatar(1 - 2 / (25 * 22))
+
+
+def test_o_cubo_sai_sozinho(app):
+    api_obj, _, indicators_store = app
+    indicators_store.salvar_extracao("hugo_boss", "week", {
+        "2026-09-07": {"efetividade": 0.9638, "hora_direta": 0.8537},
+    })
+    assert _celulas(api_obj, "cubo")["2026-09-07"] == "", "sem presenteismo, sem cubo"
+
+    _preparar(app)
+
+    assert _celulas(api_obj, "cubo")["2026-09-07"] == limits_formatar(0.9638 * 0.8537 * 0.984)
+
+
+def test_mudar_o_hc_reflete_no_inicio_sem_clicar_em_nada(app):
+    api_obj, headcount_store, _ = app
+    gestor = _preparar(app)
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,4%"
+
+    headcount_store.atualizar_gestor(gestor["id"], {"hc": 50})
+
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "99,2%"
+
+
+def test_limpar_faltas_tira_o_presenteismo_do_inicio(app):
+    api_obj = app[0]
+    _preparar(app)
+
+    api_obj.clear_faltas()
+
+    assert "2026-09-07" not in _celulas(api_obj, "presenteismo")
+
+
+def test_semana_fora_da_planilha_fica_sem_numero(app):
+    """10, 11 e 12/08 sao dias uteis antes do que a planilha cobre (ela
+    comeca no ciclo de 13/08): nao da pra afirmar nada sobre a semana."""
+    api_obj = app[0]
+    _preparar(app)
+
+    assert "2026-08-10" not in _celulas(api_obj, "presenteismo")
+
+
+def test_valor_gravado_por_versao_antiga_nao_prevalece(app):
+    """O botao antigo gravava o numero do mes repetido em todas as
+    semanas. Esse valor e ignorado: vale o calculado agora."""
+    api_obj, _, indicators_store = app
+    indicators_store.salvar_manual("hugo_boss", "week", "2026-09-07", {"presenteismo": 0.5})
+    _preparar(app)
+
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,4%"
+
+
+def test_operacao_sem_gestor_nao_ganha_presenteismo(app):
+    api_obj, _, indicators_store = app
+    _preparar(app)
+    indicators_store.salvar_extracao("hughes", "week", {"2026-09-07": {"efetividade": 1.0}})
+
+    tabela = api_obj.get_indicator_table("hughes")
+    linha = next(l for l in tabela["linhas"] if l["chave"] == "presenteismo")
+    assert all(c["texto"] == "" for c in linha["celulas"])
+
+
+def test_funcao_nova_vale_mesmo_depois_de_reabrir_o_app(app):
+    """O arquivo fica guardado sem filtro: uma funcao cadastrada com o
+    app reaberto (Api nova, sem nada em memoria) ja vale."""
+    import api as api_module
+
+    _preparar(app)
+    reaberto = api_module.Api()
+
+    resposta = reaberto.add_funcao("ASSISTENTE DE LOGISTICA")
+
+    assert resposta["resumo"]["consideradas"] == 4
+
+
+def limits_formatar(valor):
+    from indicators import limits
+    return limits.formatar(valor)
 
 
 def test_funcao_cadastrada_passa_a_contar(app):

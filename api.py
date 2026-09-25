@@ -13,8 +13,6 @@ import threading
 
 import webview
 
-from datetime import date, timedelta
-
 from automation import generic
 from config.operations import GROUP_BY_OPTIONS, OPERATIONS
 import headcount
@@ -370,30 +368,42 @@ class Api:
             return {"operacao": "", "colunas": [], "linhas": []}
 
         guardado = indicators_store.get_indicators(operation_key)
+        # Presenteismo calculado agora, do quadro e das faltas. Nao se usa
+        # valor gravado: qualquer mudanca na aba Headcount ja vale aqui, e
+        # nao sobra numero antigo preso no indicador.
+        ao_vivo = headcount.presenteismo_por_periodo(operation_key)
         colunas = []
 
-        for chave in sorted(guardado.get("week", {})):
-            entrada = guardado["week"][chave]
+        semanas = sorted(set(guardado.get("week", {})) | set(ao_vivo["week"]))
+        for chave in semanas:
+            entrada = dict(guardado.get("week", {}).get(chave, {}))
+            vivo = ao_vivo["week"].get(chave)
             titulo, subtitulo = periodos.rotulo_semana(chave)
+            parcial = entrada.get("parcial") if chave in guardado.get("week", {}) \
+                else (vivo or {}).get("parcial")
             colunas.append({
                 "chave": chave,
                 "periodo": "week",
                 "titulo": titulo,
                 "subtitulo": subtitulo,
-                "parcial": bool(entrada.get("parcial")),
-                "_entrada": entrada,
+                "parcial": bool(parcial),
+                "_entrada": self._com_presenteismo(entrada, vivo),
             })
 
-        for chave in sorted(guardado.get("month", {})):
-            entrada = guardado["month"][chave]
-            titulo, subtitulo = periodos.rotulo_mes(chave, entrada.get("de"), entrada.get("ate"))
+        meses = sorted(set(guardado.get("month", {})) | set(ao_vivo["month"]))
+        for chave in meses:
+            entrada = dict(guardado.get("month", {}).get(chave, {}))
+            vivo = ao_vivo["month"].get(chave)
+            de = entrada.get("de") or (vivo or {}).get("de")
+            ate = entrada.get("ate") or (vivo or {}).get("ate")
+            titulo, subtitulo = periodos.rotulo_mes(chave, de, ate)
             colunas.append({
                 "chave": chave,
                 "periodo": "month",
                 "titulo": titulo,
                 "subtitulo": subtitulo,
                 "parcial": False,
-                "_entrada": entrada,
+                "_entrada": self._com_presenteismo(entrada, vivo),
             })
 
         linhas = []
@@ -420,6 +430,17 @@ class Api:
             "colunas": colunas,
             "linhas": linhas,
         }
+
+    @staticmethod
+    def _com_presenteismo(entrada, vivo):
+        """Poe o presenteismo calculado na hora e refaz o CUBO com ele."""
+        entrada["presenteismo"] = vivo["presenteismo"] if vivo else None
+        entrada["cubo"] = weekly.calcular_cubo(
+            entrada.get("efetividade"),
+            entrada.get("hora_direta"),
+            entrada["presenteismo"],
+        )
+        return entrada
 
     # ---------------- Headcount / presenteismo ----------------
 
@@ -455,18 +476,23 @@ class Api:
         return {"success": headcount_store.remover_gestor(gestor_id)}
 
     def add_funcao(self, nome):
-        """Uma funcao a mais que passa a contar como falta. Vale na
-        proxima leitura da planilha, entao a importacao e refeita na
-        hora se houver arquivo carregado."""
+        """Uma funcao a mais que passa a contar como falta. Vale na hora:
+        o filtro roda toda vez que as faltas sao lidas, entao nao precisa
+        reenviar a planilha."""
         try:
             funcoes = headcount_store.adicionar_funcao(nome)
         except ValueError as exc:
             return {"success": False, "message": str(exc)}
-        return {"success": True, "funcoes": funcoes, **self._reprocessar_faltas()}
+        return {"success": True, "funcoes": funcoes, **self._resumo_atual()}
 
     def remove_funcao(self, nome):
         funcoes = headcount_store.remover_funcao(nome)
-        return {"success": True, "funcoes": funcoes, **self._reprocessar_faltas()}
+        return {"success": True, "funcoes": funcoes, **self._resumo_atual()}
+
+    @staticmethod
+    def _resumo_atual():
+        arquivo = headcount_store.arquivo()
+        return {"resumo": arquivo["resumo"]} if arquivo else {}
 
     def import_faltas(self, nome_arquivo, conteudo_base64):
         """Recebe a planilha da tela (arrastada ou escolhida) como
@@ -486,7 +512,7 @@ class Api:
             with tempfile.NamedTemporaryFile(suffix=extensao, delete=False) as fh:
                 fh.write(bruto)
                 caminho = fh.name
-            lido = faltas_reader.ler(caminho, headcount_store.listar_funcoes())
+            linhas = faltas_reader.ler_linhas(caminho)
         except ValueError as exc:
             return {"success": False, "message": str(exc)}
         except Exception as exc:  # noqa: BLE001 - arquivo fora do esperado
@@ -498,94 +524,15 @@ class Api:
                 except OSError:
                     pass
 
-        arquivo = headcount_store.salvar_faltas(nome_arquivo, len(bruto), lido)
-        self._ultimo_arquivo_faltas = (nome_arquivo, bruto)
+        arquivo = headcount_store.salvar_faltas(nome_arquivo, len(bruto), linhas)
         return {"success": True, "resumo": arquivo["resumo"]}
-
-    def _reprocessar_faltas(self):
-        """Refaz a leitura do ultimo arquivo com os filtros atuais."""
-        guardado = getattr(self, "_ultimo_arquivo_faltas", None)
-        if not guardado:
-            return {}
-        nome, bruto = guardado
-        caminho = None
-        try:
-            with tempfile.NamedTemporaryFile(
-                    suffix=os.path.splitext(nome)[1] or ".xlsx", delete=False) as fh:
-                fh.write(bruto)
-                caminho = fh.name
-            lido = faltas_reader.ler(caminho, headcount_store.listar_funcoes())
-        except Exception:  # noqa: BLE001
-            return {}
-        finally:
-            if caminho and os.path.exists(caminho):
-                try:
-                    os.remove(caminho)
-                except OSError:
-                    pass
-        headcount_store.salvar_faltas(nome, len(bruto), lido)
-        return {"resumo": lido["resumo"]}
 
     def clear_faltas(self):
         headcount_store.limpar_faltas()
-        self._ultimo_arquivo_faltas = None
         return {"success": True}
 
     def save_headcount_config(self, campos):
         return {"success": True, "config": headcount_store.salvar_config(campos or {})}
-
-    def aplicar_presenteismo(self, operacao=None, visualizacao="semanal", mes=None,
-                             periodo_id=None):
-        """Leva o presenteismo calculado pro indicador, que e o que
-        destrava o CUBO na aba Inicio."""
-        tela = headcount.montar(
-            operacao=operacao or headcount.TODAS,
-            visualizacao=visualizacao or "semanal",
-            mes=mes,
-            periodo_id=periodo_id,
-        )
-        valor = tela["cards"]["presenteismo"]
-        if valor is None:
-            return {"success": False,
-                    "message": "Sem HC ou dias uteis, nao da pra calcular o presenteismo."}
-        if tela["operacao"] == headcount.TODAS:
-            return {"success": False,
-                    "message": "Escolha uma operacao: o indicador e gravado por operacao."}
-
-        gravadas = self._gravar_presenteismo(tela, valor)
-        return {
-            "success": True,
-            "presenteismo": valor,
-            "periodos": gravadas,
-            "message": (f"Presenteismo de {limits.formatar(valor)} aplicado a "
-                        f"{gravadas} periodo(s)."),
-        }
-
-    @staticmethod
-    def _gravar_presenteismo(tela, valor):
-        """Grava pela porta de entrada manual do indicators_store, que
-        preserva o que veio da extracao."""
-        operacao = tela["operacao"]
-        if tela["visualizacao"] == "mes":
-            chave = tela["periodo_id"][:7] if tela["periodo_id"] else None
-            if not chave:
-                return 0
-            indicators_store.salvar_manual(operacao, "month", chave,
-                                           {"presenteismo": valor})
-            return 1
-
-        # No semanal, a chave do indicador e a segunda-feira da semana,
-        # que e como o relatorio do Summary identifica a semana.
-        alvos = [p for p in tela["periodos"] if p["id"] != headcount.TODAS]
-        if tela["periodo_id"] != headcount.TODAS:
-            alvos = [p for p in alvos if p["id"] == tela["periodo_id"]]
-
-        for periodo in alvos:
-            inicio = date.fromisoformat(periodo["inicio"])
-            segunda = inicio - timedelta(days=inicio.weekday())
-            indicators_store.salvar_manual(operacao, "week", segunda.isoformat(),
-                                           {"presenteismo": valor})
-        return len(alvos)
 
     # ---------------- Historico ----------------
 

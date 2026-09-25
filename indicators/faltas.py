@@ -117,13 +117,13 @@ def _achar_cabecalho(linhas):
     return None
 
 
-def ler(caminho, funcoes_extras=None):
-    """Devolve {"faltas": [...], "resumo": {...}}.
+def ler_linhas(caminho):
+    """Todas as linhas do arquivo, normalizadas e **sem filtro**.
 
-    Cada falta e {"gestor", "usuario", "data", "funcao", "motivo",
-    "contrato", "dias"}. O resumo conta o que entrou e o que ficou de
-    fora, por motivo — sem isso, um filtro derrubando o arquivo inteiro
-    passaria despercebido.
+    E isso que fica guardado: o filtro roda de novo toda vez que as
+    faltas sao consultadas, entao uma funcao cadastrada depois vale na
+    hora — mesmo com o app fechado e aberto de novo, sem reenviar a
+    planilha.
     """
     cruas = _cruas(caminho)
     indice = _achar_cabecalho(cruas)
@@ -145,10 +145,7 @@ def ler(caminho, funcoes_extras=None):
             f"O arquivo de faltas nao tem as colunas {', '.join(faltando)}."
         )
 
-    faltas = []
-    resumo = {"linhas": 0, "consideradas": 0, "sem_data": 0,
-              "motivo": 0, "contrato": 0, "funcao": 0}
-
+    linhas = []
     for crua in cruas[indice + 1:]:
         def campo(nome):
             coluna = posicoes.get(nome)
@@ -161,35 +158,63 @@ def ler(caminho, funcoes_extras=None):
         if not gestor and not data:
             continue  # linha vazia no fim da planilha
 
-        resumo["linhas"] += 1
-
-        if not data:
-            resumo["sem_data"] += 1
-            continue
-        if normalizar(campo("motivo")) in MOTIVOS_IGNORADOS:
-            resumo["motivo"] += 1
-            continue
-        contrato = normalizar(campo("contrato"))
-        if contrato and contrato not in CONTRATOS_ACEITOS:
-            resumo["contrato"] += 1
-            continue
-        if not _funcao_conta(campo("funcao"), funcoes_extras):
-            resumo["funcao"] += 1
-            continue
-
-        resumo["consideradas"] += 1
-        faltas.append({
+        linhas.append({
             "gestor": gestor,
             "usuario": (str(campo("usuario") or "")).strip(),
             "data": data,
             "funcao": (str(campo("funcao") or "")).strip(),
             "motivo": (str(campo("motivo") or "")).strip(),
             "contrato": (str(campo("contrato") or "")).strip(),
-            # Uma linha e um dia de ausencia: o arquivo nao traz
-            # quantidade, entao 5 pessoas faltando 1 dia sao 5 linhas.
-            "dias": 1,
         })
+    return linhas
+
+
+def filtrar(linhas, funcoes_extras=None):
+    """Aplica as regras e devolve {"faltas": [...], "resumo": {...}}.
+
+    Cada falta e {"gestor", "usuario", "data", "funcao", "motivo",
+    "contrato", "dias"}. O resumo conta o que entrou e o que ficou de
+    fora, por motivo — sem isso, um filtro derrubando o arquivo inteiro
+    passaria despercebido. Tambem traz a primeira e a ultima data do
+    arquivo (de todas as linhas, nao so das que contam), que e o que diz
+    que periodo a planilha cobre.
+    """
+    faltas = []
+    resumo = {"linhas": 0, "consideradas": 0, "sem_data": 0,
+              "motivo": 0, "contrato": 0, "funcao": 0}
+    datas = []
+
+    for linha in linhas:
+        resumo["linhas"] += 1
+        data = linha.get("data")
+        if not data:
+            resumo["sem_data"] += 1
+            continue
+        datas.append(data)
+
+        if normalizar(linha.get("motivo")) in MOTIVOS_IGNORADOS:
+            resumo["motivo"] += 1
+            continue
+        contrato = normalizar(linha.get("contrato"))
+        if contrato and contrato not in CONTRATOS_ACEITOS:
+            resumo["contrato"] += 1
+            continue
+        if not _funcao_conta(linha.get("funcao"), funcoes_extras):
+            resumo["funcao"] += 1
+            continue
+
+        resumo["consideradas"] += 1
+        # Uma linha e um dia de ausencia: o arquivo nao traz
+        # quantidade, entao 5 pessoas faltando 1 dia sao 5 linhas.
+        faltas.append({**linha, "dias": 1})
 
     resumo["gestores"] = len({f["gestor"] for f in faltas})
     resumo["dias"] = sum(f["dias"] for f in faltas)
+    resumo["data_inicio"] = min(datas) if datas else None
+    resumo["data_fim"] = max(datas) if datas else None
     return {"faltas": faltas, "resumo": resumo}
+
+
+def ler(caminho, funcoes_extras=None):
+    """Le e filtra de uma vez."""
+    return filtrar(ler_linhas(caminho), funcoes_extras)
