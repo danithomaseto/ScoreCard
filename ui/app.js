@@ -96,13 +96,23 @@ function showStatus(el, message, kind) {
 // Botoes que aparecem depois de uma extracao: abrir a pasta onde o
 // arquivo caiu e, quando algo falha, o print da tela do erro (que a
 // automacao ja salva, mas ate agora ninguem via).
+// Mesmo desenho de traco dos icones da barra lateral.
+const ICONE_PASTA = '<svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
+const ICONE_IMAGEM = '<svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true">' +
+  '<rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle>' +
+  '<polyline points="21 15 16 10 5 21"></polyline></svg>';
+
 function showRunActions(container, { houveSucesso, houveFalha }) {
   container.innerHTML = '';
 
-  const adicionar = (texto, acao) => {
+  const adicionar = (texto, acao, icone) => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.textContent = texto;
+    btn.innerHTML = icone;
+    const rotulo = document.createElement('span');
+    rotulo.textContent = texto;
+    btn.appendChild(rotulo);
     btn.addEventListener('click', async () => {
       const result = await acao();
       if (result && !result.success) {
@@ -113,10 +123,10 @@ function showRunActions(container, { houveSucesso, houveFalha }) {
   };
 
   if (houveSucesso) {
-    adicionar('📂 Abrir pasta', () => pywebview.api.open_last_folder());
+    adicionar('Abrir pasta', () => pywebview.api.open_last_folder(), ICONE_PASTA);
   }
   if (houveFalha) {
-    adicionar('🖼 Ver print do erro', () => pywebview.api.open_error_screenshot());
+    adicionar('Ver print do erro', () => pywebview.api.open_error_screenshot(), ICONE_IMAGEM);
   }
 
   container.hidden = container.childElementCount === 0;
@@ -781,7 +791,7 @@ runBtn.addEventListener('click', async () => {
   }
 
   runBtn.disabled = true;
-  runBtn.textContent = 'Executando...';
+  runBtn.querySelector('.btn-texto').textContent = 'Executando...';
   resetSteps();
   setBadge('running', 'Em andamento');
   progressDetailEl.textContent = 'Iniciando a extracao...';
@@ -811,7 +821,7 @@ runBtn.addEventListener('click', async () => {
     showStatus(runStatus, 'Erro inesperado: ' + err.message, 'error');
   } finally {
     runBtn.disabled = false;
-    runBtn.textContent = '▶ Iniciar extracao';
+    runBtn.querySelector('.btn-texto').textContent = 'Iniciar extracao';
   }
 });
 
@@ -845,7 +855,7 @@ multiRunBtn.addEventListener('click', async () => {
   multiProgressDetailEl.textContent = 'Iniciando a fila...';
   multiProgressPercentEl.textContent = '0%';
   multiRunBtn.disabled = true;
-  multiRunBtn.textContent = 'Executando...';
+  multiRunBtn.querySelector('.btn-texto').textContent = 'Executando...';
   multiStopBtn.hidden = false;
   multiStopBtn.disabled = false;
   multiStopBtn.textContent = 'Parar apos a atual';
@@ -873,7 +883,7 @@ multiRunBtn.addEventListener('click', async () => {
     showStatus(multiRunStatus, 'Erro inesperado: ' + err.message, 'error');
   } finally {
     multiRunBtn.disabled = false;
-    multiRunBtn.textContent = '▶ Iniciar extracao';
+    multiRunBtn.querySelector('.btn-texto').textContent = 'Iniciar extracao';
     multiStopBtn.hidden = true;
   }
 });
@@ -1205,8 +1215,8 @@ function desenharArquivoHc(tela) {
     partes.push('</div>');
   }
 
-  partes.push('<button type="button" class="secondary" id="hc-remover-arquivo" ' +
-    'style="width:auto;height:38px;padding:0 14px;margin-top:16px;font-size:13px;">Remover</button>');
+  partes.push('<button type="button" class="secondary acao" id="hc-remover-arquivo" ' +
+    'style="margin-top:16px;">Remover</button>');
 
   hcArquivoInfo.innerHTML = partes.join('');
   document.getElementById('hc-remover-arquivo').addEventListener('click', async () => {

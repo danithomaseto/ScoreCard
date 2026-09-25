@@ -190,7 +190,7 @@
               <label for="group-by">Group By 1</label>
               <select id="group-by"></select>
 
-              <button id="run-btn">▶ Iniciar extracao</button>
+              <button id="run-btn"><svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg><span class="btn-texto">Iniciar extracao</span></button>
 
               <div id="run-status" class="status" hidden></div>
               <div id="run-actions" class="run-actions" hidden></div>
@@ -371,7 +371,7 @@
               <select id="multi-group-by"></select>
 
               <div class="multi-run-row">
-                <button id="multi-run-btn">▶ Iniciar extracao</button>
+                <button id="multi-run-btn"><svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg><span class="btn-texto">Iniciar extracao</span></button>
                 <button id="multi-stop-btn" class="secondary" hidden>Parar apos a atual</button>
               </div>
 
@@ -588,11 +588,18 @@
       </section>
 
       <section id="page-settings" class="page" hidden>
-        <div class="card wide">
-          <h2>Configuracoes</h2>
-          <p class="subtitle">Pasta do SharePoint/OneDrive onde os relatorios sao salvos.</p>
-          <div class="folder-box" id="folder-path">Nenhuma pasta selecionada.</div>
-          <button id="choose-folder-btn">Alterar pasta</button>
+        <div class="page-wide-wrap">
+          <h2 class="page-heading">Configuracoes</h2>
+          <p class="subtitle">Preferencias do aplicativo, guardadas so nesta maquina.</p>
+
+          <div class="card settings-card">
+            <h3 class="card-title">Pasta do SharePoint</h3>
+            <p class="settings-texto">Onde os relatorios extraidos sao salvos, cada operacao na sua subpasta.</p>
+            <div class="settings-linha">
+              <div class="folder-box" id="folder-path">Nenhuma pasta selecionada.</div>
+              <button id="choose-folder-btn" class="secondary">Alterar pasta</button>
+            </div>
+          </div>
         </div>
       </section>
     </div>

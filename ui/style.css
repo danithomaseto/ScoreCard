@@ -1,5 +1,11 @@
 * { box-sizing: border-box; }
 
+/* O atributo hidden sempre vence. Sem isto, qualquer regra com "display"
+   (como a global de button, que e inline-flex) sobrescreve o [hidden]
+   do navegador e o elemento aparece mesmo oculto - foi assim que o
+   "Parar apos a atual" ficava visivel sem fila rodando. */
+[hidden] { display: none !important; }
+
 :root {
   --bg: #0b0e1a;
   --card-bg: #161b2e;
@@ -1074,3 +1080,66 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .hc-cobertura-item.selecionado { border-color: var(--yellow); color: var(--text); }
 .hc-descartadas { font-size: 11px; color: #667085; margin-top: 10px; line-height: 1.6; }
+
+/* ---------- Padronizacao geral (auditoria de layout) ---------- */
+
+/* Icones de traco dentro de botoes, no mesmo desenho da barra lateral.
+   Substituem os emoji, que cada fonte do Windows desenha de um jeito. */
+.btn-icone {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#run-btn .btn-icone,
+#multi-run-btn .btn-icone { fill: currentColor; width: 12px; height: 12px; }
+
+/* Botoes de acao secundarios: uma altura so no sistema todo. Antes
+   havia 38px (Abrir pasta, Remover) e 40px (acoes da Headcount). */
+.run-actions button,
+.hc-inline button,
+button.acao {
+  height: 40px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+/* Links de atalho tinham 14px de altura: area de clique pequena demais. */
+.link-btn { padding: 4px 0; }
+
+/* Copiar e um botao de apoio dentro do cabecalho da tabela; herdava os
+   46px do botao principal e competia com o titulo da coluna. */
+.copy-btn { height: 28px; }
+
+/* Cada operacao da lista e um <label>, e a margem global de label
+   deixava o espaco vertical em 14px contra 8px no horizontal. */
+.ops-item { margin: 0; }
+
+/* Fonte de dados com a mesma altura dos cards Week/Month ao lado. */
+.source-option {
+  height: 46px;
+  box-sizing: border-box;
+  padding: 0 12px;
+}
+
+/* Configuracoes no mesmo molde das outras telas. */
+.settings-card { width: 100%; max-width: none; }
+.card-title { margin: 0 0 4px; font-size: 16px; color: var(--text); }
+.settings-texto { margin: 0 0 16px; font-size: 13px; color: var(--text-muted); }
+.settings-linha { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.settings-linha .folder-box {
+  flex: 1 1 320px;
+  margin: 0;
+  min-width: 0;
+  min-height: 46px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  overflow-wrap: anywhere;
+}
+.settings-linha button { flex-shrink: 0; }
