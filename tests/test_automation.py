@@ -125,3 +125,42 @@ def test_mes_sem_datas_usa_o_mes_anterior_como_chave():
     assert _month_key(None, hoje=date(2026, 9, 24)) == "2026-08"
     assert _month_key(None, hoje=date(2026, 1, 5)) == "2025-12"
     assert _month_key({"from_date": "2026-09-01", "to_date": "2026-09-19"}) == "2026-09"
+
+
+class _ChromiumFalso:
+    """Imita playwright.chromium.launch registrando as chamadas."""
+
+    def __init__(self, sem_headless_shell=False):
+        self.chamadas = []
+        self.sem_headless_shell = sem_headless_shell
+
+    def launch(self, **kwargs):
+        self.chamadas.append(kwargs)
+        if self.sem_headless_shell and "channel" not in kwargs:
+            raise RuntimeError("Executable doesn't exist at .../chromium_headless_shell-1194")
+        return "browser"
+
+
+def _lancar_com(chromium, headless, monkeypatch):
+    from automation import base
+
+    monkeypatch.delenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE", raising=False)
+    return base._lancar(type("PW", (), {"chromium": chromium})(), headless)
+
+
+def test_sem_janela_prefere_o_headless_shell(monkeypatch):
+    chromium = _ChromiumFalso()
+    _lancar_com(chromium, True, monkeypatch)
+    assert chromium.chamadas == [{"headless": True}]
+
+
+def test_sem_headless_shell_cai_no_chromium_completo(monkeypatch):
+    chromium = _ChromiumFalso(sem_headless_shell=True)
+    assert _lancar_com(chromium, True, monkeypatch) == "browser"
+    assert chromium.chamadas[-1] == {"headless": True, "channel": "chromium"}
+
+
+def test_com_janela_usa_o_chromium_completo(monkeypatch):
+    chromium = _ChromiumFalso()
+    _lancar_com(chromium, False, monkeypatch)
+    assert chromium.chamadas == [{"headless": False, "channel": "chromium"}]

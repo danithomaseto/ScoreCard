@@ -21,6 +21,8 @@ from datetime import datetime
 from indicators.limits import MANUAIS
 from indicators.weekly import calcular_cubo
 
+import arquivo_seguro
+
 APP_NAME = "ScoreCard"
 
 
@@ -44,8 +46,7 @@ def _ler():
 
 
 def _gravar(dados):
-    with open(_store_path(), "w", encoding="utf-8") as fh:
-        json.dump(dados, fh, indent=2, ensure_ascii=False)
+    arquivo_seguro.gravar_json(_store_path(), dados)
 
 
 def get_indicators(operation_key=None):

@@ -7,6 +7,8 @@ import json
 import os
 from datetime import datetime
 
+import arquivo_seguro
+
 APP_NAME = "ScoreCard"
 MAX_ENTRIES = 200
 
@@ -42,5 +44,4 @@ def add_entry(entry):
     entries = get_history()
     entries.insert(0, {**entry, "timestamp": datetime.now().isoformat(timespec="seconds")})
     entries = entries[:MAX_ENTRIES]
-    with open(_history_path(), "w", encoding="utf-8") as fh:
-        json.dump(entries, fh, indent=2, ensure_ascii=False)
+    arquivo_seguro.gravar_json(_history_path(), entries)

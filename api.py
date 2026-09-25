@@ -5,6 +5,7 @@ chamavel do JavaScript.
 
 import base64
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -13,7 +14,6 @@ import threading
 
 import webview
 
-from automation import generic
 from config.operations import GROUP_BY_OPTIONS, OPERATIONS
 import headcount
 import headcount_store
@@ -21,7 +21,10 @@ import history_store
 from indicators import faltas as faltas_reader
 from indicators import limits, periodos, presenteismo, reader, weekly
 import indicators_store
+import registro
 import settings_store
+
+log = logging.getLogger("scorecard.api")
 
 
 class Api:
@@ -50,11 +53,17 @@ class Api:
             return {"success": False, "message": "Informe usuario e senha."}
         self._username = username
         self._password = password
+        # So em memoria, para o filtro do log trocar por *** se algum
+        # dia aparecerem numa mensagem de erro. Nunca vao para arquivo.
+        registro.esconder(username, password)
+        log.info("login informado na tela")
         return {"success": True}
 
     def logout(self):
         self._username = None
         self._password = None
+        registro.esquecer()
+        log.info("logout")
         return {"success": True}
 
     def is_logged_in(self):
@@ -110,6 +119,12 @@ class Api:
         )
 
     def _record_history(self, operation_key, result):
+        log.info(
+            "extracao %s: %s em %ss - %s%s",
+            operation_key, self._status_da_extracao(result),
+            result.get("duration_seconds"), result.get("message"),
+            f" | {result['indicators_message']}" if result.get("indicators_message") else "",
+        )
         if result.get("file_path"):
             self._last_folder = os.path.dirname(result["file_path"])
         if result.get("screenshot"):
@@ -151,6 +166,7 @@ class Api:
         try:
             lido = reader.ler(result["file_path"])
         except Exception as exc:  # noqa: BLE001 - arquivo fora do esperado
+            log.exception("nao deu pra ler %s", result["file_path"])
             result["indicators_message"] = f"Relatorio salvo, mas nao deu pra calcular: {exc}"
             return
 
@@ -219,6 +235,10 @@ class Api:
         # trava ou demora, ja que o .exe empacotado nao mostra log nenhum.
         headless = os.environ.get("SCORECARD_HEADLESS", "1") != "0"
 
+        # Importado aqui e nao no topo: o Playwright leva uma fracao de
+        # segundo pra carregar, e a abertura do app nao precisa dele.
+        from automation import generic
+
         result = generic.run(
             operation_key,
             base_dir=settings_store.get_sharepoint_folder(),
@@ -262,55 +282,75 @@ class Api:
         cancelled = 0
         sem_indicador = 0
 
-        for index, operation_key in enumerate(operation_keys):
-            label = OPERATIONS[operation_key]["label"]
+        # Um navegador so para a fila inteira; cada operacao abre uma
+        # sessao propria nele (ver automation.base.Navegador). O login
+        # continua sendo um por operacao: cada uma e um servidor/site
+        # diferente do BlueYonder.
+        from automation import generic
+        from automation.base import Navegador
 
-            if self._cancel_multi.is_set():
-                cancelled += 1
+        log.info("fila de %s operacoes (%s)", total, period or "week")
+        navegador = None
+        try:
+            for index, operation_key in enumerate(operation_keys):
+                label = OPERATIONS[operation_key]["label"]
+
+                if self._cancel_multi.is_set():
+                    cancelled += 1
+                    self._emit_js("updateMultiProgress", {
+                        "index": index,
+                        "total": total,
+                        "operation_label": label,
+                        "step": "Cancelada",
+                        "status": "cancelled",
+                    })
+                    continue
+
+                def on_progress(step, _index=index, _label=label):
+                    self._emit_js("updateMultiProgress", {
+                        "index": _index,
+                        "total": total,
+                        "operation_label": _label,
+                        "step": step,
+                        "status": "running",
+                    })
+
+                if navegador is None or not navegador.ativo():
+                    if navegador is not None:
+                        navegador.fechar()  # caiu no meio da fila: abre outro
+                    on_progress("abrindo o navegador...")
+                    navegador = Navegador(headless=headless)
+
+                result = generic.run(
+                    operation_key,
+                    base_dir=base_dir,
+                    headless=headless,
+                    username=self._username,
+                    password=self._password,
+                    on_progress=on_progress,
+                    date_range=date_range,
+                    group_by=group_by,
+                    period=period,
+                    navegador=navegador,
+                )
+                self._calcular_indicadores(operation_key, result)
+                self._record_history(operation_key, result)
+
+                status = self._status_da_extracao(result)
+                if status != "error":
+                    succeeded += 1
+                if status == "warning":
+                    sem_indicador += 1
                 self._emit_js("updateMultiProgress", {
                     "index": index,
                     "total": total,
                     "operation_label": label,
-                    "step": "Cancelada",
-                    "status": "cancelled",
+                    "step": result.get("indicators_message") or result.get("message", ""),
+                    "status": status,
                 })
-                continue
-
-            def on_progress(step, _index=index, _label=label):
-                self._emit_js("updateMultiProgress", {
-                    "index": _index,
-                    "total": total,
-                    "operation_label": _label,
-                    "step": step,
-                    "status": "running",
-                })
-
-            result = generic.run(
-                operation_key,
-                base_dir=base_dir,
-                headless=headless,
-                username=self._username,
-                password=self._password,
-                on_progress=on_progress,
-                date_range=date_range,
-                group_by=group_by,
-                period=period,
-            )
-            self._calcular_indicadores(operation_key, result)
-            self._record_history(operation_key, result)
-
-            status = self._status_da_extracao(result)
-            if status != "error":
-                succeeded += 1
-            if status == "warning":
-                sem_indicador += 1
-            self._emit_js("updateMultiProgress", {
-                "index": index,
-                "total": total,
-                "operation_label": label,
-                "step": result.get("indicators_message") or result.get("message", ""),
-                "status": status,
-            })
+        finally:
+            if navegador is not None:
+                navegador.fechar()
 
         failed = total - succeeded - cancelled
         message = f"{succeeded} de {total} extracoes concluidas"
@@ -320,6 +360,7 @@ class Api:
             message += f", {sem_indicador} sem indicador"
         if cancelled:
             message += f", {cancelled} cancelada(s)"
+        log.info("fila encerrada: %s", message)
         return {
             "success": failed == 0 and cancelled == 0,
             "message": message + ".",
@@ -518,8 +559,10 @@ class Api:
                 caminho = fh.name
             linhas = faltas_reader.ler_linhas(caminho)
         except ValueError as exc:
+            log.warning("planilha de faltas %s recusada: %s", nome_arquivo, exc)
             return {"success": False, "message": str(exc)}
         except Exception as exc:  # noqa: BLE001 - arquivo fora do esperado
+            log.exception("nao deu pra ler a planilha de faltas %s", nome_arquivo)
             return {"success": False, "message": f"Nao deu pra ler a planilha: {exc}"}
         finally:
             if caminho and os.path.exists(caminho):
@@ -529,6 +572,8 @@ class Api:
                     pass
 
         arquivo = headcount_store.salvar_faltas(nome_arquivo, len(bruto), linhas)
+        log.info("planilha de faltas %s importada: %s linhas, %s consideradas",
+                 nome_arquivo, arquivo["resumo"]["linhas"], arquivo["resumo"]["consideradas"])
         return {"success": True, "resumo": arquivo["resumo"]}
 
     def clear_faltas(self):

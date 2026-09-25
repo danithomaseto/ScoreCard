@@ -263,7 +263,24 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .sidebar-brand-footer {
   font-size: 10px;
   color: #667085;
-  padding-bottom: 16px;
+}
+
+/* Assinatura de quem criou o sistema, logo abaixo do slogan. */
+.sidebar-autor {
+  margin-top: 8px;
+  padding: 0 0 16px 8px;
+  border-left: 2px solid var(--yellow);
+  font-size: 10px;
+  line-height: 1.3;
+  color: #667085;
+}
+
+.sidebar-autor strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
 }
 
 /* Sem "display: flex" aqui de proposito: as <section class="page"> sao
@@ -1152,3 +1169,44 @@ button.acao {
   overflow-wrap: anywhere;
 }
 .settings-linha button { flex-shrink: 0; }
+
+
+/* ---------- Carregamento e transicoes ---------- */
+
+.esqueleto {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.11) 50%,
+    rgba(255, 255, 255, 0.05) 100%);
+  background-size: 200% 100%;
+  animation: esqueleto-brilho 1.2s ease-in-out infinite;
+}
+
+.linha-esqueleto .esqueleto { width: 55%; }
+.linha-esqueleto td:first-child .esqueleto { width: 75%; }
+
+@keyframes esqueleto-brilho {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* Curtas de proposito: a ideia e a tela nao "saltar", nao fazer esperar. */
+.page:not([hidden]) { animation: surgir 140ms ease-out; }
+
+.hc-inline:not([hidden]),
+.hc-funcoes:not([hidden]) { animation: surgir 120ms ease-out; }
+
+@keyframes surgir {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page:not([hidden]),
+  .hc-inline:not([hidden]),
+  .hc-funcoes:not([hidden]),
+  .esqueleto { animation: none; }
+}

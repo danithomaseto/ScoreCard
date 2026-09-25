@@ -49,13 +49,48 @@ const multiProgressPercentEl = document.getElementById('multi-progress-percent')
 const multiStepsEl = document.getElementById('multi-progress-steps');
 const multiHistoryTableBody = document.getElementById('multi-history-table-body');
 
+// Esqueleto de carregamento: linhas cinza no formato da tabela enquanto
+// o Python responde. So aparece se a resposta passar de 150 ms — abaixo
+// disso ele so piscaria na tela, o que parece mais lento, nao menos.
+const ESPERA_DO_ESQUELETO = 150;
+
+function desenharEsqueleto(tbody, colunas, linhas = 4) {
+  tbody.innerHTML = '';
+  for (let i = 0; i < linhas; i += 1) {
+    const tr = document.createElement('tr');
+    tr.className = 'linha-esqueleto';
+    for (let c = 0; c < colunas; c += 1) {
+      const td = document.createElement('td');
+      const barra = document.createElement('span');
+      barra.className = 'esqueleto';
+      td.appendChild(barra);
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+}
+
+async function comEsqueleto(tbody, colunas, carregar, antesDeMostrar) {
+  const timer = setTimeout(() => {
+    if (antesDeMostrar) antesDeMostrar();
+    desenharEsqueleto(tbody, colunas);
+  }, ESPERA_DO_ESQUELETO);
+  try {
+    return await carregar();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const navItems = document.querySelectorAll('.nav-item[data-page]');
 const pages = document.querySelectorAll('.page');
 
 // Uma etapa pra cada mensagem que automation/generic.py emite via
 // on_progress, na mesma ordem em que acontecem.
 const PROGRESS_STEPS = [
-  { key: 'browser', match: (t) => t.includes('abrindo o navegador') },
+  // Na fila, so a primeira operacao abre o navegador; as seguintes
+  // abrem uma sessao nova nele.
+  { key: 'browser', match: (t) => t.includes('abrindo o navegador') || t.includes('no navegador') },
   { key: 'login', match: (t) => t.includes('fazendo login') },
   { key: 'menu', match: (t) => t.includes('abrindo menu') },
   { key: 'frame', match: (t) => t.includes('localizando o iframe') },
@@ -191,7 +226,11 @@ async function loadIndicators() {
   const operacao = homeOperationSelect.value;
   if (!operacao) return;
 
-  const tabela = await pywebview.api.get_indicator_table(operacao);
+  const tabela = await comEsqueleto(
+    indicatorsBody, 6,
+    () => pywebview.api.get_indicator_table(operacao),
+    () => { indicatorsEmpty.hidden = true; indicatorsWrap.hidden = false; },
+  );
   const temDados = tabela.colunas.length > 0;
 
   indicatorsEmpty.hidden = temDados;
@@ -393,7 +432,7 @@ navItems.forEach((btn) => {
 // As duas abas de extracao mostram o mesmo historico, cada uma com o
 // seu <tbody>.
 async function loadHistoryTable(tbody = historyTableBody) {
-  const history = await pywebview.api.get_report_history();
+  const history = await comEsqueleto(tbody, 7, () => pywebview.api.get_report_history());
   tbody.innerHTML = '';
   if (!history.length) {
     const row = document.createElement('tr');
@@ -951,8 +990,8 @@ function hcPercentual(valor) {
 }
 
 async function carregarHeadcount() {
-  hcTela = await pywebview.api.get_headcount(
-    hcEstado.operacao, hcEstado.visualizacao, hcEstado.mes, hcEstado.periodo_id);
+  hcTela = await comEsqueleto(hcCorpo, 7, () => pywebview.api.get_headcount(
+    hcEstado.operacao, hcEstado.visualizacao, hcEstado.mes, hcEstado.periodo_id));
 
   hcEstado.mes = hcTela.mes;
   hcEstado.periodo_id = hcTela.periodo_id;

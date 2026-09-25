@@ -15,9 +15,16 @@ if sys.stderr is None:
 if sys.stdin is None:
     sys.stdin = open(os.devnull, "r")
 
-import webview
+import logging
 
-from api import Api
+import registro
+
+registro.configurar()
+log = logging.getLogger("scorecard")
+
+import webview  # noqa: E402 - depois do log, para registrar erro de import
+
+from api import Api  # noqa: E402
 
 
 def resource_path(relative_path):
@@ -27,6 +34,15 @@ def resource_path(relative_path):
     if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
+
+
+# Nomes do executavel dentro da pasta de cada navegador ("chrome-win",
+# "chrome-win64", "chrome-headless-shell-win64"...), que mudam conforme
+# a versao do Playwright.
+EXECUTAVEIS_DO_CHROMIUM = (
+    "chrome.exe", "headless_shell.exe", "chrome-headless-shell.exe",
+    "chrome", "headless_shell", "chrome-headless-shell",
+)
 
 
 def _chromium_ja_esta_no_pacote():
@@ -55,12 +71,15 @@ def _chromium_ja_esta_no_pacote():
         if not os.path.isdir(raiz):
             continue
         for nome in os.listdir(raiz):
-            if not nome.startswith("chromium-"):
+            # O .exe leva o chromium_headless_shell (mais leve); rodando do
+            # codigo-fonte pode haver so o Chromium completo.
+            if not nome.startswith(("chromium-", "chromium_headless_shell-")):
                 continue
-            for relativo in (("chrome-win", "chrome.exe"),
-                             ("chrome-linux", "chrome"),
-                             ("chrome-mac", "Chromium.app", "Contents", "MacOS", "Chromium")):
-                if os.path.isfile(os.path.join(raiz, nome, *relativo)):
+            pasta = os.path.join(raiz, nome)
+            for sub in os.listdir(pasta):
+                caminho = os.path.join(pasta, sub)
+                if os.path.isdir(caminho) and any(
+                        os.path.isfile(os.path.join(caminho, exe)) for exe in EXECUTAVEIS_DO_CHROMIUM):
                     return True
     return False
 
@@ -83,9 +102,20 @@ def ensure_browser_installed():
 
 
 def fechar_splash():
-    """Fecha a tela de abertura do PyInstaller, se houver. Ela aparece
-    enquanto o .exe descompacta o conteudo (Chromium incluso), que e a
-    parte demorada — sem ela o programa parece travado."""
+    """Chamado quando a janela termina de carregar: avisa o lancador
+    (ScoreCard.exe), que mantem a tela de abertura na frente ate aqui,
+    e fecha a tela de abertura propria, se este executavel tiver uma."""
+    log.info("janela carregada")
+    sinal = os.environ.pop("SCORECARD_SINAL_PRONTO", None)
+    if sinal:
+        try:
+            with open(sinal, "w", encoding="utf-8") as fh:
+                fh.write("ok")
+        except OSError:
+            pass  # sem o aviso o lancador so espera um pouco mais
+
+    if "_PYI_SPLASH_IPC" not in os.environ:
+        return  # sem tela de abertura propria (aberto pelo lancador)
     try:
         import pyi_splash  # so existe dentro do .exe com splash
     except ImportError:
@@ -97,6 +127,7 @@ def fechar_splash():
 
 
 def main():
+    log.info("Score Card aberto (%s)", sys.executable if getattr(sys, "frozen", False) else "codigo-fonte")
     ensure_browser_installed()
 
     api = Api()

@@ -173,3 +173,43 @@ def test_credenciais_nunca_sao_persistidas(api, operations, isolated_history):
 
     assert "senha" not in str(settings_store.get_settings()).lower()
     assert "senha" not in str(isolated_history.get_history()).lower()
+
+
+def test_fila_abre_um_navegador_so(api, operations, monkeypatch):
+    """Cada operacao ganha uma sessao nova, mas o navegador e um so para
+    a fila inteira — e ele e fechado no fim."""
+    from automation import base
+
+    abertos = []
+    original = base.Navegador
+
+    class Contador(original):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            abertos.append(self)
+
+    monkeypatch.setattr(base, "Navegador", Contador)
+    operations("mock_a", "Mock A", "MockA")
+    operations("mock_b", "Mock B", "MockB")
+    operations("mock_c", "Mock C", "MockC")
+
+    result = api.run_multi_extraction(["mock_a", "mock_b", "mock_c"], date_range=DATAS, period="week")
+
+    assert result["success"], result.get("message")
+    assert len(abertos) == 1
+    assert not abertos[0].ativo(), "o navegador da fila precisa ser fechado no fim"
+
+
+def test_sessao_de_uma_operacao_nao_vaza_para_a_proxima(api, operations):
+    """Com o navegador compartilhado, a operacao seguinte comeca sem os
+    cookies da anterior: o login de cada site acontece do zero."""
+    from automation.base import Navegador
+
+    navegador = Navegador(headless=True)
+    try:
+        primeira = navegador.nova_pagina()
+        primeira.context.add_cookies([{"name": "sessao", "value": "x", "url": "https://exemplo.dhl.com"}])
+        segunda = navegador.nova_pagina()
+        assert segunda.context.cookies() == []
+    finally:
+        navegador.fechar()

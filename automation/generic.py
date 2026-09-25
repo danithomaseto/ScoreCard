@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 from datetime import date, datetime, timedelta
@@ -12,10 +13,12 @@ from automation.base import (
     select_combobox,
     select_custom_date_range,
     select_default_date_range,
-    open_browser_session,
+    Navegador,
     take_screenshot,
 )
 from config.operations import DEFAULT_DATE_RANGE, OPERATIONS
+
+registro = logging.getLogger("scorecard.automacao")
 
 
 def _to_site_date_format(iso_date):
@@ -49,6 +52,7 @@ def run(
     date_range=None,
     group_by=None,
     period=None,
+    navegador=None,
 ):
     """Executa a automacao completa (login + extracao do relatorio) para
     qualquer operacao cadastrada em config/operations.py.
@@ -66,7 +70,9 @@ def run(
     no lugar do padrao "User ID" da operacao. period ("week" ou "month")
     define em qual subpasta da operacao o arquivo e salvo - "Week" ou
     "Month" - pra separar os dados usados no calculo dos indicadores
-    semanais dos mensais.
+    semanais dos mensais. navegador, se informado, e um Navegador ja
+    aberto (fila do Extrair Multiplos): a operacao usa uma sessao nova
+    dele e nao o fecha no fim.
     """
     config = OPERATIONS[operation_key]
 
@@ -105,6 +111,7 @@ def run(
 
     def log(step):
         print(f"[{operation_key}] {step}", flush=True)
+        registro.info("[%s] %s", operation_key, step)
         if on_progress:
             try:
                 on_progress(step)
@@ -112,8 +119,13 @@ def run(
                 pass  # nunca deixa um erro de UI derrubar a automacao
 
     start_time = time.monotonic()
-    log("abrindo o navegador...")
-    playwright, browser, page = open_browser_session(headless=headless)
+    proprio = navegador is None
+    if proprio:
+        log("abrindo o navegador...")
+        navegador = Navegador(headless=headless)
+    else:
+        log("abrindo uma sessao nova no navegador...")
+    page = navegador.nova_pagina()
     result = {
         "operation": operation_key,
         "operation_label": config["label"],
@@ -188,9 +200,12 @@ def run(
         result["message"] = str(exc)
         result["screenshot"] = take_screenshot(page, operation_key)
     finally:
-        page.context.close()
-        browser.close()
-        playwright.stop()
+        try:
+            page.context.close()
+        except Exception:
+            pass
+        if proprio:
+            navegador.fechar()
 
     result["duration_seconds"] = round(time.monotonic() - start_time, 1)
     return result

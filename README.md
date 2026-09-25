@@ -108,7 +108,7 @@ terminal). Ele:
 2. Instala as dependencias.
 3. Baixa o Chromium (`playwright install chromium`).
 4. Limpa builds anteriores (`build/`, `dist/`).
-5. Empacota tudo com o PyInstaller em modo **arquivo unico**.
+5. Empacota tudo com o PyInstaller e junta num **arquivo unico**.
 
 Comando equivalente, se preferir rodar direto:
 ```powershell
@@ -118,14 +118,20 @@ pyinstaller build.spec --noconfirm
 Ao final, o executavel fica em **`dist\ScoreCard.exe`** — um arquivo
 so, sem mais nada junto. E esse arquivo que voce distribui.
 
-> **Sobre o modo arquivo unico:** o Chromium usado pela automacao vai
-> embutido dentro do `.exe` (evita depender de download na maquina de
-> quem for usar). Isso deixa o arquivo grande (varias centenas de MB)
-> e faz o programa demorar um pouco mais pra abrir — a cada abertura, e
-> nao so na primeira vez, o Windows precisa descompactar tudo numa
-> pasta temporaria antes de iniciar. Pra um uso semanal (abre, roda a
-> extracao, fecha), esse tempo extra de abertura e um bom compromisso
-> em troca de nao precisar instalar nada na maquina de quem usa.
+> **Como o arquivo unico abre rapido:** o `ScoreCard.exe` e um lancador
+> pequeno com o app inteiro (Python, interface, Chromium) guardado
+> dentro. Na **primeira abertura de cada versao** ele descompacta o app
+> em `%LOCALAPPDATA%\ScoreCard\app-<versao>` — a tela de abertura
+> mostra o andamento no rodape — e nas seguintes so abre, sem
+> descompactar nada. Mandou uma versao nova? Ela descompacta de novo uma
+> vez e apaga a pasta da anterior. Se a descompactacao for interrompida
+> (PC desligou), a proxima abertura refaz. Detalhes em `lancador.py`.
+>
+> O Chromium embutido e o **headless shell**, a versao feita pra rodar
+> sem janela, com mais ou menos metade do tamanho do completo. Para
+> gerar um .exe que consiga mostrar a automacao na tela
+> (`SCORECARD_HEADLESS=0`, so pra diagnostico), rode o build com
+> `SCORECARD_BUILD_FULL_CHROMIUM=1`.
 
 ### Pre-requisitos na maquina que gera o .exe
 
@@ -141,6 +147,19 @@ embutido). So o WebView2 Runtime (que, de novo, ja vem com o Windows
 atualizado) e, claro, acesso a rede da operacao (VPN) na hora de rodar
 a extracao de verdade.
 
+## Log
+
+O app grava o que fez em `%APPDATA%\ScoreCard\logs\scorecard.log`:
+abertura, etapas da automacao, extracoes, importacoes e erros com o
+detalhe tecnico. Quando algo der errado numa maquina, e esse arquivo que
+explica. O tamanho e limitado (1 MB, mais os 3 anteriores). Usuario e
+senha nunca entram no log.
+
+Os arquivos de dados (`settings.json`, `history.json`,
+`indicators.json`, `headcount.json`) sao gravados de forma segura: um
+PC que desliga no meio da gravacao deixa o arquivo anterior inteiro, e
+nunca um arquivo pela metade.
+
 ## Configuracoes / trocar a pasta do SharePoint
 
 Dentro do app, botao **Configuracoes** no topo, depois **Alterar
@@ -154,7 +173,10 @@ pasta**. Abre o seletor de pastas nativo do Windows. A pasta e validada
 - Ficam guardados **so na memoria** do processo (`api.py`, atributos
   `_username`/`_password` da classe `Api`) enquanto o app esta aberto;
   saem da memoria quando o programa fecha ou quando se clica em Sair.
-- Nunca sao escritos em disco, nem em log, nem em cache. O unico
+- Nunca sao escritos em disco, nem em log, nem em cache. Alem de
+  nenhum trecho do app registrar credenciais, o log passa todo texto
+  por um filtro que troca por `***` o usuario e a senha da sessao, caso
+  aparecam dentro de uma mensagem de erro vinda do navegador. O unico
   arquivo persistido (`%APPDATA%\ScoreCard\settings.json`) guarda so o
   caminho da pasta do SharePoint.
 - O campo de senha na interface e mascarado (`type="password"`).
@@ -172,7 +194,10 @@ aparece sozinha no dropdown, sem precisar mexer em mais nada.
 
 ```
 main.py              # cria a janela, garante que o Chromium existe
+lancador.py          # o ScoreCard.exe: descompacta o app uma vez e abre
 api.py                # metodos chamados pelo JS (login, executar, config)
+registro.py           # log local, sem credenciais
+arquivo_seguro.py     # gravacao dos JSON sem corromper no meio
 settings_store.py     # persiste a pasta do SharePoint em %APPDATA%
 history_store.py      # historico das extracoes em %APPDATA%
 indicators_store.py   # indicadores calculados, por operacao e periodo
@@ -202,9 +227,12 @@ tests/
   test_indicators_store.py  # gravacao e a tabela da aba Inicio
   test_presenteismo.py   # faltas, periodos e o caminho ate o cubo
   test_api.py            # extracao unica, fila multipla e validacoes
+  test_lancador.py       # app dentro do .exe, descompactado uma vez
+  test_infra.py          # gravacao segura e log sem credenciais
 requirements.txt
 requirements-dev.txt      # o de cima + pytest
-build.spec               # config do PyInstaller (modo arquivo unico)
+build.spec               # config do PyInstaller (app + lancador)
+tools/empacotar.py        # poe o app dentro do lancador, no fim do build
 build.bat                 # script de build de um clique (Windows)
 ```
 

@@ -22,6 +22,8 @@ import os
 import uuid
 from datetime import datetime
 
+import arquivo_seguro
+
 APP_NAME = "ScoreCard"
 
 PADRAO_CONFIG = {
@@ -58,8 +60,7 @@ def ler():
 
 
 def _gravar(dados):
-    with open(_caminho(), "w", encoding="utf-8") as fh:
-        json.dump(dados, fh, indent=2, ensure_ascii=False)
+    arquivo_seguro.gravar_json(_caminho(), dados)
     return dados
 
 

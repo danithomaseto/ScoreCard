@@ -46,29 +46,77 @@ def _click_first_match(target, selectors, timeout=4000):
     return False
 
 
+def _lancar(playwright, headless):
+    """Abre o Chromium mais leve que estiver disponivel.
+
+    Sem janela (o normal), a preferencia e o chromium-headless-shell:
+    feito so pra rodar sem tela, tem mais ou menos metade do tamanho do
+    Chromium completo — e e ele que vai embutido no .exe (build.spec).
+    Se ele nao estiver instalado, cai no completo, que e o que ja se
+    usava antes: um "playwright install" antigo pode nao ter trazido o
+    headless shell, e isso ja causou "Executable doesn't exist".
+
+    Com janela (SCORECARD_HEADLESS=0, so pra diagnostico) o headless
+    shell nao serve, entao vai direto no completo.
+    """
+    if os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE"):
+        return playwright.chromium.launch(
+            headless=headless,
+            executable_path=os.environ["PLAYWRIGHT_CHROMIUM_EXECUTABLE"],
+        )
+    if headless:
+        try:
+            return playwright.chromium.launch(headless=True)
+        except Exception as exc:  # noqa: BLE001
+            if "Executable doesn't exist" not in str(exc):
+                raise
+    return playwright.chromium.launch(headless=headless, channel="chromium")
+
+
+class Navegador:
+    """Playwright e Chromium abertos uma vez e reaproveitados.
+
+    Na fila do Extrair Multiplos, abrir um navegador novo para cada
+    operacao custava alguns segundos por operacao so de subir processo.
+    Com esta classe a fila abre um navegador so, e cada operacao ganha
+    um contexto proprio (cookies e sessao separados, como se fosse um
+    navegador novo) que e fechado no fim dela.
+    """
+
+    def __init__(self, headless=True):
+        self.playwright = sync_playwright().start()
+        try:
+            self.browser = _lancar(self.playwright, headless)
+        except Exception:
+            self.playwright.stop()
+            raise
+
+    def nova_pagina(self):
+        context = self.browser.new_context(ignore_https_errors=True, accept_downloads=True)
+        return context.new_page()
+
+    def ativo(self):
+        try:
+            return self.browser.is_connected()
+        except Exception:
+            return False
+
+    def fechar(self):
+        for fechar in (self.browser.close, self.playwright.stop):
+            try:
+                fechar()
+            except Exception:
+                pass
+
+
 def open_browser_session(headless=True):
     """Abre o Playwright, o browser e um context com download habilitado.
 
     Retorna (playwright, browser, page). Quem chamar e responsavel por
     fechar context/browser/playwright ao final.
     """
-    launch_kwargs = {"headless": headless}
-    if os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE"):
-        launch_kwargs["executable_path"] = os.environ["PLAYWRIGHT_CHROMIUM_EXECUTABLE"]
-    else:
-        # Forca o Chromium "completo" em vez do chromium-headless-shell
-        # (variante enxuta que o Playwright passou a preferir em modo
-        # headless por padrao) — esse segundo binario e baixado a parte
-        # e nem sempre acompanha um "playwright install chromium"
-        # simples, o que ja causou "Executable doesn't exist" mesmo com
-        # o Chromium normal presente.
-        launch_kwargs["channel"] = "chromium"
-
-    playwright = sync_playwright().start()
-    browser = playwright.chromium.launch(**launch_kwargs)
-    context = browser.new_context(ignore_https_errors=True, accept_downloads=True)
-    page = context.new_page()
-    return playwright, browser, page
+    navegador = Navegador(headless=headless)
+    return navegador.playwright, navegador.browser, navegador.nova_pagina()
 
 
 def take_screenshot(page, operation_key, suffix="falha"):

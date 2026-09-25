@@ -19,8 +19,9 @@ Ver docs/INDICADORES.md, secao 10.1.
 import datetime
 import unicodedata
 
-import openpyxl
-import xlrd
+# openpyxl e xlrd sao importados dentro das funcoes que leem: juntos
+# custam uma fracao de segundo que a abertura do app pagaria sem
+# precisar, ja que so sao usados quando chega um arquivo.
 
 # Titulo normalizado no export -> nome usado no resto do codigo.
 COLUNAS = {
@@ -127,6 +128,8 @@ def _linhas_do_xlsx(caminho):
     # valida a extensao do nome e recusaria um .xlsx salvo com outro
     # nome — que e justamente o tipo de coisa que a assinatura ja
     # resolveu antes de chegar aqui.
+    import openpyxl
+
     with open(caminho, "rb") as fh:
         livro = openpyxl.load_workbook(fh, data_only=True, read_only=True)
         try:
@@ -137,6 +140,8 @@ def _linhas_do_xlsx(caminho):
 
 
 def _linhas_do_xls(caminho):
+    import xlrd
+
     livro = xlrd.open_workbook(caminho)
     aba = livro.sheet_by_index(0)
     linhas = []

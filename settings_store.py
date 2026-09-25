@@ -7,6 +7,8 @@ na pasta de dados do Windows (%APPDATA%).
 import json
 import os
 
+import arquivo_seguro
+
 APP_NAME = "ScoreCard"
 
 
@@ -33,8 +35,7 @@ def get_settings():
 
 
 def save_settings(data):
-    with open(_settings_path(), "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=2, ensure_ascii=False)
+    arquivo_seguro.gravar_json(_settings_path(), data)
 
 
 def get_sharepoint_folder():
