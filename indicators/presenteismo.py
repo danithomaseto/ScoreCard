@@ -120,6 +120,9 @@ def ciclos_folha(hoje=None, anteriores=3):
         ciclos.append({
             "id": inicio.isoformat(),
             "rotulo": f"{inicio.strftime('%d/%m/%Y')} → {fim.strftime('%d/%m/%Y')}",
+            # O ano do inicio e sempre o do fim ou o anterior; repetir
+            # os dois estourava a largura do seletor.
+            "rotulo_curto": f"{inicio.strftime('%d/%m')} → {fim.strftime('%d/%m/%Y')}",
             "inicio": inicio.isoformat(),
             "fim": fim.isoformat(),
             "status": status,

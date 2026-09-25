@@ -916,7 +916,6 @@ const hcOperacao = document.getElementById('hc-operacao');
 const hcMes = document.getElementById('hc-mes');
 const hcMesLabel = document.getElementById('hc-mes-label');
 const hcPeriodo = document.getElementById('hc-periodo');
-const hcPeriodoHint = document.getElementById('hc-periodo-hint');
 const hcVisualizacao = document.getElementById('hc-visualizacao');
 const hcCorpo = document.getElementById('hc-corpo');
 const hcTotal = document.getElementById('hc-total');
@@ -931,6 +930,10 @@ const hcArquivoInfo = document.getElementById('hc-arquivo-info');
 
 let hcEstado = { operacao: 'todas', visualizacao: 'semanal', mes: null, periodo_id: null };
 let hcTela = null;
+
+function plural(numero, singular, plural_) {
+  return `${numero} ${numero === 1 ? singular : plural_}`;
+}
 
 function hcPercentual(valor) {
   if (valor === null || valor === undefined) return '-';
@@ -972,15 +975,21 @@ function desenharFiltrosHc(tela) {
   hcMesLabel.textContent = noMes ? 'Periodo da Folha Ponto' : 'Mes vigente';
   if (noMes) {
     preencherSelect(hcMes, tela.periodos.map((p) => ({
-      id: p.id, rotulo: `${p.rotulo} · ${p.status}`,
+      id: p.id, rotulo: `${p.rotulo_curto} · ${p.status}`,
     })), tela.periodo_id);
   } else {
     preencherSelect(hcMes, tela.meses, tela.mes);
   }
 
-  preencherSelect(hcPeriodo, noMes ? [] : tela.periodos, tela.periodo_id);
+  // No modo mes o seletor de semana fica desabilitado, e o proprio texto
+  // dele explica o porque - uma dica embaixo esticava o card so neste
+  // modo e a tela pulava ao alternar.
+  if (noMes) {
+    preencherSelect(hcPeriodo, [{ id: '', rotulo: 'Nao se aplica ao ciclo da folha' }], '');
+  } else {
+    preencherSelect(hcPeriodo, tela.periodos, tela.periodo_id);
+  }
   hcPeriodo.disabled = noMes;
-  hcPeriodoHint.hidden = !noMes;
 
   for (const botao of hcVisualizacao.querySelectorAll('.seg-opcao')) {
     botao.classList.toggle('active', botao.dataset.visualizacao === tela.visualizacao);
@@ -991,6 +1000,7 @@ function desenharCardsHc(tela) {
   const c = tela.cards;
   document.getElementById('hc-card-operacao').textContent = c.operacao;
   document.getElementById('hc-card-periodo').textContent = c.periodo;
+  document.getElementById('hc-card-periodo-nota').textContent = c.periodo_nota;
   document.getElementById('hc-card-hc').textContent = c.hc_total;
   document.getElementById('hc-card-faltas').textContent = c.faltas;
   document.getElementById('hc-card-horas').textContent = `${c.horas_perdidas}h perdidas`;
@@ -1016,8 +1026,10 @@ function desenharTabelaHc(tela) {
   hcTabelaTitulo.textContent = tela.visualizacao === 'mes'
     ? 'Resultado do mes por gestor · folha ponto'
     : 'Resultado semanal por gestor';
-  hcContador.textContent = `${tela.linhas.length} linha${tela.linhas.length === 1 ? '' : 's'}`;
+  hcContador.textContent = plural(tela.linhas.length, 'linha', 'linhas');
+  // Sem gestor, a tabela so teria cabecalhos soltos: fica so a mensagem.
   hcVazio.hidden = tela.linhas.length > 0;
+  document.getElementById('hc-tabela-wrap').hidden = tela.linhas.length === 0;
 
   hcCorpo.innerHTML = '';
   for (const linha of tela.linhas) {
@@ -1036,7 +1048,7 @@ function desenharTabelaHc(tela) {
     nome.textContent = linha.gestor;
     const nota = document.createElement('div');
     nota.className = 'hc-gestor-nota';
-    nota.textContent = `${linha.usuarios} usuario${linha.usuarios === 1 ? '' : 's'} na planilha`;
+    nota.textContent = `${plural(linha.usuarios, 'usuario', 'usuarios')} na planilha`;
     nomes.appendChild(nome);
     nomes.appendChild(nota);
     caixa.appendChild(avatar);
@@ -1098,7 +1110,7 @@ function desenharTabelaHc(tela) {
   const tr = document.createElement('tr');
   const celulas = [
     'TOTAL CONSOLIDADO',
-    `${t.gestores} gestor${t.gestores === 1 ? '' : 'es'}`,
+    plural(t.gestores, 'gestor', 'gestores'),
     t.hc, t.dias_uteis, t.horas_dia, t.faltas,
   ];
   celulas.forEach((texto, indice) => {
@@ -1188,7 +1200,7 @@ function desenharArquivoHc(tela) {
       const status = item.status ? ` · ${item.status}` : '';
       partes.push(`<span class="hc-cobertura-item${marca}">` +
         `<span>${item.rotulo}${status}</span>` +
-        `<span>${item.linhas} linhas · ${item.dias} dias</span></span>`);
+        `<span>${plural(item.linhas, 'linha', 'linhas')} · ${plural(item.dias, 'dia', 'dias')}</span></span>`);
     }
     partes.push('</div>');
   }

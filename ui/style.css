@@ -756,20 +756,32 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .filtros-linha { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
 .filtro-campo { display: flex; flex-direction: column; flex: 1 1 210px; min-width: 190px; }
+/* O ciclo da folha ponto tem o texto mais longo dos quatro campos. */
+.filtro-campo.largo { flex-grow: 1.35; }
 .filtro-campo select { margin-bottom: 0; }
 .filtro-campo select:disabled { opacity: 0.45; cursor: not-allowed; }
 .filtro-hint { margin: 8px 0 0; font-size: 11px; color: #667085; line-height: 1.5; }
 
+/* Mesma altura dos selects ao lado (46px) e opcoes dividindo a largura
+   toda: o estilo global de botao dava 46px a cada opcao e o conjunto
+   ficava com 56, desalinhado, e com um vazio a direita. */
 .segmentado {
-  display: inline-flex;
+  display: flex;
+  width: 100%;
+  height: 46px;
+  box-sizing: border-box;
   background: var(--input-bg);
   border: 1px solid var(--input-border);
   border-radius: 8px;
-  padding: 4px;
-  gap: 4px;
+  padding: 3px;
+  gap: 3px;
 }
 
 .seg-opcao {
+  flex: 1;
+  height: 100%;
+  margin: 0;
+  padding: 0 10px;
   background: none;
   border: none;
   border-radius: 6px;
@@ -777,10 +789,11 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
-  padding: 9px 16px;
+  white-space: nowrap;
   cursor: pointer;
-  width: auto;
 }
+
+.seg-opcao:hover:not(.active) { color: var(--text); background: rgba(255, 255, 255, 0.04); }
 
 .seg-opcao.active { background: var(--yellow); color: #151515; }
 
@@ -804,6 +817,14 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
 .hc-card-valor { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
+/* Nome e periodo sao texto, nao numero: no tamanho dos numeros eles
+   quebravam em ate tres linhas e esticavam os cinco cards juntos. */
+.hc-card-valor.texto {
+  font-size: 17px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .hc-card-valor.vermelho { color: #fca5a5; }
 .hc-card-nota { font-size: 11px; color: #667085; margin-top: 6px; }
 
@@ -981,8 +1002,12 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .hc-formula-corpo { gap: 24px; flex-wrap: wrap; }
 .hc-formula-corpo:not([hidden]) { display: flex; }
 
+/* O bloco de codigo estica ate a altura da memoria ao lado; o texto
+   fica centralizado nele em vez de colado no topo com um vazio embaixo. */
 .hc-formula {
   flex: 1 1 380px;
+  display: flex;
+  align-items: center;
   margin: 0;
   background: #0d1120;
   border: 1px solid var(--card-border);

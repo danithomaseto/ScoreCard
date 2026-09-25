@@ -86,6 +86,33 @@ def _rotulo_periodo(visualizacao, periodos, periodo_id):
     return periodo["rotulo"]
 
 
+def _plural(numero, singular, plural):
+    return f"{numero} {singular if numero == 1 else plural}"
+
+
+def _card_periodo(visualizacao, mes, periodos, periodo_id, dias):
+    """Titulo curto e nota do card de periodo.
+
+    O rotulo completo ("Folha ponto · 13/09/2026 → 12/10/2026") quebrava
+    em tres linhas no card e esticava os cinco cards juntos; aqui ele e
+    dividido entre o valor e a linha de nota.
+    """
+    uteis = _plural(dias, "dia util", "dias uteis")
+    if visualizacao == "mes":
+        periodo = _periodo_selecionado(periodos, periodo_id)
+        if not periodo:
+            return "-", ""
+        return periodo["rotulo_curto"], f"Folha ponto · {periodo['status']} · {uteis}"
+    if periodo_id == TODAS or not periodo_id:
+        return _rotulo_mes(mes), f"Todas as semanas · {uteis}"
+    periodo = _periodo_selecionado(periodos, periodo_id)
+    if not periodo:
+        return "-", ""
+    inicio = datetime.date.fromisoformat(periodo["inicio"]).strftime("%d/%m")
+    fim = datetime.date.fromisoformat(periodo["fim"]).strftime("%d/%m")
+    return f"{inicio} a {fim}", f"S{periodo['numero']} · {uteis}"
+
+
 def _usuarios_do_gestor(lancamentos, nome):
     return len({f["usuario"] for f in lancamentos
                 if f["gestor"].casefold() == nome.casefold() and f["usuario"]})
@@ -124,6 +151,8 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
     inicio, fim = _intervalo(periodos, periodo_id)
     dias_periodo = _dias_do_periodo(periodos, periodo_id)
     rotulo = _rotulo_periodo(visualizacao, periodos, periodo_id)
+    periodo_titulo, periodo_nota = _card_periodo(
+        visualizacao, mes, periodos, periodo_id, dias_periodo)
 
     gestores = [g for g in dados["gestores"]
                 if operacao in (TODAS, None) or g["operacao"] == operacao]
@@ -186,7 +215,8 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
                               [{"key": TODAS, "label": "Todas as Operacoes"}]
                               + [{"key": k, "label": v["label"]} for k, v in OPERATIONS.items()]
                               if o["key"] == (operacao or TODAS)), ""),
-            "periodo": rotulo,
+            "periodo": periodo_titulo,
+            "periodo_nota": periodo_nota,
             "hc_total": hc_total,
             "faltas": faltas_total,
             "horas_perdidas": round(horas_perdidas, 2),
