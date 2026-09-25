@@ -54,6 +54,9 @@ DEFAULT_DATE_RANGE = {
     "month": "Last Month",
 }
 
+# "escala_espanhola": a operacao trabalha os dois ultimos sabados de cada
+# mes (e folga os primeiros). Esses sabados contam como dia util no
+# presenteismo e podem entrar nos dias de pico. Domingo nunca entra.
 OPERATIONS = {
     "hugo_boss": {
         "label": "Hugo Boss",
@@ -94,6 +97,7 @@ OPERATIONS = {
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "Nike",
+        "escala_espanhola": True,
     },
     "sumup": {
         "label": "Sumup",
@@ -114,6 +118,7 @@ OPERATIONS = {
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "Rede",
+        "escala_espanhola": True,
     },
     "jcb": {
         "label": "JCB",
@@ -124,6 +129,7 @@ OPERATIONS = {
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "JCB",
+        "escala_espanhola": True,
     },
     "lego": {
         "label": "Lego",
@@ -154,6 +160,7 @@ OPERATIONS = {
         "group_by_option": "User ID",
         "export_format": "EXCEL",
         "sharepoint_folder": "HPE",
+        "escala_espanhola": True,
     },
     "armani": {
         "label": "Armani",
@@ -176,3 +183,7 @@ OPERATIONS = {
         "sharepoint_folder": "ABB",
     },
 }
+
+
+def escala_espanhola(operation_key):
+    return bool(OPERATIONS.get(operation_key, {}).get("escala_espanhola"))

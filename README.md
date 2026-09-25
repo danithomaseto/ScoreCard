@@ -213,6 +213,7 @@ indicators/
   periodos.py           # numero da semana e rotulos de periodo
   faltas.py             # le a planilha de ausencias e filtra o que conta
   presenteismo.py       # semanas do mes, ciclos 13->12 e a formula
+  pico.py               # hora direta dos 5 dias de pico do mes
 config/
   operations.py         # cadastro das operacoes
 ui/
@@ -226,6 +227,7 @@ tests/
   test_indicators.py     # calculo conferido contra as planilhas
   test_indicators_store.py  # gravacao e a tabela da aba Inicio
   test_presenteismo.py   # faltas, periodos e o caminho ate o cubo
+  test_pico.py           # dias de pico e sabados da escala espanhola
   test_api.py            # extracao unica, fila multipla e validacoes
   test_lancador.py       # app dentro do .exe, descompactado uma vez
   test_infra.py          # gravacao segura e log sem credenciais

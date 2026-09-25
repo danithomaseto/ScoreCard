@@ -922,3 +922,56 @@ indicador. O CUBO e refeito junto.
   diferir, porque os dias sao outros.
 
 O botao da tela de Headcount passou a ser **Ver no Inicio**.
+
+## 18. Dias de pico e escala espanhola (25/09/2026)
+
+### Hora direta de pico
+
+Terceira opcao no "Periodo do indicador" das duas abas de extracao:
+**Dias de Pico**. E o mesmo Summary, com tres diferencas:
+
+- **Group By 1 fixo em Report Date** (uma linha por dia). O campo trava
+  nesse valor enquanto o pico estiver escolhido.
+- **Periodo**: o mes do calendario. Sem datas digitadas, "Last Month";
+  o atalho "Mes passado" mantem o pico escolhido.
+- **Pasta**: `<operacao>\Dias de Pico`.
+
+A conta segue a planilha de referencia (Calculo_ScoreCard.xlsx, aba
+Summary) e esta em `indicators/pico.py`:
+
+1. Hora direta de cada dia: (Measured Direct + Signon Direct + Insert
+   Direct) / (Total - PD Brk).
+2. Os **5 dias de maior hora direta** entre os dias validos.
+3. Hora direta de pico **agregada**: soma das horas dos 5 dias dividida
+   uma vez so (celula U2 da planilha), e nao a media das porcentagens.
+
+Dias validos: segunda a sexta; nas operacoes de escala espanhola,
+tambem os dois ultimos sabados do mes. Domingo e sabado fora da escala
+nunca entram — e hora extra, e hora extra nao entra. So contam os dias
+do mes extraido.
+
+Conferido com a planilha: 96,82% com o sabado 19/09 (escala espanhola)
+e 96,57% sem ele.
+
+Na aba Inicio o pico e uma coluna **"Pico"** logo a direita do mes, do
+CUBO a DISPERSAO (coverage nao se aplica e fica vazio; o Copiar leva os
+cinco valores). Efetividade, dispersao e presenteismo sao os do mes; so
+a hora direta e do pico, e o cubo muda com ela:
+CUBO pico = EF do mes x HD do pico x PRES do mes. Passando o mouse no
+titulo aparecem os 5 dias. Extraido so ate parte do mes, a coluna
+mostra "mes em andamento".
+
+### Escala espanhola
+
+Nike/Fisia, Rede, JCB e HPE (`"escala_espanhola": True` em
+config/operations.py) trabalham os **dois ultimos sabados de cada mes**
+e folgam os primeiros. Esses sabados:
+
+- podem entrar nos dias de pico;
+- contam como **dia util no presenteismo**, na semana e no ciclo da
+  folha. Cada ciclo 13->12 ganha 2 dias (os dois ultimos sabados sempre
+  caem depois do dia 13). Ex.: 13/09 -> 12/10/2026 tem 21 dias uteis na
+  escala normal e 23 na espanhola.
+
+Na tela de Headcount com "Todas as Operacoes", cada gestor usa os dias
+uteis da escala da operacao dele.

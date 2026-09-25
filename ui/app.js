@@ -264,7 +264,8 @@ function desenharCabecalho(tabela) {
   tabela.colunas.forEach((coluna, indice) => {
     const th = document.createElement('th');
     th.scope = 'col';
-    th.className = 'indicator-col' + (coluna.periodo === 'month' ? ' month-col' : '');
+    th.className = 'indicator-col' + classeDaColuna(coluna);
+    if (coluna.dica) th.title = coluna.dica;
 
     const titulo = document.createElement('div');
     titulo.className = 'col-title';
@@ -279,13 +280,19 @@ function desenharCabecalho(tabela) {
     if (coluna.parcial) {
       const aviso = document.createElement('div');
       aviso.className = 'col-warning';
-      aviso.textContent = 'semana incompleta';
+      aviso.textContent = coluna.aviso || 'semana incompleta';
       th.appendChild(aviso);
     }
 
     th.appendChild(botaoCopiar(indice, coluna.titulo));
     indicatorsHead.appendChild(th);
   });
+}
+
+function classeDaColuna(coluna) {
+  if (coluna.periodo === 'month') return ' month-col';
+  if (coluna.periodo === 'peak') return ' peak-col';
+  return '';
 }
 
 function desenharLinhas(tabela) {
@@ -309,8 +316,12 @@ function desenharLinhas(tabela) {
     linha.celulas.forEach((celula, indice) => {
       const td = document.createElement('td');
       const coluna = tabela.colunas[indice];
-      td.className = 'indicator-cell' + (coluna.periodo === 'month' ? ' month-col' : '');
-      if (celula.texto) {
+      td.className = 'indicator-cell' + classeDaColuna(coluna);
+      if (celula.nao_se_aplica) {
+        // Indicador que nao existe nesta coluna (coverage no pico): nem
+        // traco, que quer dizer "ainda sem numero".
+        td.classList.add('nao-se-aplica');
+      } else if (celula.texto) {
         const valor = document.createElement('span');
         valor.className = 'indicator-value ' + (celula.cor || '');
         valor.textContent = celula.texto;
@@ -338,15 +349,19 @@ function botaoCopiar(indice, titulo) {
   return btn;
 }
 
-// Os seis valores da coluna, na ordem dos indicadores. Indicador sem
-// numero vira posicao vazia, pra nenhum valor subir de lugar.
+// Os valores da coluna, na ordem dos indicadores. Indicador sem numero
+// vira posicao vazia, pra nenhum valor subir de lugar. Indicador que
+// nao existe na coluna (coverage no pico) fica de fora: o pico copia
+// cinco valores, do cubo a dispersao.
 function valoresDaColuna(indice) {
-  return Array.from(indicatorsBody.querySelectorAll('tr')).map((tr) => {
-    const celula = tr.querySelectorAll('td')[indice];
-    if (!celula) return '';
-    const valor = celula.querySelector('.indicator-value');
-    return valor ? valor.textContent : '';
-  });
+  return Array.from(indicatorsBody.querySelectorAll('tr'))
+    .map((tr) => tr.querySelectorAll('td')[indice])
+    .filter((celula) => !(celula && celula.classList.contains('nao-se-aplica')))
+    .map((celula) => {
+      if (!celula) return '';
+      const valor = celula.querySelector('.indicator-value');
+      return valor ? valor.textContent : '';
+    });
 }
 
 function textoDaColuna(indice) {
@@ -563,18 +578,30 @@ async function loadGroupByOptions() {
   }
 }
 
+// Dias de pico: o Group By 1 e sempre Report Date (uma linha por dia),
+// entao o campo trava nesse valor enquanto o pico estiver escolhido e
+// volta ao que estava ao trocar de novo.
+const GROUP_BY_DO_PICO = 'Report Date';
+
+function escolherPeriodo(botoes, select, periodo) {
+  botoes.forEach((el) => el.classList.toggle('active', el.dataset.period === periodo));
+  const pico = periodo === 'peak';
+  if (pico && !select.disabled) {
+    select.dataset.anterior = select.value;
+    select.value = GROUP_BY_DO_PICO;
+  } else if (!pico && select.disabled) {
+    select.value = select.dataset.anterior || 'User ID';
+  }
+  select.disabled = pico;
+  select.title = pico ? 'Nos dias de pico o Group By 1 e sempre Report Date.' : '';
+}
+
 periodOptionEls.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    periodOptionEls.forEach((el) => el.classList.remove('active'));
-    btn.classList.add('active');
-  });
+  btn.addEventListener('click', () => escolherPeriodo(periodOptionEls, groupBySelect, btn.dataset.period));
 });
 
 multiPeriodOptionEls.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    multiPeriodOptionEls.forEach((el) => el.classList.remove('active'));
-    btn.classList.add('active');
-  });
+  btn.addEventListener('click', () => escolherPeriodo(multiPeriodOptionEls, multiGroupBySelect, btn.dataset.period));
 });
 
 function getSelectedMultiPeriod() {
@@ -715,6 +742,7 @@ document.querySelectorAll('[data-date-shortcuts]').forEach((group) => {
   const fromInput = isMulti ? multiFromDateInput : fromDateInput;
   const toInput = isMulti ? multiToDateInput : toDateInput;
   const periodButtons = isMulti ? multiPeriodOptionEls : periodOptionEls;
+  const select = isMulti ? multiGroupBySelect : groupBySelect;
 
   group.querySelectorAll('button[data-range]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -723,8 +751,12 @@ document.querySelectorAll('[data-date-shortcuts]').forEach((group) => {
       fromInput.value = toInputDate(inicio);
       toInput.value = toInputDate(fim);
 
-      const alvo = mensal ? 'month' : 'week';
-      periodButtons.forEach((el) => el.classList.toggle('active', el.dataset.period === alvo));
+      // "Mes passado" com Dias de Pico escolhido continua no pico: o pico
+      // tambem e de um mes inteiro.
+      const atual = Array.from(periodButtons).find((el) => el.classList.contains('active'));
+      const noPico = atual && atual.dataset.period === 'peak';
+      const alvo = mensal ? (noPico ? 'peak' : 'month') : 'week';
+      escolherPeriodo(periodButtons, select, alvo);
     });
   });
 });

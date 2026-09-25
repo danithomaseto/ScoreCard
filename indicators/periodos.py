@@ -62,3 +62,13 @@ def semana_parcial(data_iso, de, ate):
     inicio = date.fromisoformat(data_iso)
     fim = inicio + timedelta(days=6)
     return inicio < date.fromisoformat(de) or fim > date.fromisoformat(ate)
+
+
+def mes_parcial(chave, de, ate):
+    """O intervalo extraido para antes do fim do mes? So da pra saber com
+    datas digitadas; o "Last Month" do relatorio ja e o mes fechado."""
+    if not de or not ate:
+        return False
+    ano, mes = (int(p) for p in chave.split("-"))
+    proximo = date(ano + (mes == 12), mes % 12 + 1, 1)
+    return date.fromisoformat(ate) < proximo - timedelta(days=1)

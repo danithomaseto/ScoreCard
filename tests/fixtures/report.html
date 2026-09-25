@@ -97,9 +97,11 @@ document.getElementById('button-1224').addEventListener('click', function() {
   // O arquivo entregue muda com o agrupamento, igual ao Summary: com o
   // segundo nivel marcado vem o export semanal (com a coluna de
   // semana); sem ele, o mensal consolidado, sem data nenhuma.
+  // Com Group By 1 = Report Date (dias de pico), uma linha por dia.
   const semanal = document.getElementById('groupinglvl2_check-inputEl').checked;
+  const porDia = document.getElementById('groupBy').value === 'Report Date';
   const link = document.getElementById('downloadLink');
-  link.href = semanal ? 'summary_3semanas.xlsx' : 'summary_mes.xlsx';
+  link.href = semanal ? 'summary_3semanas.xlsx' : (porDia ? 'summary_pico.xlsx' : 'summary_mes.xlsx');
   link.click();
 });
 </script>

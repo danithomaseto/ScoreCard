@@ -4,6 +4,7 @@ chamavel do JavaScript.
 """
 
 import base64
+import datetime
 import json
 import logging
 import os
@@ -14,12 +15,12 @@ import threading
 
 import webview
 
-from config.operations import GROUP_BY_OPTIONS, OPERATIONS
+from config.operations import GROUP_BY_OPTIONS, OPERATIONS, escala_espanhola
 import headcount
 import headcount_store
 import history_store
 from indicators import faltas as faltas_reader
-from indicators import limits, periodos, presenteismo, reader, weekly
+from indicators import limits, periodos, pico, presenteismo, reader, weekly
 import indicators_store
 import registro
 import settings_store
@@ -179,7 +180,26 @@ class Api:
             "ate": ate,
         }
 
-        if result.get("period_type") == "Month":
+        if result.get("period_type") == "Dias de Pico":
+            chave = result.get("month_key")
+            if not chave:
+                result["indicators_message"] = (
+                    "Relatorio salvo, mas nao deu pra identificar de que mes "
+                    "ele e: informe o periodo na tela e extraia de novo."
+                )
+                return
+            calculado = pico.calcular(lido["linhas"], chave,
+                                      escala_espanhola=escala_espanhola(operation_key))
+            if calculado["hora_direta"] is None:
+                result["indicators_message"] = (
+                    "Relatorio salvo, mas nenhum dia valido do mes veio com "
+                    "horas: confira se o Group By 1 saiu como Report Date."
+                )
+                return
+            calculado["parcial"] = periodos.mes_parcial(chave, de, ate)
+            resultados = {chave: calculado}
+            periodo = "peak"
+        elif result.get("period_type") == "Month":
             chave = result.get("month_key")
             if not chave:
                 result["indicators_message"] = (
@@ -213,7 +233,7 @@ class Api:
         if group_by and group_by not in GROUP_BY_OPTIONS:
             return {"success": False, "message": "Opcao de 'Group By 1' invalida."}
 
-        if period and period not in ("week", "month"):
+        if period and period not in ("week", "month", "peak"):
             return {"success": False, "message": "Periodo do indicador invalido."}
 
         folder_check = self.validate_sharepoint_folder()
@@ -433,25 +453,34 @@ class Api:
 
         # Mes: mesma regra, so o que veio do Summary. O presenteismo que
         # entra nele e o do ciclo da folha ponto que comeca no dia 13.
-        for chave in sorted(guardado.get("month", {})):
-            entrada = dict(guardado.get("month", {}).get(chave, {}))
+        # Logo depois de cada mes vem o pico dele, se foi extraido.
+        meses = guardado.get("month", {})
+        picos = guardado.get("peak", {})
+        for chave in sorted(set(meses) | set(picos)):
+            entrada_mes = dict(meses.get(chave, {}))
             vivo = ao_vivo["month"].get(chave)
-            de = entrada.get("de") or (vivo or {}).get("de")
-            ate = entrada.get("ate") or (vivo or {}).get("ate")
-            titulo, subtitulo = periodos.rotulo_mes(chave, de, ate)
-            colunas.append({
-                "chave": chave,
-                "periodo": "month",
-                "titulo": titulo,
-                "subtitulo": subtitulo,
-                "parcial": False,
-                "_entrada": self._com_presenteismo(entrada, vivo),
-            })
+            if chave in meses:
+                de = entrada_mes.get("de") or (vivo or {}).get("de")
+                ate = entrada_mes.get("ate") or (vivo or {}).get("ate")
+                titulo, subtitulo = periodos.rotulo_mes(chave, de, ate)
+                colunas.append({
+                    "chave": chave,
+                    "periodo": "month",
+                    "titulo": titulo,
+                    "subtitulo": subtitulo,
+                    "parcial": False,
+                    "_entrada": self._com_presenteismo(dict(entrada_mes), vivo),
+                })
+            if chave in picos:
+                colunas.append(self._coluna_pico(chave, picos[chave], entrada_mes, vivo))
 
         linhas = []
         for indicador in limits.ORDEM:
             celulas = []
             for coluna in colunas:
+                if indicador in coluna.get("sem", ()):
+                    celulas.append({"texto": "", "cor": "", "nao_se_aplica": True})
+                    continue
                 valor = coluna["_entrada"].get(indicador)
                 celulas.append({
                     "texto": limits.formatar(valor),
@@ -466,11 +495,34 @@ class Api:
 
         for coluna in colunas:
             coluna.pop("_entrada")
+            coluna.pop("sem", None)
 
         return {
             "operacao": OPERATIONS[operation_key]["label"],
             "colunas": colunas,
             "linhas": linhas,
+        }
+
+    def _coluna_pico(self, chave, entrada_pico, entrada_mes, vivo):
+        """O pico usa efetividade, dispersao e presenteismo do mes; so a
+        hora direta e dos dias de pico — e o cubo muda com ela. Sem a
+        extracao mensal, fica so a hora direta, e o cubo sem numero."""
+        entrada = {campo: entrada_mes.get(campo) for campo in ("efetividade", "dispersao")}
+        entrada["hora_direta"] = entrada_pico.get("hora_direta")
+        dias = [datetime.date.fromisoformat(d["data"]).strftime("%d/%m")
+                for d in entrada_pico.get("dias", [])]
+        titulo, _ = periodos.rotulo_mes(chave)
+        return {
+            "chave": f"pico-{chave}",
+            "periodo": "peak",
+            "titulo": "Pico",
+            "subtitulo": f"{titulo} · {len(dias)} dias",
+            "parcial": bool(entrada_pico.get("parcial")),
+            "aviso": "mes em andamento",
+            "dica": "Dias de pico: " + ", ".join(dias) if dias else "",
+            # O pico vai do CUBO a DISPERSAO; coverage nao se aplica.
+            "sem": ["coverage"],
+            "_entrada": self._com_presenteismo(entrada, vivo),
         }
 
     @staticmethod

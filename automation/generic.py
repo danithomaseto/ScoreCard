@@ -18,6 +18,18 @@ from automation.base import (
 )
 from config.operations import DEFAULT_DATE_RANGE, OPERATIONS
 
+# Tipo de extracao -> subpasta da operacao onde o arquivo e salvo. Os
+# nomes precisam bater com as pastas do SharePoint.
+PASTAS_DO_PERIODO = {
+    "week": "Week",
+    "month": "Month",
+    "peak": "Dias de Pico",
+}
+
+# Dias de pico: uma linha por dia do mes, sem quebra por pessoa — so a
+# hora direta sai daqui; efetividade e dispersao vem do mensal.
+GROUP_BY_DO_PICO = "Report Date"
+
 registro = logging.getLogger("scorecard.automacao")
 
 
@@ -67,10 +79,11 @@ def run(
     um periodo especifico em vez do padrao (Ultima semana) da operacao.
     group_by, se informado, e o texto exato de uma das opcoes de "Group
     By 1" (config.operations.GROUP_BY_OPTIONS) escolhida na tela, usado
-    no lugar do padrao "User ID" da operacao. period ("week" ou "month")
-    define em qual subpasta da operacao o arquivo e salvo - "Week" ou
-    "Month" - pra separar os dados usados no calculo dos indicadores
-    semanais dos mensais. navegador, se informado, e um Navegador ja
+    no lugar do padrao "User ID" da operacao. period ("week", "month" ou
+    "peak") define em qual subpasta da operacao o arquivo e salvo -
+    "Week", "Month" ou "Dias de Pico" (PASTAS_DO_PERIODO). No pico o
+    Group By 1 e sempre Report Date, e o escolhido na tela e ignorado.
+    navegador, se informado, e um Navegador ja
     aberto (fila do Extrair Multiplos): a operacao usa uma sessao nova
     dele e nao o fecha no fim.
     """
@@ -90,13 +103,18 @@ def run(
             "message": f"A pasta configurada nao existe ou nao foi definida: {base_dir}",
         }
 
-    period_folder = "Month" if (period or "week").lower() == "month" else "Week"
+    tipo = (period or "week").lower()
+    if tipo not in PASTAS_DO_PERIODO:
+        tipo = "week"
+    period_folder = PASTAS_DO_PERIODO[tipo]
 
     folder = config.get("sharepoint_folder") or config["label"]
     download_dir = os.path.join(base_dir, folder, period_folder)
 
-    is_month = period_folder == "Month"
-    default_range = DEFAULT_DATE_RANGE["month" if is_month else "week"]
+    is_month = tipo == "month"
+    is_peak = tipo == "peak"
+    # O pico e do mes do calendario: sem datas digitadas, "Last Month".
+    default_range = DEFAULT_DATE_RANGE["week" if tipo == "week" else "month"]
 
     if date_range:
         period_label = (
@@ -107,7 +125,7 @@ def run(
     else:
         period_label = default_range
         origem = default_range.lower().replace(" ", "_")
-    group_by_option = group_by or config["group_by_option"]
+    group_by_option = GROUP_BY_DO_PICO if is_peak else (group_by or config["group_by_option"])
 
     def log(step):
         print(f"[{operation_key}] {step}", flush=True)
@@ -137,7 +155,7 @@ def run(
         "origem": origem,
         "date_from": date_range["from_date"] if date_range else None,
         "date_to": date_range["to_date"] if date_range else None,
-        "month_key": _month_key(date_range) if is_month else None,
+        "month_key": _month_key(date_range) if (is_month or is_peak) else None,
     }
 
     try:
@@ -164,8 +182,8 @@ def run(
             log(f"preenchendo Date Range ({default_range})...")
             select_default_date_range(frame, default_range)
 
-        if is_month:
-            # O mensal vem consolidado: um nivel so, sem quebra por
+        if is_month or is_peak:
+            # O mensal vem consolidado (e o pico, por dia): um nivel so, sem quebra por
             # semana. Uma linha por pessoa com os totais do periodo.
             log(f"preenchendo Group By 1 ({group_by_option})...")
             select_combobox(frame, "Group By 1", group_by_option, option_text=group_by_option)

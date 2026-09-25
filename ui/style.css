@@ -378,6 +378,10 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 /* O mes vem de extracao propria, com outro intervalo: separar deixa
    claro que a ultima coluna nao e a soma das anteriores. */
 .month-col { border-left: 2px solid var(--input-border); background: rgba(255, 204, 0, 0.04); }
+/* O pico vem colado no mes dele: mesmo fundo, sem a linha de separacao,
+   e o titulo em amarelo para nao ser lido como um segundo mes. */
+.peak-col { background: rgba(255, 204, 0, 0.04); }
+th.peak-col .col-title { color: var(--yellow); }
 
 .indicator-name { vertical-align: middle; }
 .indicator-label { font-size: 15px; font-weight: 700; color: var(--text); }
@@ -517,6 +521,11 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
    parametros, entao sobra pouca largura: a 1280 dava 125px por botao e
    o texto quebrava. Abaixo do minimo eles empilham em vez de espremer
    ate quebrar a palavra. */
+/* Com os tres periodos (Week, Month, Dias de Pico), meia coluna nao
+   cabe: a fonte de dados e o periodo ficam um embaixo do outro, e os
+   tres cards dividem a largura toda. */
+.linha-fonte-periodo { display: block; }
+
 .period-options {
   display: flex;
   flex-wrap: wrap;
@@ -525,7 +534,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
 .period-option {
-  flex: 1 1 130px;
+  flex: 1 1 110px;
   display: flex;
   align-items: center;
   gap: 10px;

@@ -11,6 +11,11 @@ Sao dois calendarios diferentes, de proposito:
 
 Uma falta e roteada pela **data** para os dois ao mesmo tempo: o mesmo
 arquivo alimenta a semana e o ciclo sem ser importado duas vezes.
+
+Dia util e segunda a sexta. Nas operacoes de **escala espanhola**
+(marcadas em config/operations.py), os dois ultimos sabados de cada mes
+tambem sao dias de trabalho, e entram na conta; os primeiros sabados
+sao folga. Domingo nunca entra.
 """
 
 import calendar
@@ -27,20 +32,33 @@ MESES = [
 DIA_DE_CORTE = 13  # a folha ponto vira no dia 13
 
 
-def dias_uteis(inicio, fim):
-    """Segunda a sexta entre as duas datas, inclusive."""
+def sabado_trabalhado(dia):
+    """Um dos dois ultimos sabados do mes: duas semanas depois dele o
+    mes ja virou."""
+    return dia.weekday() == 5 and (dia + datetime.timedelta(days=14)).month != dia.month
+
+
+def dia_util(dia, escala_espanhola=False):
+    if dia.weekday() < 5:
+        return True
+    return escala_espanhola and sabado_trabalhado(dia)
+
+
+def dias_uteis(inicio, fim, escala_espanhola=False):
+    """Dias de trabalho entre as duas datas, inclusive: segunda a sexta,
+    mais os dois ultimos sabados do mes na escala espanhola."""
     if fim < inicio:
         return 0
     total = 0
     dia = inicio
     while dia <= fim:
-        if dia.weekday() < 5:
+        if dia_util(dia, escala_espanhola):
             total += 1
         dia += datetime.timedelta(days=1)
     return total
 
 
-def semanas_do_mes(ano, mes, hoje=None):
+def semanas_do_mes(ano, mes, hoje=None, escala_espanhola=False):
     """As semanas do mes, de segunda a domingo, cortadas na virada.
 
     Setembro/2026 sai assim: 01-06 (4 dias uteis), 07-13 (5), 14-20 (5),
@@ -63,7 +81,7 @@ def semanas_do_mes(ano, mes, hoje=None):
             "rotulo": f"S{numero} · {inicio.strftime('%d/%m')} a {fim.strftime('%d/%m')}",
             "inicio": inicio.isoformat(),
             "fim": fim.isoformat(),
-            "dias_uteis": dias_uteis(inicio, fim),
+            "dias_uteis": dias_uteis(inicio, fim, escala_espanhola),
             "em_aberto": inicio <= hoje <= fim,
         })
         inicio = fim + datetime.timedelta(days=1)
@@ -91,7 +109,7 @@ def ciclo_de(data_iso):
     return _inicio_do_ciclo(datetime.date.fromisoformat(data_iso)).isoformat()
 
 
-def ciclos_folha(hoje=None, anteriores=3):
+def ciclos_folha(hoje=None, anteriores=3, escala_espanhola=False):
     """Os ciclos 13->12, do mais recente pro mais antigo.
 
     O ciclo em andamento entra como "Em aberto" e conta **so os dias
@@ -114,9 +132,9 @@ def ciclos_folha(hoje=None, anteriores=3):
         if hoje < inicio:
             status, uteis = f"Aberto em {inicio.strftime('%d/%m')}", 0
         elif hoje > fim:
-            status, uteis = "Fechado", dias_uteis(inicio, fim)
+            status, uteis = "Fechado", dias_uteis(inicio, fim, escala_espanhola)
         else:
-            status, uteis = "Em aberto", dias_uteis(inicio, hoje)
+            status, uteis = "Em aberto", dias_uteis(inicio, hoje, escala_espanhola)
         ciclos.append({
             "id": inicio.isoformat(),
             "rotulo": f"{inicio.strftime('%d/%m/%Y')} → {fim.strftime('%d/%m/%Y')}",

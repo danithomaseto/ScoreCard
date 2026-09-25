@@ -7,7 +7,7 @@ JavaScript so desenha o que recebe.
 
 import datetime
 
-from config.operations import OPERATIONS
+from config.operations import OPERATIONS, escala_espanhola
 import headcount_store
 from indicators import presenteismo
 
@@ -40,12 +40,13 @@ def _meses_disponiveis(hoje, quantidade=3):
     return meses
 
 
-def _periodos(visualizacao, mes, hoje):
-    """Os periodos da visualizacao escolhida, ja com dias uteis."""
+def _periodos(visualizacao, mes, hoje, escala=False):
+    """Os periodos da visualizacao escolhida, ja com dias uteis (na
+    escala espanhola, contando os dois ultimos sabados do mes)."""
     if visualizacao == "mes":
-        return presenteismo.ciclos_folha(hoje=hoje)
+        return presenteismo.ciclos_folha(hoje=hoje, escala_espanhola=escala)
     ano, numero = int(mes[:4]), int(mes[5:7])
-    return presenteismo.semanas_do_mes(ano, numero, hoje=hoje)
+    return presenteismo.semanas_do_mes(ano, numero, hoje=hoje, escala_espanhola=escala)
 
 
 def _periodo_selecionado(periodos, periodo_id):
@@ -138,7 +139,11 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
 
     meses = _meses_disponiveis(hoje)
     mes = mes or meses[0]["id"]
-    periodos = _periodos(visualizacao, mes, hoje)
+    # A tela mostra os dias uteis da escala da operacao filtrada. Com
+    # "Todas as Operacoes" as escalas se misturam: a tela mostra a
+    # normal, e cada gestor usa a da operacao dele (logo abaixo).
+    escala_da_tela = escala_espanhola(operacao)
+    periodos = _periodos(visualizacao, mes, hoje, escala_da_tela)
 
     if visualizacao == "mes":
         padrao = next((p["id"] for p in periodos if p["status"] == "Em aberto"),
@@ -162,10 +167,19 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
     hc_total = faltas_total = 0
     horas_disponiveis = horas_perdidas = 0.0
 
+    dias_por_escala = {escala_da_tela: dias_periodo}
+
+    def dias_da_escala(escala):
+        if escala not in dias_por_escala:
+            dias_por_escala[escala] = _dias_do_periodo(
+                _periodos(visualizacao, mes, hoje, escala), periodo_id)
+        return dias_por_escala[escala]
+
     for gestor in sorted(gestores, key=lambda g: g["nome"].casefold()):
         hc = int(gestor.get("hc") or 0)
+        dias_do_gestor = dias_da_escala(escala_espanhola(gestor["operacao"]))
         dias = gestor.get("dias_uteis")
-        dias = int(dias) if dias is not None else dias_periodo
+        dias = int(dias) if dias is not None else dias_do_gestor
         horas_dia = float(gestor.get("horas_dia") or config["horas_dia"])
         faltas = _faltas_do_gestor(lancamentos, gestor["nome"], inicio, fim)
         valor = presenteismo.calcular(hc, dias, horas_dia, faltas)
@@ -186,7 +200,7 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
             "periodo": rotulo,
             "hc": hc,
             "dias_uteis": dias,
-            "dias_do_periodo": dias_periodo,
+            "dias_do_periodo": dias_do_gestor,
             "horas_dia": horas_dia,
             "faltas": faltas,
             "presenteismo": valor,
@@ -357,10 +371,12 @@ def presenteismo_do_intervalo(operacao, inicio, fim, hoje=None, dados=None):
         inicio = datetime.date.fromisoformat(inicio)
     if isinstance(fim, str):
         fim = datetime.date.fromisoformat(fim)
+    escala = escala_espanhola(operacao)
 
     # Dia util antes do que a planilha cobre: falta pode ter acontecido
     # ali sem aparecer. Nao da pra fechar o periodo.
-    if inicio < cobre_de and presenteismo.dias_uteis(inicio, cobre_de - datetime.timedelta(days=1)) > 0:
+    if inicio < cobre_de and presenteismo.dias_uteis(
+            inicio, cobre_de - datetime.timedelta(days=1), escala) > 0:
         return None
 
     em_andamento = inicio <= hoje <= fim
@@ -368,10 +384,11 @@ def presenteismo_do_intervalo(operacao, inicio, fim, hoje=None, dados=None):
     if ate < inicio:
         return None
     # Periodo ja encerrado precisa estar coberto ate o fim.
-    if not em_andamento and ate < fim and             presenteismo.dias_uteis(ate + datetime.timedelta(days=1), min(fim, hoje)) > 0:
+    if not em_andamento and ate < fim and presenteismo.dias_uteis(
+            ate + datetime.timedelta(days=1), min(fim, hoje), escala) > 0:
         return None
 
-    dias = presenteismo.dias_uteis(max(inicio, cobre_de), ate)
+    dias = presenteismo.dias_uteis(max(inicio, cobre_de), ate, escala)
     if dias <= 0:
         return None
 

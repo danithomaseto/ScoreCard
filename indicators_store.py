@@ -8,7 +8,8 @@ apaga o relatorio anterior da mesma operacao (de proposito, pra pasta
 do SharePoint nao acumular lixo). Lendo os arquivos da pasta, o
 historico das semanas anteriores iria embora junto.
 
-Formato: operacao -> periodo ("week"/"month") -> chave -> resultado.
+Formato: operacao -> periodo ("week"/"month"/"peak") -> chave -> resultado.
+"peak" e a hora direta dos dias de pico, por mes (indicators/pico.py).
 A chave da semana e a data que vem no arquivo ("2026-08-30"); a do mes
 e o proprio mes ("2026-09"), que vem dos parametros da extracao porque
 o export mensal nao traz coluna de data.
