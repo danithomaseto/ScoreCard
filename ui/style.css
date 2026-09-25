@@ -874,6 +874,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .hc-inline label { margin: 0; font-size: 12px; font-weight: 600; color: var(--text); }
 .hc-inline input { margin: 0; width: 280px; }
+.hc-inline select { margin: 0; width: 220px; }
 .hc-inline button { width: auto; height: 38px; padding: 0 14px; margin: 0; font-size: 13px; }
 .hc-inline-nota { font-size: 11px; color: var(--text-muted); flex: 1; }
 

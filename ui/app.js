@@ -1268,11 +1268,26 @@ hcVisualizacao.addEventListener('click', async (evento) => {
   await carregarHeadcount();
 });
 
+const hcNovoGestorOp = document.getElementById('hc-novo-gestor-op');
+
+// A operacao do gestor novo e escolhida na propria faixa. Vem marcada
+// com a do filtro; com "Todas as Operacoes" no filtro, fica sem escolha
+// e o cadastro so sai depois de escolher - antes ele caia calado na
+// primeira operacao da lista.
+function preencherOperacaoDoGestor() {
+  const operacoes = (hcTela ? hcTela.operacoes : []).filter((o) => o.key !== 'todas');
+  const itens = [{ key: '', label: 'Escolha a operacao' }, ...operacoes];
+  const doFiltro = hcEstado.operacao !== 'todas' ? hcEstado.operacao : '';
+  preencherSelect(hcNovoGestorOp, itens, doFiltro, 'key', 'label');
+  hcNovoGestorOp.options[0].disabled = true;
+}
+
 function abrirFaixa(qual) {
   const gestor = document.getElementById('hc-inline-gestor');
   const funcao = document.getElementById('hc-inline-funcao');
   gestor.hidden = qual !== 'gestor';
   funcao.hidden = qual !== 'funcao';
+  if (qual === 'gestor') preencherOperacaoDoGestor();
   const campo = document.getElementById(qual === 'gestor' ? 'hc-novo-gestor' : 'hc-nova-funcao');
   if (qual) { campo.value = ''; campo.focus(); }
 }
@@ -1284,8 +1299,17 @@ for (const botao of document.querySelectorAll('[data-cancelar]')) {
 }
 
 async function confirmarFaixa(qual, valor) {
+  let destino = '';
+  if (qual === 'gestor') {
+    destino = hcNovoGestorOp.value;
+    if (!destino) {
+      hcStatus.textContent = 'Escolha a operacao do gestor antes de adicionar.';
+      hcNovoGestorOp.focus();
+      return;
+    }
+  }
   const resposta = qual === 'gestor'
-    ? await pywebview.api.add_gestor(valor, hcEstado.operacao)
+    ? await pywebview.api.add_gestor(valor, destino)
     : await pywebview.api.add_funcao(valor);
   if (!resposta.success) {
     hcStatus.textContent = resposta.message;
@@ -1293,10 +1317,27 @@ async function confirmarFaixa(qual, valor) {
   }
   abrirFaixa(null);
   await carregarHeadcount();
+  const nomeOperacao = qual === 'gestor'
+    ? hcNovoGestorOp.options[hcNovoGestorOp.selectedIndex]?.text || destino
+    : '';
   hcStatus.textContent = qual === 'gestor'
-    ? `${valor} cadastrado. Preencha o HC: as faltas ja vem da planilha carregada.`
+    ? `${valor} cadastrado em ${nomeOperacao}. Preencha o HC: as faltas ja vem da planilha carregada.`
     : `${valor} passa a contar como falta, ja nesta planilha e na aba Inicio.`;
 }
+
+document.getElementById('hc-confirmar-gestor').addEventListener('click', async () => {
+  const valor = document.getElementById('hc-novo-gestor').value.trim();
+  if (!valor) {
+    hcStatus.textContent = 'Informe o nome do gestor.';
+    document.getElementById('hc-novo-gestor').focus();
+    return;
+  }
+  await confirmarFaixa('gestor', valor);
+});
+
+hcNovoGestorOp.addEventListener('keydown', (evento) => {
+  if (evento.key === 'Escape') abrirFaixa(null);
+});
 
 for (const [id, qual] of [['hc-novo-gestor', 'gestor'], ['hc-nova-funcao', 'funcao']]) {
   document.getElementById(id).addEventListener('keydown', async (evento) => {

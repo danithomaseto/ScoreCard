@@ -407,3 +407,26 @@ def test_mes_fora_do_summary_nao_vira_coluna(app):
     meses = [c["chave"] for c in api_obj.get_indicator_table("hugo_boss")["colunas"]
              if c["periodo"] == "month"]
     assert meses == ["2026-09"]
+
+
+def test_gestor_vai_para_a_operacao_escolhida(app):
+    api_obj, headcount_store, _ = app
+
+    resposta = api_obj.add_gestor("Marina Duarte", "lego")
+
+    assert resposta["success"]
+    assert headcount_store.listar_gestores("lego")[0]["nome"] == "Marina Duarte"
+    assert headcount_store.listar_gestores("hugo_boss") == []
+
+
+def test_sem_operacao_escolhida_o_gestor_nao_e_cadastrado(app):
+    """Antes, com o filtro em "todas", ele caia calado na primeira
+    operacao da lista e o HC somava no lugar errado."""
+    api_obj, headcount_store, _ = app
+
+    for invalida in ("todas", "", None, "nao_existe"):
+        resposta = api_obj.add_gestor("Marina Duarte", invalida)
+        assert resposta["success"] is False
+        assert "operacao" in resposta["message"].lower()
+
+    assert headcount_store.listar_gestores() == []

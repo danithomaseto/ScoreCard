@@ -455,11 +455,12 @@ class Api:
         )
 
     def add_gestor(self, nome, operacao):
-        """A operacao vem do filtro ativo; quando ele esta em "todas",
-        cai na primeira da lista, porque um gestor precisa pertencer a
-        alguma."""
-        if operacao in (None, "", headcount.TODAS):
-            operacao = next(iter(OPERATIONS))
+        """A operacao e escolhida na faixa de cadastro. Sem ela, nao
+        cadastra: antes, com o filtro em "todas", o gestor caia calado
+        na primeira operacao da lista e o HC dele somava no lugar
+        errado."""
+        if operacao not in OPERATIONS:
+            return {"success": False, "message": "Escolha a operacao do gestor."}
         try:
             gestor = headcount_store.adicionar_gestor(nome, operacao)
         except ValueError as exc:
