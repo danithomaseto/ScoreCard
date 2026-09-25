@@ -893,6 +893,14 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   color: var(--text-muted);
 }
 
+.hc-funcao-op {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--yellow);
+  border-left: 1px solid var(--input-border);
+  padding-left: 8px;
+}
+
 .hc-funcao-chip button {
   width: auto; height: auto; margin: 0; padding: 0;
   background: none; border: none; color: #f97066;

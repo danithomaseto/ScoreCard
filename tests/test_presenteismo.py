@@ -372,7 +372,7 @@ def test_funcao_nova_vale_mesmo_depois_de_reabrir_o_app(app):
     _preparar(app)
     reaberto = api_module.Api()
 
-    resposta = reaberto.add_funcao("ASSISTENTE DE LOGISTICA")
+    resposta = reaberto.add_funcao("ASSISTENTE DE LOGISTICA", "hugo_boss")
 
     assert resposta["resumo"]["consideradas"] == 4
 
@@ -391,7 +391,7 @@ def test_funcao_cadastrada_passa_a_contar(app):
     antes = api_obj.get_headcount("hugo_boss", "semanal", "2026-09", "todas")
     assert antes["arquivo"]["resumo"]["consideradas"] == 3
 
-    resposta = api_obj.add_funcao("ASSISTENTE DE LOGISTICA")
+    resposta = api_obj.add_funcao("ASSISTENTE DE LOGISTICA", "hugo_boss")
 
     assert resposta["success"]
     assert resposta["resumo"]["consideradas"] == 4, "a linha de assistente passa a entrar"
@@ -430,3 +430,53 @@ def test_sem_operacao_escolhida_o_gestor_nao_e_cadastrado(app):
         assert "operacao" in resposta["message"].lower()
 
     assert headcount_store.listar_gestores() == []
+
+
+def test_funcao_de_outra_operacao_nao_conta(app):
+    """A funcao cadastrada na Lego nao muda as faltas de um gestor da
+    Hugo Boss: quem liga a falta a operacao e o gestor."""
+    api_obj, headcount_store, _ = app
+    _preparar(app)
+
+    resposta = api_obj.add_funcao("ASSISTENTE DE LOGISTICA", "lego")
+
+    assert resposta["success"]
+    assert resposta["resumo"]["consideradas"] == 3
+    assert headcount_store.listar_funcoes("hugo_boss") == []
+    assert headcount_store.listar_funcoes("lego")[0]["nome"] == "ASSISTENTE DE LOGISTICA"
+
+
+def test_sem_operacao_escolhida_a_funcao_nao_e_cadastrada(app):
+    api_obj, headcount_store, _ = app
+
+    for operacao in (None, "", "todas", "nao_existe"):
+        resposta = api_obj.add_funcao("ASSISTENTE DE LOGISTICA", operacao)
+        assert not resposta["success"]
+    assert headcount_store.listar_funcoes() == []
+
+
+def test_mesma_funcao_em_duas_operacoes_remove_so_a_escolhida(app):
+    api_obj, headcount_store, _ = app
+    _preparar(app)
+    api_obj.add_funcao("ASSISTENTE DE LOGISTICA", "hugo_boss")
+    api_obj.add_funcao("ASSISTENTE DE LOGISTICA", "lego")
+
+    resposta = api_obj.remove_funcao("ASSISTENTE DE LOGISTICA", "hugo_boss")
+
+    assert resposta["resumo"]["consideradas"] == 3
+    assert [f["operacao"] for f in headcount_store.listar_funcoes()] == ["lego"]
+
+
+def test_funcao_gravada_por_versao_antiga_vale_para_todas(app):
+    """Versoes anteriores guardavam so o nome: continua valendo para
+    todas as operacoes ate ser removida."""
+    api_obj, headcount_store, _ = app
+    _preparar(app)
+    dados = headcount_store.ler()
+    dados["funcoes"] = ["ASSISTENTE DE LOGISTICA"]
+    headcount_store._gravar(dados)
+
+    tela = api_obj.get_headcount("hugo_boss", "semanal", "2026-09", "todas")
+
+    assert tela["arquivo"]["resumo"]["consideradas"] == 4
+    assert tela["funcoes"][0]["operacao_label"] == "Todas"

@@ -73,7 +73,8 @@ entao os tres aparecem como `—` por enquanto, nunca como zero.
 horas/dia) e digitado ali e as faltas vem de uma planilha de ausencias,
 que nunca sao digitadas. A planilha e filtrada — ferias nao e falta,
 temporario fica de fora e so entram as funcoes que compoem o quadro
-(Log I, Log II, Operador, mais as que forem cadastradas na tela). Cada
+(Log I, Log II, Operador, mais as que forem cadastradas na tela para
+a operacao do gestor). Cada
 falta e roteada pela data para a semana do mes e para o ciclo da folha
 ponto (dia 13 ao dia 12) ao mesmo tempo.
 

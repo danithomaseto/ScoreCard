@@ -241,7 +241,10 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
             "meta": meta,
         },
         "arquivo": _resumo_do_arquivo(arquivo, periodos, visualizacao, periodo_id),
-        "funcoes": dados["funcoes"],
+        "funcoes": [
+            {**f, "operacao_label": OPERATIONS.get(f["operacao"], {}).get("label", "Todas")}
+            for f in headcount_store.listar_funcoes(operacao)
+        ],
         "config": config,
         "meta": meta,
     }

@@ -907,6 +907,13 @@ indicador. O CUBO e refeito junto.
   numero.
 - **Funcoes**: o arquivo fica guardado sem filtro, e o filtro roda na
   leitura. Uma funcao cadastrada vale na hora, mesmo com o app reaberto.
+- **Operacao do gestor e da funcao**: os dois sao cadastrados com a
+  operacao escolhida na propria faixa de cadastro, nunca pelo filtro da
+  tela — sem escolher, nao cadastra. A planilha de ausencias nao tem
+  coluna de operacao: quem liga a falta a operacao e o gestor. Por isso
+  uma funcao cadastrada na Lego so passa a contar nas faltas dos
+  gestores da Lego. Funcoes gravadas por versoes anteriores (so o nome)
+  continuam valendo para todas as operacoes ate serem removidas.
 - O ajuste manual de **dias uteis** de um gestor vale so para a tela de
   Headcount; a aba Inicio usa os dias uteis de cada semana e ciclo.
 - A semana da tela de Headcount e a do mes vigente, cortada na virada

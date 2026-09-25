@@ -169,15 +169,20 @@ def ler_linhas(caminho):
     return linhas
 
 
-def filtrar(linhas, funcoes_extras=None):
+def filtrar(linhas, funcoes_extras=None, extras_do_gestor=None):
     """Aplica as regras e devolve {"faltas": [...], "resumo": {...}}.
 
     Cada falta e {"gestor", "usuario", "data", "funcao", "motivo",
     "contrato", "dias"}. O resumo conta o que entrou e o que ficou de
     fora, por motivo — sem isso, um filtro derrubando o arquivo inteiro
-    passaria despercebido. Tambem traz a primeira e a ultima data do
-    arquivo (de todas as linhas, nao so das que contam), que e o que diz
-    que periodo a planilha cobre.
+    passaria despercebido.
+
+    funcoes_extras valem para todas as linhas; extras_do_gestor(nome)
+    devolve as que valem so para as linhas daquele gestor.
+
+    Tambem traz a primeira e a ultima data do arquivo (de todas as
+    linhas, nao so das que contam), que e o que diz que periodo a
+    planilha cobre.
     """
     faltas = []
     resumo = {"linhas": 0, "consideradas": 0, "sem_data": 0,
@@ -199,7 +204,13 @@ def filtrar(linhas, funcoes_extras=None):
         if contrato and contrato not in CONTRATOS_ACEITOS:
             resumo["contrato"] += 1
             continue
-        if not _funcao_conta(linha.get("funcao"), funcoes_extras):
+        extras = list(funcoes_extras or ())
+        if extras_do_gestor:
+            # Funcao cadastrada numa operacao so vale para as faltas dos
+            # gestores daquela operacao: a planilha nao tem coluna de
+            # operacao, quem liga a falta a operacao e o gestor.
+            extras += extras_do_gestor(linha.get("gestor"))
+        if not _funcao_conta(linha.get("funcao"), extras):
             resumo["funcao"] += 1
             continue
 

@@ -477,18 +477,20 @@ class Api:
     def remove_gestor(self, gestor_id):
         return {"success": headcount_store.remover_gestor(gestor_id)}
 
-    def add_funcao(self, nome):
-        """Uma funcao a mais que passa a contar como falta. Vale na hora:
-        o filtro roda toda vez que as faltas sao lidas, entao nao precisa
-        reenviar a planilha."""
+    def add_funcao(self, nome, operacao):
+        """Uma funcao a mais que passa a contar como falta nos gestores da
+        operacao escolhida. Vale na hora: o filtro roda toda vez que as
+        faltas sao lidas, entao nao precisa reenviar a planilha."""
+        if operacao not in OPERATIONS:
+            return {"success": False, "message": "Escolha a operacao da funcao."}
         try:
-            funcoes = headcount_store.adicionar_funcao(nome)
+            funcoes = headcount_store.adicionar_funcao(nome, operacao)
         except ValueError as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True, "funcoes": funcoes, **self._resumo_atual()}
 
-    def remove_funcao(self, nome):
-        funcoes = headcount_store.remover_funcao(nome)
+    def remove_funcao(self, nome, operacao=None):
+        funcoes = headcount_store.remover_funcao(nome, operacao)
         return {"success": True, "funcoes": funcoes, **self._resumo_atual()}
 
     @staticmethod

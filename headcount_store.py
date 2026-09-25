@@ -12,7 +12,8 @@ O que fica aqui:
   com a data, e sao roteados na hora de montar a tela.
 - **funcoes**: funcoes que contam como falta alem dos padroes do
   leitor. Cargo com nome proprio aparece o tempo todo; sem essa lista,
-  incluir um exigiria mexer no codigo.
+  incluir um exigiria mexer no codigo. Cada uma e de uma operacao e
+  so conta nas faltas dos gestores dela.
 - **config**: meta, densidade e se a formula aparece.
 """
 
@@ -132,32 +133,80 @@ def remover_gestor(gestor_id):
 
 
 # ---------------- Funcoes que contam ----------------
+# Cada funcao e cadastrada para uma operacao: o nome do cargo muda de
+# uma operacao pra outra, e uma funcao que conta numa pode nao contar
+# em outra. Versoes anteriores guardavam so o nome, valendo para todas;
+# essas continuam valendo para todas ate serem removidas.
 
-def listar_funcoes():
-    return ler()["funcoes"]
+TODAS = "todas"
 
 
-def adicionar_funcao(nome):
-    """Uma funcao a mais que passa a contar nas faltas. A comparacao e
-    por trecho do texto, entao "Operador de Ponte" tambem pega
-    "OPERADOR DE PONTE ROLANTE"."""
+def _normalizar_funcao(item):
+    if isinstance(item, str):
+        return {"nome": item, "operacao": TODAS}
+    return {"nome": item.get("nome", ""), "operacao": item.get("operacao") or TODAS}
+
+
+def listar_funcoes(operacao=None):
+    funcoes = [_normalizar_funcao(f) for f in ler()["funcoes"]]
+    if operacao and operacao != TODAS:
+        return [f for f in funcoes if f["operacao"] in (operacao, TODAS)]
+    return funcoes
+
+
+def adicionar_funcao(nome, operacao):
+    """Uma funcao a mais que passa a contar nas faltas dos gestores de
+    uma operacao. A comparacao e por trecho do texto, entao "Operador de
+    Ponte" tambem pega "OPERADOR DE PONTE ROLANTE"."""
     nome = (nome or "").strip()
     if not nome:
         raise ValueError("Informe o nome da funcao.")
+    if not operacao or operacao == TODAS:
+        raise ValueError("Escolha a operacao da funcao.")
 
     dados = ler()
-    if any(f.casefold() == nome.casefold() for f in dados["funcoes"]):
-        raise ValueError(f"{nome} ja esta na lista.")
-    dados["funcoes"].append(nome)
+    funcoes = [_normalizar_funcao(f) for f in dados["funcoes"]]
+    if any(f["nome"].casefold() == nome.casefold() and f["operacao"] == operacao
+           for f in funcoes):
+        raise ValueError(f"{nome} ja esta na lista desta operacao.")
+    funcoes.append({"nome": nome, "operacao": operacao})
+    dados["funcoes"] = funcoes
+    _gravar(dados)
+    return funcoes
+
+
+def remover_funcao(nome, operacao=None):
+    dados = ler()
+    alvo = (nome or "").casefold()
+    dados["funcoes"] = [
+        f for f in (_normalizar_funcao(x) for x in dados["funcoes"])
+        if not (f["nome"].casefold() == alvo and (operacao is None or f["operacao"] == operacao))
+    ]
     _gravar(dados)
     return dados["funcoes"]
 
 
-def remover_funcao(nome):
-    dados = ler()
-    dados["funcoes"] = [f for f in dados["funcoes"] if f.casefold() != (nome or "").casefold()]
-    _gravar(dados)
-    return dados["funcoes"]
+def _extras(dados):
+    """(funcoes que valem pra todos, funcao que diz as de cada gestor)."""
+    funcoes = [_normalizar_funcao(f) for f in dados.get("funcoes", [])]
+    globais = [f["nome"] for f in funcoes if f["operacao"] == TODAS]
+
+    por_operacao = {}
+    for f in funcoes:
+        if f["operacao"] != TODAS:
+            por_operacao.setdefault(f["operacao"], []).append(f["nome"])
+
+    operacoes_do_gestor = {}
+    for g in dados.get("gestores", []):
+        operacoes_do_gestor.setdefault(g["nome"].casefold(), set()).add(g["operacao"])
+
+    def do_gestor(nome):
+        extras = []
+        for operacao in operacoes_do_gestor.get((nome or "").casefold(), ()):
+            extras += por_operacao.get(operacao, [])
+        return extras
+
+    return globais, do_gestor
 
 
 # ---------------- Faltas ----------------
@@ -192,7 +241,8 @@ def arquivo(dados=None):
         return None
 
     if "linhas" in guardado:
-        lido = faltas_reader.filtrar(guardado["linhas"], dados.get("funcoes"))
+        globais, do_gestor = _extras(dados)
+        lido = faltas_reader.filtrar(guardado["linhas"], globais, do_gestor)
     else:
         # Arquivo importado por uma versao anterior, que guardava as
         # faltas ja filtradas. Continua valendo ate a proxima importacao.

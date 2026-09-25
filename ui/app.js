@@ -1155,13 +1155,17 @@ function desenharFuncoesHc(tela) {
   for (const funcao of tela.funcoes) {
     const chip = document.createElement('span');
     chip.className = 'hc-funcao-chip';
-    chip.appendChild(document.createTextNode(funcao));
+    chip.appendChild(document.createTextNode(funcao.nome));
+    const operacao = document.createElement('span');
+    operacao.className = 'hc-funcao-op';
+    operacao.textContent = funcao.operacao_label;
+    chip.appendChild(operacao);
     const remover = document.createElement('button');
     remover.type = 'button';
     remover.textContent = '×';
-    remover.setAttribute('aria-label', `Remover ${funcao}`);
+    remover.setAttribute('aria-label', `Remover ${funcao.nome} de ${funcao.operacao_label}`);
     remover.addEventListener('click', async () => {
-      await pywebview.api.remove_funcao(funcao);
+      await pywebview.api.remove_funcao(funcao.nome, funcao.operacao);
       await carregarHeadcount();
     });
     chip.appendChild(remover);
@@ -1269,17 +1273,19 @@ hcVisualizacao.addEventListener('click', async (evento) => {
 });
 
 const hcNovoGestorOp = document.getElementById('hc-novo-gestor-op');
+const hcNovaFuncaoOp = document.getElementById('hc-nova-funcao-op');
+const SELETOR_DE_OPERACAO = { gestor: hcNovoGestorOp, funcao: hcNovaFuncaoOp };
 
-// A operacao do gestor novo e escolhida na propria faixa. Vem marcada
-// com a do filtro; com "Todas as Operacoes" no filtro, fica sem escolha
-// e o cadastro so sai depois de escolher - antes ele caia calado na
-// primeira operacao da lista.
-function preencherOperacaoDoGestor() {
+// A operacao do gestor ou da funcao nova e escolhida na propria faixa.
+// Vem marcada com a do filtro; com "Todas as Operacoes" no filtro, fica
+// sem escolha e o cadastro so sai depois de escolher - antes ele caia
+// calado na primeira operacao da lista.
+function preencherOperacaoDaFaixa(select) {
   const operacoes = (hcTela ? hcTela.operacoes : []).filter((o) => o.key !== 'todas');
   const itens = [{ key: '', label: 'Escolha a operacao' }, ...operacoes];
   const doFiltro = hcEstado.operacao !== 'todas' ? hcEstado.operacao : '';
-  preencherSelect(hcNovoGestorOp, itens, doFiltro, 'key', 'label');
-  hcNovoGestorOp.options[0].disabled = true;
+  preencherSelect(select, itens, doFiltro, 'key', 'label');
+  select.options[0].disabled = true;
 }
 
 function abrirFaixa(qual) {
@@ -1287,7 +1293,7 @@ function abrirFaixa(qual) {
   const funcao = document.getElementById('hc-inline-funcao');
   gestor.hidden = qual !== 'gestor';
   funcao.hidden = qual !== 'funcao';
-  if (qual === 'gestor') preencherOperacaoDoGestor();
+  if (qual) preencherOperacaoDaFaixa(SELETOR_DE_OPERACAO[qual]);
   const campo = document.getElementById(qual === 'gestor' ? 'hc-novo-gestor' : 'hc-nova-funcao');
   if (qual) { campo.value = ''; campo.focus(); }
 }
@@ -1299,45 +1305,50 @@ for (const botao of document.querySelectorAll('[data-cancelar]')) {
 }
 
 async function confirmarFaixa(qual, valor) {
-  let destino = '';
-  if (qual === 'gestor') {
-    destino = hcNovoGestorOp.value;
-    if (!destino) {
-      hcStatus.textContent = 'Escolha a operacao do gestor antes de adicionar.';
-      hcNovoGestorOp.focus();
-      return;
-    }
+  const seletor = SELETOR_DE_OPERACAO[qual];
+  const destino = seletor.value;
+  if (!destino) {
+    hcStatus.textContent = qual === 'gestor'
+      ? 'Escolha a operacao do gestor antes de adicionar.'
+      : 'Escolha a operacao da funcao antes de adicionar.';
+    seletor.focus();
+    return;
   }
   const resposta = qual === 'gestor'
     ? await pywebview.api.add_gestor(valor, destino)
-    : await pywebview.api.add_funcao(valor);
+    : await pywebview.api.add_funcao(valor, destino);
   if (!resposta.success) {
     hcStatus.textContent = resposta.message;
     return;
   }
+  const nomeOperacao = seletor.options[seletor.selectedIndex]?.text || destino;
   abrirFaixa(null);
   await carregarHeadcount();
-  const nomeOperacao = qual === 'gestor'
-    ? hcNovoGestorOp.options[hcNovoGestorOp.selectedIndex]?.text || destino
-    : '';
   hcStatus.textContent = qual === 'gestor'
     ? `${valor} cadastrado em ${nomeOperacao}. Preencha o HC: as faltas ja vem da planilha carregada.`
-    : `${valor} passa a contar como falta, ja nesta planilha e na aba Inicio.`;
+    : `${valor} passa a contar como falta em ${nomeOperacao}, ja nesta planilha e na aba Inicio.`;
 }
 
-document.getElementById('hc-confirmar-gestor').addEventListener('click', async () => {
-  const valor = document.getElementById('hc-novo-gestor').value.trim();
-  if (!valor) {
-    hcStatus.textContent = 'Informe o nome do gestor.';
-    document.getElementById('hc-novo-gestor').focus();
-    return;
-  }
-  await confirmarFaixa('gestor', valor);
-});
+for (const [botao, campo, qual] of [
+  ['hc-confirmar-gestor', 'hc-novo-gestor', 'gestor'],
+  ['hc-confirmar-funcao', 'hc-nova-funcao', 'funcao'],
+]) {
+  document.getElementById(botao).addEventListener('click', async () => {
+    const valor = document.getElementById(campo).value.trim();
+    if (!valor) {
+      hcStatus.textContent = qual === 'gestor' ? 'Informe o nome do gestor.' : 'Informe o nome da funcao.';
+      document.getElementById(campo).focus();
+      return;
+    }
+    await confirmarFaixa(qual, valor);
+  });
+}
 
-hcNovoGestorOp.addEventListener('keydown', (evento) => {
-  if (evento.key === 'Escape') abrirFaixa(null);
-});
+for (const seletor of [hcNovoGestorOp, hcNovaFuncaoOp]) {
+  seletor.addEventListener('keydown', (evento) => {
+    if (evento.key === 'Escape') abrirFaixa(null);
+  });
+}
 
 for (const [id, qual] of [['hc-novo-gestor', 'gestor'], ['hc-nova-funcao', 'funcao']]) {
   document.getElementById(id).addEventListener('keydown', async (evento) => {
