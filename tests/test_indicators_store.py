@@ -13,6 +13,8 @@ def store(tmp_path, monkeypatch):
     return indicators_store
 
 
+DATAS_SETEMBRO = {"from_date": "2026-08-30", "to_date": "2026-09-19"}
+
 SEMANA = {
     "2026-08-30": {
         "soma_goal": 245.99,
@@ -224,3 +226,79 @@ def test_semana_cortada_no_meio_fica_marcada_como_parcial(api_real, operations, 
     semanas = store.get_indicators("mock")["week"]
     assert semanas["2026-08-30"]["parcial"] is True, "comeca antes do intervalo"
     assert semanas["2026-09-13"]["parcial"] is False, "cabe inteira"
+
+
+# ---------------- Quando o calculo nao roda ----------------
+
+def _quebrar_leitura(monkeypatch, mensagem="formato nao suportado"):
+    """Faz o leitor recusar o arquivo, como aconteceu de verdade com o
+    .xls que o Summary entrega."""
+    import api as api_module
+
+    def recusar(caminho):
+        raise ValueError(mensagem)
+
+    monkeypatch.setattr(api_module.reader, "ler", recusar)
+
+
+def test_arquivo_salvo_sem_indicador_nao_se_apresenta_como_concluida(
+    api_real, operations, store, isolated_history, monkeypatch
+):
+    """Foi exatamente isso que escondeu o problema do .xls: a extracao
+    salvava o arquivo, o calculo falhava calado e a tela dizia
+    "Concluida"."""
+    operations("mock", "Mock Co", "MockCo")
+    _quebrar_leitura(monkeypatch)
+
+    resultado = api_real.run_extraction(
+        "mock", date_range=DATAS_SETEMBRO, period="week"
+    )
+
+    assert resultado["success"] is True, "o arquivo foi salvo de verdade"
+    assert resultado["status"] == "warning", "mas nao e uma extracao concluida"
+    assert "nao deu pra calcular" in resultado["indicators_message"]
+    assert store.get_indicators("mock") == {}
+
+
+def test_o_motivo_fica_visivel_no_historico(
+    api_real, operations, isolated_history, monkeypatch
+):
+    operations("mock", "Mock Co", "MockCo")
+    _quebrar_leitura(monkeypatch, "formato nao suportado")
+
+    api_real.run_extraction("mock", date_range=DATAS_SETEMBRO, period="week")
+
+    entrada = isolated_history.get_history()[0]
+    assert entrada["status"] == "warning"
+    assert "formato nao suportado" in entrada["indicators_message"]
+
+
+def test_extracao_completa_continua_sendo_sucesso(
+    api_real, operations, isolated_history
+):
+    operations("mock", "Mock Co", "MockCo")
+
+    resultado = api_real.run_extraction("mock", date_range=DATAS_SETEMBRO, period="week")
+
+    assert resultado["status"] == "success"
+    assert not resultado.get("indicators_message")
+    assert isolated_history.get_history()[0]["status"] == "success"
+
+
+def test_fila_multipla_conta_as_que_ficaram_sem_indicador(
+    api_real, operations, store, isolated_history, monkeypatch
+):
+    operations("mock_a", "Mock A", "MockA")
+    operations("mock_b", "Mock B", "MockB")
+    _quebrar_leitura(monkeypatch)
+    avisos = []
+    api_real._emit_js = lambda fn, payload: avisos.append(payload)
+
+    resultado = api_real.run_multi_extraction(
+        ["mock_a", "mock_b"], date_range=DATAS_SETEMBRO, period="week"
+    )
+
+    assert resultado["sem_indicador"] == 2
+    assert "sem indicador" in resultado["message"]
+    finais = [p["status"] for p in avisos if p.get("status") != "running"]
+    assert finais == ["warning", "warning"]

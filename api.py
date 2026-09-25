@@ -114,11 +114,24 @@ class Api:
             "period_label": result.get("period_label"),
             "group_by": result.get("group_by"),
             "period_type": result.get("period_type"),
-            "status": "success" if result.get("success") else "error",
+            # Tres estados, nao dois: "warning" e a extracao que salvou o
+            # arquivo mas nao gerou indicador. Tratar isso como sucesso
+            # foi o que escondeu o problema do .xls ate a primeira
+            # extracao real.
+            "status": self._status_da_extracao(result),
             "duration_seconds": result.get("duration_seconds"),
             "file_path": result.get("file_path"),
             "message": result.get("message"),
+            "indicators_message": result.get("indicators_message"),
         })
+
+    @staticmethod
+    def _status_da_extracao(result):
+        if not result.get("success"):
+            return "error"
+        if result.get("indicators_message"):
+            return "warning"
+        return "success"
 
     def _calcular_indicadores(self, operation_key, result):
         """Le o arquivo recem-baixado, calcula e grava os indicadores.
@@ -148,6 +161,10 @@ class Api:
         if result.get("period_type") == "Month":
             chave = result.get("month_key")
             if not chave:
+                result["indicators_message"] = (
+                    "Relatorio salvo, mas nao deu pra identificar de que mes "
+                    "ele e: informe o periodo na tela e extraia de novo."
+                )
                 return
             resultados = {chave: weekly.totais(lido["linhas"], nivel_detalhe=nivel_detalhe)}
             periodo = "month"
@@ -210,6 +227,7 @@ class Api:
         )
         self._calcular_indicadores(operation_key, result)
         self._record_history(operation_key, result)
+        result["status"] = self._status_da_extracao(result)
         return result
 
     def cancel_multi_extraction(self):
@@ -237,6 +255,7 @@ class Api:
         total = len(operation_keys)
         succeeded = 0
         cancelled = 0
+        sem_indicador = 0
 
         for index, operation_key in enumerate(operation_keys):
             label = OPERATIONS[operation_key]["label"]
@@ -275,21 +294,25 @@ class Api:
             self._calcular_indicadores(operation_key, result)
             self._record_history(operation_key, result)
 
-            ok = bool(result.get("success"))
-            if ok:
+            status = self._status_da_extracao(result)
+            if status != "error":
                 succeeded += 1
+            if status == "warning":
+                sem_indicador += 1
             self._emit_js("updateMultiProgress", {
                 "index": index,
                 "total": total,
                 "operation_label": label,
-                "step": result.get("message", ""),
-                "status": "success" if ok else "error",
+                "step": result.get("indicators_message") or result.get("message", ""),
+                "status": status,
             })
 
         failed = total - succeeded - cancelled
         message = f"{succeeded} de {total} extracoes concluidas"
         if failed:
             message += f", {failed} com falha"
+        if sem_indicador:
+            message += f", {sem_indicador} sem indicador"
         if cancelled:
             message += f", {cancelled} cancelada(s)"
         return {
@@ -298,6 +321,7 @@ class Api:
             "succeeded": succeeded,
             "failed": failed,
             "cancelled": cancelled,
+            "sem_indicador": sem_indicador,
         }
 
     # ---------------- Abrir arquivos ----------------

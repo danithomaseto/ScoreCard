@@ -70,6 +70,23 @@ const PROGRESS_STEPS = [
   { key: 'save', match: (t) => t.includes('concluido') },
 ];
 
+// Uma extracao tem tres desfechos, nao dois: concluida, concluida sem
+// indicador (o arquivo salvou mas o calculo nao rodou) e falha. Tratar
+// o do meio como sucesso foi o que escondeu o problema do .xls.
+const DESFECHOS = {
+  success: { rotulo: 'Concluida', classe: 'success' },
+  warning: { rotulo: 'Sem indicador', classe: 'warning' },
+  error: { rotulo: 'Falha', classe: 'error' },
+};
+
+function desfechoDe(entrada) {
+  // Entradas gravadas antes deste campo existir nao tem "status", mas
+  // so eram criadas quando a extracao dava certo - entao a ausencia do
+  // campo conta como sucesso, nao falha.
+  const status = entrada.status || 'success';
+  return DESFECHOS[status] || DESFECHOS.success;
+}
+
 function showStatus(el, message, kind) {
   el.textContent = message;
   el.className = 'status' + (kind ? ' ' + kind : '');
@@ -149,14 +166,10 @@ async function loadLastRun() {
     return;
   }
   const last = history[0];
-  // Entradas gravadas antes deste campo existir nao tem "status", mas so
-  // eram criadas quando a extracao dava certo - entao a ausencia do campo
-  // conta como sucesso, nao falha.
-  const ok = last.status ? last.status === 'success' : true;
+  const desfecho = desfechoDe(last);
   const quando = new Date(last.timestamp).toLocaleString('pt-BR');
-  homeLastRunEl.textContent = ok
-    ? `Ultima extracao: ${last.operation}, ${quando}`
-    : `Ultima extracao: ${last.operation}, ${quando} (falhou)`;
+  const sufixo = desfecho.classe === 'success' ? '' : ` (${desfecho.rotulo.toLowerCase()})`;
+  homeLastRunEl.textContent = `Ultima extracao: ${last.operation}, ${quando}${sufixo}`;
 }
 
 // O texto e a cor de cada celula vem prontos do Python: as faixas sao
@@ -358,13 +371,13 @@ async function loadHistoryTable(tbody = historyTableBody) {
     row.appendChild(makeCell(formatDuration(entry.duration_seconds)));
 
     const statusCell = document.createElement('td');
-    // Entradas gravadas antes deste campo existir nao tem "status", mas
-    // so eram criadas quando a extracao dava certo - entao a ausencia do
-    // campo conta como sucesso, nao falha.
-    const ok = entry.status ? entry.status === 'success' : true;
+    const desfecho = desfechoDe(entry);
     const pill = document.createElement('span');
-    pill.className = 'status-pill ' + (ok ? 'success' : 'error');
-    pill.textContent = ok ? 'Concluida' : 'Falha';
+    pill.className = 'status-pill ' + desfecho.classe;
+    pill.textContent = desfecho.rotulo;
+    if (entry.indicators_message) {
+      pill.title = entry.indicators_message;
+    }
     statusCell.appendChild(pill);
     row.appendChild(statusCell);
 
@@ -564,15 +577,17 @@ window.updateMultiProgress = function (data) {
   if (!step) return;
 
   const subtitle = step.querySelector('.step-subtitle');
-  step.classList.remove('active', 'done', 'error');
+  step.classList.remove('active', 'done', 'error', 'warning', 'cancelled');
 
   if (data.status === 'running') {
     step.classList.add('active');
     subtitle.textContent = data.step;
     multiProgressPercentEl.textContent = `${Math.round((data.index / data.total) * 100)}%`;
   } else {
-    const classePorStatus = { success: 'done', cancelled: 'cancelled' };
+    const classePorStatus = { success: 'done', warning: 'warning', cancelled: 'cancelled' };
     step.classList.add(classePorStatus[data.status] || 'error');
+    // Numa fila, "Concluida" nao pode mascarar a operacao que salvou o
+    // arquivo sem gerar indicador: ali o motivo e que importa.
     subtitle.textContent = data.status === 'success' ? 'Concluida' : data.step;
     multiProgressPercentEl.textContent = `${Math.round(((data.index + 1) / data.total) * 100)}%`;
   }
@@ -739,16 +754,21 @@ runBtn.addEventListener('click', async () => {
   progressPercentEl.textContent = '0%';
   try {
     const result = await pywebview.api.run_extraction(operationSelect.value, dateRange, groupBySelect.value, getSelectedPeriod());
+    const desfecho = desfechoDe(result);
     if (result.success) {
       markStepsDone();
-      setBadge('success', 'Concluida');
       progressPercentEl.textContent = '100%';
     } else {
       markStepsError();
-      setBadge('error', 'Falha');
     }
-    progressDetailEl.textContent = result.message;
-    showStatus(runStatus, result.message, result.success ? 'success' : 'error');
+    setBadge(desfecho.classe, desfecho.rotulo);
+
+    // O aviso vem na frente da mensagem de sucesso: o que a pessoa
+    // precisa saber e que o indicador nao saiu, nao que o arquivo
+    // salvou.
+    const texto = result.indicators_message || result.message;
+    progressDetailEl.textContent = texto;
+    showStatus(runStatus, texto, desfecho.classe);
     showRunActions(runActions, { houveSucesso: result.success, houveFalha: !result.success });
     await loadHistoryTable();
   } catch (err) {

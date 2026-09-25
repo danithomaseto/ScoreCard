@@ -830,22 +830,27 @@ O que esse arquivo confirmou, e nao precisa mais ser verificado:
 - Sem linha de total no fim.
 - As semanas vem separadas certinho (15, 15 e 16 linhas).
 
-### Proximo passo: a falha do calculo precisa aparecer na tela
+### A falha do calculo agora aparece na tela (feito)
 
-**E por onde retomar.** Hoje, quando o calculo nao roda, `api.py`
-guarda o motivo em `result["indicators_message"]` e **ninguem mostra
-esse campo**. A extracao segue como "Concluida", porque o arquivo
-realmente foi salvo — e foi exatamente isso que escondeu o problema do
-`.xls` ate a primeira extracao real.
+Uma extracao passa a ter **tres desfechos, nao dois**:
 
-O que fazer:
+| Desfecho | O que aconteceu | Como aparece |
+|---|---|---|
+| Concluida | arquivo salvo e indicadores calculados | verde |
+| Sem indicador | arquivo salvo, calculo nao rodou | **amarelo**, com o motivo |
+| Falha | a extracao nao terminou | vermelho |
 
-1. A tela de extracao mostra o aviso quando ele existe, em vez de so
-   "Concluida".
-2. O historico distingue os tres casos: concluida, concluida sem
-   indicador, e falha.
-3. Um teste cobrindo o caminho: arquivo salvo, calculo recusado, aviso
-   visivel.
+O do meio era o que faltava: era ele que se disfarcava de sucesso e
+escondeu o problema do `.xls` ate a primeira extracao real.
+
+Onde isso aparece: no painel Andamento (a tarja passa a mostrar o
+motivo, nao a mensagem de arquivo salvo), na linha do historico (com o
+motivo no tooltip), na fila da aba multipla e na linha de ultima
+extracao do Inicio. O resumo da fila multipla conta separado quantas
+ficaram sem indicador.
+
+O motivo tambem passou a existir no caso do mes sem periodo
+identificado, que antes saia calado.
 
 ### Decidido e fechado
 
