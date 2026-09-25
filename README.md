@@ -82,7 +82,9 @@ hora**, do quadro e das faltas, sempre que abre. Por isso qualquer
 mudanca — planilha nova, HC corrigido, gestor ou funcao a mais — ja
 aparece la, e o **CUBO** sai sozinho nas semanas que tem efetividade e
 hora direta. Cada semana (segunda a domingo, a mesma do Summary) recebe
-o valor dela, e o mes e o ciclo da folha que comeca no dia 13.
+o valor dela, e o mes e o ciclo da folha que comeca no dia 13. So
+aparecem as semanas e os meses que vieram do Summary; os outros ciclos
+da folha ficam so na aba Headcount.
 
 A planilha so tem linha em dia com falta, entao o periodo que ela cobre
 e deduzido — do dia 13 do ciclo da primeira data ate o dia da

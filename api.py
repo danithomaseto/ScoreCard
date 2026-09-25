@@ -374,24 +374,25 @@ class Api:
         ao_vivo = headcount.presenteismo_por_periodo(operation_key)
         colunas = []
 
-        semanas = sorted(set(guardado.get("week", {})) | set(ao_vivo["week"]))
-        for chave in semanas:
-            entrada = dict(guardado.get("week", {}).get(chave, {}))
-            vivo = ao_vivo["week"].get(chave)
+        # So entra na aba Inicio a semana ou o mes que veio do Summary: e
+        # ele que define as colunas. O presenteismo preenche essas colunas,
+        # nao cria outras. As faltas de uma semana que nao foi extraida
+        # continuam contando no ciclo da folha ponto, calculado por dia.
+        for chave in sorted(guardado.get("week", {})):
+            entrada = dict(guardado["week"][chave])
             titulo, subtitulo = periodos.rotulo_semana(chave)
-            parcial = entrada.get("parcial") if chave in guardado.get("week", {}) \
-                else (vivo or {}).get("parcial")
             colunas.append({
                 "chave": chave,
                 "periodo": "week",
                 "titulo": titulo,
                 "subtitulo": subtitulo,
-                "parcial": bool(parcial),
-                "_entrada": self._com_presenteismo(entrada, vivo),
+                "parcial": bool(entrada.get("parcial")),
+                "_entrada": self._com_presenteismo(entrada, ao_vivo["week"].get(chave)),
             })
 
-        meses = sorted(set(guardado.get("month", {})) | set(ao_vivo["month"]))
-        for chave in meses:
+        # Mes: mesma regra, so o que veio do Summary. O presenteismo que
+        # entra nele e o do ciclo da folha ponto que comeca no dia 13.
+        for chave in sorted(guardado.get("month", {})):
             entrada = dict(guardado.get("month", {}).get(chave, {}))
             vivo = ao_vivo["month"].get(chave)
             de = entrada.get("de") or (vivo or {}).get("de")

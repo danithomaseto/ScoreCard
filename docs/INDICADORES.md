@@ -889,6 +889,11 @@ na hora, a partir do quadro (Headcount) e das faltas, toda vez que abre.
 Qualquer mudanca ja aparece la, e nao sobra numero antigo preso no
 indicador. O CUBO e refeito junto.
 
+- **Colunas**: so aparece na aba Inicio a semana ou o mes que veio de
+  uma extracao do Summary. O presenteismo preenche essas colunas e nao
+  cria outras. Os demais ciclos da folha aparecem so na aba Headcount.
+  As faltas de uma semana que nao foi extraida continuam contando no
+  ciclo da folha ponto, que e calculado por dia.
 - **Semana**: segunda a domingo, a mesma semana do Summary (chave na
   segunda). Cada semana recebe o valor **dela** — o botao antigo, com
   "Todas as semanas" marcado, gravava o numero do mes repetido em todas,

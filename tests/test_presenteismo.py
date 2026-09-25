@@ -228,6 +228,19 @@ def test_faltas_sao_roteadas_para_a_semana_pela_data(app):
     assert s1["cards"]["faltas"] == 0
 
 
+def _extrair_mes(app, chave):
+    """Simula o mes que veio de uma extracao mensal do Summary."""
+    _, _, indicators_store = app
+    indicators_store.salvar_extracao("hugo_boss", "month", {chave: {"efetividade": 1.0}})
+
+
+def _extrair_semanas(app, *segundas):
+    """Simula as semanas que vieram de uma extracao do Summary."""
+    _, _, indicators_store = app
+    indicators_store.salvar_extracao(
+        "hugo_boss", "week", {s: {"efetividade": 1.0} for s in segundas})
+
+
 def _celulas(api_obj, indicador):
     """{chave da coluna: texto da celula} de uma linha da aba Inicio."""
     tabela = api_obj.get_indicator_table("hugo_boss")
@@ -239,6 +252,7 @@ def test_importar_ja_leva_cada_semana_ao_inicio(app):
     """Sem botao nenhum: importou, a aba Inicio ja mostra o presenteismo
     de cada semana — e o de cada uma, nao um numero do mes repetido."""
     api_obj = app[0]
+    _extrair_semanas(app, "2026-08-31", "2026-09-07", "2026-09-14")
     _preparar(app)
 
     presenteismo = _celulas(api_obj, "presenteismo")
@@ -253,6 +267,7 @@ def test_mes_do_inicio_e_o_ciclo_da_folha(app):
     """Agosto e o ciclo 13/08 -> 12/09: as faltas de 08 e 10/09 entram
     nele, a de 14/09 ja e do ciclo seguinte."""
     api_obj = app[0]
+    _extrair_mes(app, "2026-08")
     _preparar(app)
 
     presenteismo = _celulas(api_obj, "presenteismo")
@@ -274,6 +289,7 @@ def test_o_cubo_sai_sozinho(app):
 
 def test_mudar_o_hc_reflete_no_inicio_sem_clicar_em_nada(app):
     api_obj, headcount_store, _ = app
+    _extrair_semanas(app, "2026-09-07")
     gestor = _preparar(app)
     assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,4%"
 
@@ -284,20 +300,48 @@ def test_mudar_o_hc_reflete_no_inicio_sem_clicar_em_nada(app):
 
 def test_limpar_faltas_tira_o_presenteismo_do_inicio(app):
     api_obj = app[0]
+    _extrair_semanas(app, "2026-09-07")
     _preparar(app)
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,4%"
 
     api_obj.clear_faltas()
 
-    assert "2026-09-07" not in _celulas(api_obj, "presenteismo")
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == ""
 
 
 def test_semana_fora_da_planilha_fica_sem_numero(app):
     """10, 11 e 12/08 sao dias uteis antes do que a planilha cobre (ela
     comeca no ciclo de 13/08): nao da pra afirmar nada sobre a semana."""
     api_obj = app[0]
+    _extrair_semanas(app, "2026-08-10")
     _preparar(app)
 
-    assert "2026-08-10" not in _celulas(api_obj, "presenteismo")
+    assert _celulas(api_obj, "presenteismo")["2026-08-10"] == ""
+
+
+def test_semana_fora_do_summary_nao_vira_coluna(app):
+    """So entra na aba Inicio a semana que veio do Summary."""
+    api_obj = app[0]
+    _extrair_semanas(app, "2026-09-14")
+    _preparar(app)
+
+    semanas = [c["chave"] for c in api_obj.get_indicator_table("hugo_boss")["colunas"]
+               if c["periodo"] == "week"]
+    assert semanas == ["2026-09-14"]
+
+
+def test_falta_de_semana_fora_do_summary_conta_na_folha_ponto(app):
+    """A semana de 07/09 nao foi extraida e nao aparece, mas as duas
+    faltas dela (08 e 10/09) continuam no ciclo 13/08 -> 12/09."""
+    api_obj = app[0]
+    _extrair_semanas(app, "2026-09-14")
+    _extrair_mes(app, "2026-08")
+    _preparar(app)
+
+    presenteismo = _celulas(api_obj, "presenteismo")
+
+    assert "2026-09-07" not in presenteismo
+    assert presenteismo["2026-08"] == limits_formatar(1 - 2 / (25 * 22))
 
 
 def test_valor_gravado_por_versao_antiga_nao_prevalece(app):
@@ -351,3 +395,15 @@ def test_funcao_cadastrada_passa_a_contar(app):
 
     assert resposta["success"]
     assert resposta["resumo"]["consideradas"] == 4, "a linha de assistente passa a entrar"
+
+
+def test_mes_fora_do_summary_nao_vira_coluna(app):
+    """A planilha cobre o ciclo de agosto, mas agosto nao foi extraido
+    do Summary: nao aparece."""
+    api_obj = app[0]
+    _extrair_mes(app, "2026-09")
+    _preparar(app)
+
+    meses = [c["chave"] for c in api_obj.get_indicator_table("hugo_boss")["colunas"]
+             if c["periodo"] == "month"]
+    assert meses == ["2026-09"]
