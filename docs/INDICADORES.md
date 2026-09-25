@@ -300,8 +300,17 @@ uma coluna por vez.
 nome de semana: quem cola ja tem esses textos na apresentacao, e o
 rotulo junto so atrapalha.
 
-**Formato: um valor por linha**, seis linhas. Colando no Excel, cada
-valor cai numa celula, descendo a coluna na ordem dos indicadores:
+**Formato: uma tabela de uma coluna por seis linhas.** E isso que faz
+cada valor cair numa celula do PowerPoint. Texto com quebras de linha
+nao serve: a quebra vira linha dentro do paragrafo e o PowerPoint cola
+os seis valores empilhados **dentro de uma celula so**.
+
+A copia leva os dois formatos ao mesmo tempo — a tabela (`text/html`),
+que o PowerPoint e o Excel usam pra distribuir os valores, e o texto
+puro (`text/plain`), pra quem cola num bloco de notas ou num chat. Quem
+recebe escolhe o que entende.
+
+O texto puro segue sendo um valor por linha, na ordem dos indicadores:
 
 ```
 (cubo, vazio)
@@ -312,9 +321,9 @@ valor cai numa celula, descendo a coluna na ordem dos indicadores:
 (coverage, vazio)
 ```
 
-**Indicador sem numero vira linha vazia**, nao `—` nem `0`. Assim as
+**Indicador sem numero vira celula vazia**, nao `—` nem `0`. Assim as
 seis posicoes ficam preservadas e nada sobe de lugar; um traco viraria
-celula de texto no meio dos numeros.
+texto no meio dos numeros.
 
 **Valor igual ao da tela** (`96,4%`, com virgula e sinal de porcento):
 o que e apresentado e o que foi conferido. Se um dia precisar do numero

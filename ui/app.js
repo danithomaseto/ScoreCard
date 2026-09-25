@@ -287,23 +287,34 @@ function botaoCopiar(indice, titulo) {
   return btn;
 }
 
-// Um valor por linha, na ordem dos indicadores: colando no Excel cada
-// um cai numa celula, descendo a coluna. Indicador sem numero vira linha
-// vazia, pra nenhum valor subir de lugar.
+// Os seis valores da coluna, na ordem dos indicadores. Indicador sem
+// numero vira posicao vazia, pra nenhum valor subir de lugar.
+function valoresDaColuna(indice) {
+  return Array.from(indicatorsBody.querySelectorAll('tr')).map((tr) => {
+    const celula = tr.querySelectorAll('td')[indice];
+    if (!celula) return '';
+    const valor = celula.querySelector('.indicator-value');
+    return valor ? valor.textContent : '';
+  });
+}
+
 function textoDaColuna(indice) {
-  return Array.from(indicatorsBody.querySelectorAll('tr'))
-    .map((tr) => {
-      const celula = tr.querySelectorAll('td')[indice];
-      if (!celula) return '';
-      const valor = celula.querySelector('.indicator-value');
-      return valor ? valor.textContent : '';
-    })
-    .join('\n');
+  return valoresDaColuna(indice).join('\n');
+}
+
+// A mesma coluna como tabela de uma coluna por seis linhas. E isso que
+// faz cada valor cair numa celula do PowerPoint: texto com quebras de
+// linha ele cola inteiro dentro de UMA celula, porque a quebra vira
+// linha dentro do paragrafo, nao mudanca de celula.
+function tabelaDaColuna(indice) {
+  const linhas = valoresDaColuna(indice)
+    .map((valor) => `<tr><td>${valor}</td></tr>`)
+    .join('');
+  return `<table>${linhas}</table>`;
 }
 
 async function copiarColuna(indice, btn) {
-  const texto = textoDaColuna(indice);
-  const copiado = await copiarTexto(texto);
+  const copiado = await copiarTexto(textoDaColuna(indice), tabelaDaColuna(indice));
 
   const original = btn.textContent;
   btn.textContent = copiado ? 'Copiado' : 'Nao deu';
@@ -314,25 +325,46 @@ async function copiarColuna(indice, btn) {
   }, 2000);
 }
 
-async function copiarTexto(texto) {
-  // O WebView2 aceita a area de transferencia do navegador em contexto
-  // seguro; o textarea escondido cobre o caso de nao aceitar.
+// Copia nos dois formatos de uma vez: a tabela (que o PowerPoint e o
+// Excel usam pra distribuir os valores entre as celulas) e o texto
+// puro (pra quem cola num bloco de notas ou num chat). Quem recebe
+// escolhe o que entende.
+async function copiarTexto(texto, html) {
   try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(texto);
+    if (navigator.clipboard && window.ClipboardItem && window.isSecureContext) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([texto], { type: 'text/plain' }),
+        }),
+      ]);
       return true;
     }
   } catch (err) {
     // cai no plano B
   }
+
+  // Plano B: selecionar uma tabela de verdade fora da tela e mandar
+  // copiar. O navegador coloca os dois formatos sozinho — e por isso
+  // que aqui vai um elemento editavel, e nao um <textarea>, que so
+  // saberia copiar texto puro.
   try {
-    const area = document.createElement('textarea');
-    area.value = texto;
+    const area = document.createElement('div');
+    area.contentEditable = 'true';
+    area.innerHTML = html;
     area.style.position = 'fixed';
+    area.style.left = '-10000px';
     area.style.opacity = '0';
     document.body.appendChild(area);
-    area.select();
+
+    const intervalo = document.createRange();
+    intervalo.selectNodeContents(area);
+    const selecao = window.getSelection();
+    selecao.removeAllRanges();
+    selecao.addRange(intervalo);
+
     const ok = document.execCommand('copy');
+    selecao.removeAllRanges();
     document.body.removeChild(area);
     return ok;
   } catch (err) {
