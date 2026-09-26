@@ -137,10 +137,14 @@ def main():
         "Score Card",
         index_path,
         js_api=api,
-        width=980,
-        height=700,
-        min_size=(820, 600),
+        width=1280,
+        height=800,
+        min_size=(900, 600),
         resizable=True,
+        # Abre ocupando a tela: a aba Inicio e uma tabela larga, e a 980 px
+        # o mes e o pico ficavam escondidos. Ao restaurar a janela, volta
+        # para 1280 x 800.
+        maximized=True,
         # Cor de fundo mostrada por uma fracao de segundo antes da
         # pagina terminar de carregar, pra combinar com o tema escuro
         # em vez do branco padrao do pywebview.

@@ -81,3 +81,134 @@ def test_log_registra_a_importacao_de_faltas(log_em_arquivo):
         Api().import_faltas("faltas_abs.xlsx", base64.b64encode(fh.read()).decode())
 
     assert "planilha de faltas faltas_abs.xlsx importada" in log_em_arquivo.read_text(encoding="utf-8")
+
+
+# ---------------- Versao ----------------
+
+def test_versao_do_build_e_de_desenvolvimento(tmp_path, monkeypatch):
+    import sys
+
+    import versao
+
+    monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path), raising=False)
+    assert versao.info()["versao"] == "desenvolvimento"
+
+    from datetime import datetime
+    versao.gerar(str(tmp_path / versao.ARQUIVO), agora=datetime(2026, 9, 26, 14, 30), commit="a1b2c3d")
+    assert versao.info() == {"versao": "2026.09.26", "build": "26/09/2026 14:30", "commit": "a1b2c3d"}
+
+
+# ---------------- Checagem de conexao ----------------
+
+def test_conexao_com_servidor_no_ar_e_fora_do_ar():
+    import socket
+
+    import conexao
+
+    servidor = socket.socket()
+    servidor.bind(("127.0.0.1", 0))
+    servidor.listen(1)
+    porta = servidor.getsockname()[1]
+    try:
+        assert conexao.alcancavel(f"https://127.0.0.1:{porta}/rp/login")
+    finally:
+        servidor.close()
+    assert not conexao.alcancavel(f"https://127.0.0.1:{porta}/rp/login", tempo_limite=1)
+    assert conexao.alcancavel("file:///C:/mock/login.html"), "sem rede para checar"
+
+
+def test_checagem_pode_ser_desligada(monkeypatch):
+    import conexao
+
+    monkeypatch.setenv("SCORECARD_SEM_CHECAGEM_VPN", "1")
+    assert conexao.alcancavel("https://127.0.0.1:1/")
+
+
+def _porta_fechada():
+    import socket
+
+    s = socket.socket()
+    s.bind(("127.0.0.1", 0))
+    porta = s.getsockname()[1]
+    s.close()
+    return porta
+
+
+@pytest.fixture
+def api_sem_vpn(tmp_path, monkeypatch):
+    import settings_store
+    from config.operations import OPERATIONS
+    from api import Api
+
+    pasta = tmp_path / "sharepoint"
+    pasta.mkdir()
+    monkeypatch.setattr(settings_store, "get_sharepoint_folder", lambda: str(pasta))
+    url = f"https://127.0.0.1:{_porta_fechada()}/portal"
+    for chave in ("fora_a", "fora_b"):
+        OPERATIONS[chave] = {"label": chave, "login_url": url, "report_name": "r",
+                             "group_by_option": "User ID", "export_format": "EXCEL"}
+    instancia = Api()
+    instancia.login("usuario", "senha")
+    instancia.eventos = []
+    instancia._emit_js = lambda fn, payload: instancia.eventos.append((fn, payload))
+    yield instancia
+    for chave in ("fora_a", "fora_b"):
+        OPERATIONS.pop(chave, None)
+
+
+def test_sem_vpn_a_extracao_para_antes_de_abrir_o_navegador(api_sem_vpn, monkeypatch):
+    import time
+
+    import history_store
+    from automation import base
+
+    monkeypatch.setattr(base, "Navegador", lambda *a, **k: pytest.fail("nao devia abrir o navegador"))
+    inicio = time.monotonic()
+    resultado = api_sem_vpn.run_extraction(
+        "fora_a", date_range={"from_date": "2026-09-01", "to_date": "2026-09-07"}, period="peak")
+
+    assert time.monotonic() - inicio < 5
+    assert resultado["status"] == "error"
+    assert "VPN" in resultado["message"]
+    historico = history_store.get_history()[0]
+    assert historico["status"] == "error"
+    assert historico["period_type"] == "Dias de Pico"
+    assert historico["period_label"] == "01/09/2026 - 07/09/2026"
+
+
+def test_fila_sem_vpn_nao_repete_a_checagem_no_mesmo_servidor(api_sem_vpn, monkeypatch):
+    import conexao
+
+    checagens = []
+    original = conexao.alcancavel
+    monkeypatch.setattr(conexao, "alcancavel", lambda url, **k: checagens.append(url) or original(url, **k))
+
+    resultado = api_sem_vpn.run_multi_extraction(["fora_a", "fora_b"], period="week")
+
+    assert resultado["failed"] == 2
+    assert len(checagens) == 1, "o segundo usa o resultado do primeiro"
+
+
+# ---------------- Diagnostico ----------------
+
+def test_diagnostico_leva_log_e_ambiente_sem_dados_pessoais(log_em_arquivo, tmp_path):
+    import zipfile
+
+    import diagnostico
+    import headcount_store
+    from api import Api
+
+    api = Api()
+    api.login("daniel.usuario", "S3nh@Secreta!")
+    headcount_store.adicionar_gestor("Marina Duarte", "hugo_boss")
+    logging.getLogger("scorecard").info("erro com S3nh@Secreta! no meio")
+
+    caminho = diagnostico.gerar(str(tmp_path / "saida"))
+
+    with zipfile.ZipFile(caminho) as zipado:
+        nomes = zipado.namelist()
+        tudo = "\n".join(zipado.read(n).decode("utf-8") for n in nomes)
+    assert "info.txt" in nomes and "logs/scorecard.log" in nomes
+    assert "Gestores cadastrados: 1" in tudo
+    assert "Marina Duarte" not in tudo, "nome de gestor nao sai da maquina"
+    assert "S3nh@Secreta!" not in tudo and "daniel.usuario" not in tudo

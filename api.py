@@ -15,7 +15,11 @@ import threading
 
 import webview
 
-from config.operations import GROUP_BY_OPTIONS, OPERATIONS, escala_espanhola
+from config.operations import (
+    DEFAULT_DATE_RANGE, GROUP_BY_OPTIONS, OPERATIONS, PASTAS_DO_PERIODO, escala_espanhola,
+)
+import conexao
+import diagnostico
 import headcount
 import headcount_store
 import history_store
@@ -24,6 +28,7 @@ from indicators import limits, periodos, pico, presenteismo, reader, weekly
 import indicators_store
 import registro
 import settings_store
+import versao
 
 log = logging.getLogger("scorecard.api")
 
@@ -255,6 +260,14 @@ class Api:
         # trava ou demora, ja que o .exe empacotado nao mostra log nenhum.
         headless = os.environ.get("SCORECARD_HEADLESS", "1") != "0"
 
+        # Sem VPN o login so falharia no timeout, com o navegador aberto.
+        self._emit_js("updateProgress", "verificando a conexao com o servidor...")
+        if not conexao.alcancavel(OPERATIONS[operation_key]["login_url"]):
+            result = self._sem_conexao(operation_key, date_range, group_by, period)
+            self._record_history(operation_key, result)
+            result["status"] = "error"
+            return result
+
         # Importado aqui e nao no topo: o Playwright leva uma fracao de
         # segundo pra carregar, e a abertura do app nao precisa dele.
         from automation import generic
@@ -274,6 +287,31 @@ class Api:
         self._record_history(operation_key, result)
         result["status"] = self._status_da_extracao(result)
         return result
+
+    @staticmethod
+    def _sem_conexao(operation_key, date_range, group_by, period):
+        """Resultado de uma extracao barrada antes de abrir o navegador,
+        no mesmo formato que a automacao devolve, para ir ao historico."""
+        config = OPERATIONS[operation_key]
+        tipo = period if period in PASTAS_DO_PERIODO else "week"
+        if date_range:
+            rotulo = " - ".join(
+                datetime.date.fromisoformat(date_range[campo]).strftime("%d/%m/%Y")
+                for campo in ("from_date", "to_date"))
+        else:
+            rotulo = DEFAULT_DATE_RANGE["week" if tipo == "week" else "month"]
+        mensagem = conexao.mensagem(config["login_url"])
+        log.warning("extracao %s barrada: %s", operation_key, mensagem)
+        return {
+            "operation": operation_key,
+            "operation_label": config["label"],
+            "period_label": rotulo,
+            "period_type": PASTAS_DO_PERIODO[tipo],
+            "group_by": "Report Date" if tipo == "peak" else (group_by or config["group_by_option"]),
+            "success": False,
+            "message": mensagem,
+            "duration_seconds": 0.0,
+        }
 
     def cancel_multi_extraction(self):
         """Pedido de parada vindo da tela. A operacao em andamento vai
@@ -311,6 +349,7 @@ class Api:
 
         log.info("fila de %s operacoes (%s)", total, period or "week")
         navegador = None
+        servidores_fora = set()  # sem VPN, nao tenta de novo o mesmo servidor
         try:
             for index, operation_key in enumerate(operation_keys):
                 label = OPERATIONS[operation_key]["label"]
@@ -335,24 +374,30 @@ class Api:
                         "status": "running",
                     })
 
-                if navegador is None or not navegador.ativo():
-                    if navegador is not None:
-                        navegador.fechar()  # caiu no meio da fila: abre outro
-                    on_progress("abrindo o navegador...")
-                    navegador = Navegador(headless=headless)
+                url = OPERATIONS[operation_key]["login_url"]
+                on_progress("verificando a conexao com o servidor...")
+                if conexao.destino(url) in servidores_fora or not conexao.alcancavel(url):
+                    servidores_fora.add(conexao.destino(url))
+                    result = self._sem_conexao(operation_key, date_range, group_by, period)
+                else:
+                    if navegador is None or not navegador.ativo():
+                        if navegador is not None:
+                            navegador.fechar()  # caiu no meio da fila: abre outro
+                        on_progress("abrindo o navegador...")
+                        navegador = Navegador(headless=headless)
 
-                result = generic.run(
-                    operation_key,
-                    base_dir=base_dir,
-                    headless=headless,
-                    username=self._username,
-                    password=self._password,
-                    on_progress=on_progress,
-                    date_range=date_range,
-                    group_by=group_by,
-                    period=period,
-                    navegador=navegador,
-                )
+                    result = generic.run(
+                        operation_key,
+                        base_dir=base_dir,
+                        headless=headless,
+                        username=self._username,
+                        password=self._password,
+                        on_progress=on_progress,
+                        date_range=date_range,
+                        group_by=group_by,
+                        period=period,
+                        navegador=navegador,
+                    )
                 self._calcular_indicadores(operation_key, result)
                 self._record_history(operation_key, result)
 
@@ -389,6 +434,30 @@ class Api:
             "cancelled": cancelled,
             "sem_indicador": sem_indicador,
         }
+
+    # ---------------- Versao e diagnostico ----------------
+
+    def get_app_info(self):
+        return versao.info()
+
+    def gerar_diagnostico(self):
+        """Zip com log, versao e ambiente, sem credenciais nem dados das
+        pessoas, na pasta Downloads — pra mandar a quem da suporte."""
+        try:
+            caminho = diagnostico.gerar()
+        except OSError as exc:
+            log.exception("nao deu pra gerar o diagnostico")
+            return {"success": False, "message": f"Nao deu pra gerar o diagnostico: {exc}"}
+        log.info("diagnostico gerado em %s", caminho)
+        if sys.platform == "win32":
+            try:  # abre o Explorer ja com o zip selecionado
+                subprocess.Popen(["explorer", "/select,", caminho])
+            except OSError:
+                pass
+        else:
+            self._open_path(os.path.dirname(caminho), "Pasta do diagnostico")
+        return {"success": True, "caminho": caminho,
+                "message": f"Diagnostico salvo em {caminho}"}
 
     # ---------------- Abrir arquivos ----------------
 

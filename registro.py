@@ -43,7 +43,7 @@ def esquecer():
     _segredos.clear()
 
 
-def _limpar(texto):
+def limpar(texto):
     # Do mais longo pro mais curto: se o usuario estiver contido na
     # senha, a senha inteira some primeiro.
     for segredo in sorted(_segredos, key=len, reverse=True):
@@ -56,7 +56,7 @@ class _FormatoSemSegredo(logging.Formatter):
     mensagem de erro de terceiros poderia trazer um valor digitado."""
 
     def format(self, record):
-        return _limpar(super().format(record))
+        return limpar(super().format(record))
 
 
 def configurar():

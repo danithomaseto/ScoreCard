@@ -110,6 +110,28 @@ def find_playwright_chromium():
 
 datas += find_playwright_chromium()
 
+
+def gravar_versao():
+    """versao.json com a data do build e o commit, mostrado no rodape
+    do app e no diagnostico (ver versao.py)."""
+    import subprocess
+
+    import versao
+
+    try:
+        commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=SPECPATH,
+                                capture_output=True, text=True, timeout=10).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        commit = ""
+    os.makedirs(workpath, exist_ok=True)
+    destino = os.path.join(workpath, versao.ARQUIVO)
+    dados = versao.gerar(destino, commit=commit)
+    print(f"[versao] {dados['versao']} build {dados['build']} commit {commit or '-'}", flush=True)
+    return destino
+
+
+datas += [(gravar_versao(), ".")]
+
 # ---------------- 1. O app, em pasta ----------------
 
 a = Analysis(

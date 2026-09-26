@@ -49,6 +49,14 @@ GROUP_BY_OPTIONS = [
 # proposito: digitar so um pedaco ("Las") deixaria o combobox escolher
 # a primeira opcao que sobrar na lista, que pode ser Last Week, Last
 # Month ou Last Year conforme o relatorio.
+# Tipo de extracao -> subpasta da operacao onde o arquivo e salvo. Os
+# nomes precisam bater com as pastas do SharePoint.
+PASTAS_DO_PERIODO = {
+    "week": "Week",
+    "month": "Month",
+    "peak": "Dias de Pico",
+}
+
 DEFAULT_DATE_RANGE = {
     "week": "Last Week",
     "month": "Last Month",

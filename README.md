@@ -155,6 +155,20 @@ detalhe tecnico. Quando algo der errado numa maquina, e esse arquivo que
 explica. O tamanho e limitado (1 MB, mais os 3 anteriores). Usuario e
 senha nunca entram no log.
 
+Em **Configuracoes > Gerar diagnostico** o app junta o log, a versao e
+o ambiente da maquina num zip na pasta Downloads, pronto para mandar a
+quem da suporte. Leva so contagens e tamanhos dos dados — nenhum nome de
+gestor, matricula, usuario ou senha.
+
+A versao (data do build) aparece no rodape da barra lateral, abaixo do
+nome do criador; passando o mouse, mostra a hora do build e o commit.
+
+Antes de abrir o navegador, cada extracao confere se o servidor da
+operacao responde. Sem VPN, a mensagem aparece em segundos, em vez de
+esperar o login dar timeout; na fila, um servidor fora do ar nao e
+testado de novo. Se a checagem atrapalhar em alguma rede,
+`SCORECARD_SEM_CHECAGEM_VPN=1` desliga.
+
 Os arquivos de dados (`settings.json`, `history.json`,
 `indicators.json`, `headcount.json`) sao gravados de forma segura: um
 PC que desliga no meio da gravacao deixa o arquivo anterior inteiro, e
@@ -197,6 +211,9 @@ main.py              # cria a janela, garante que o Chromium existe
 lancador.py          # o ScoreCard.exe: descompacta o app uma vez e abre
 api.py                # metodos chamados pelo JS (login, executar, config)
 registro.py           # log local, sem credenciais
+versao.py             # versao/data do build, gravada pelo build.spec
+diagnostico.py        # zip de diagnostico sem dados pessoais
+conexao.py            # checagem rapida do servidor (VPN) antes de extrair
 arquivo_seguro.py     # gravacao dos JSON sem corromper no meio
 settings_store.py     # persiste a pasta do SharePoint em %APPDATA%
 history_store.py      # historico das extracoes em %APPDATA%

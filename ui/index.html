@@ -62,6 +62,13 @@
         </svg>
         <span>Headcount</span>
       </button>
+      <button class="nav-item" data-page="coverage">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+          <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+        </svg>
+        <span>Coverage</span>
+      </button>
       <button class="nav-item" data-page="settings">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
@@ -87,6 +94,7 @@
         </div>
         <div class="sidebar-brand-footer">DHL &mdash; Excellence. Simply delivered.</div>
         <div class="sidebar-autor">Criado por <strong>Daniel Thomaseto</strong></div>
+        <div class="sidebar-versao" id="app-versao"></div>
       </div>
     </nav>
 
@@ -608,6 +616,31 @@
         </div>
       </section>
 
+      <section id="page-coverage" class="page" hidden>
+        <div class="page-wide-wrap">
+          <h2 class="page-heading">Coverage</h2>
+          <p class="subtitle">Cobertura da operacao. A regra do calculo ainda vai ser definida.</p>
+
+          <div class="card coverage-card">
+            <div class="coverage-icone" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            </div>
+            <div class="coverage-texto">
+              <h3 class="card-title">Em construcao</h3>
+              <p>
+                Esta aba vai receber o calculo do Coverage. Enquanto a regra nao
+                estiver definida, o indicador aparece como <strong>&mdash;</strong>
+                na aba Inicio.
+              </p>
+              <div class="coverage-meta">
+                <span class="coverage-meta-rotulo">Meta</span>
+                <span class="coverage-meta-valor">92% a 110%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="page-settings" class="page" hidden>
         <div class="page-wide-wrap">
           <h2 class="page-heading">Configuracoes</h2>
@@ -619,6 +652,19 @@
             <div class="settings-linha">
               <div class="folder-box" id="folder-path">Nenhuma pasta selecionada.</div>
               <button id="choose-folder-btn" class="secondary">Alterar pasta</button>
+            </div>
+          </div>
+
+          <div class="card settings-card">
+            <h3 class="card-title">Diagnostico</h3>
+            <p class="settings-texto">
+              Quando algo der errado, gere o diagnostico e mande o arquivo para quem
+              da suporte. Ele leva o log, a versao e o ambiente desta maquina &mdash;
+              nunca usuario, senha ou dados das pessoas.
+            </p>
+            <div class="settings-linha">
+              <button id="diagnostico-btn" class="secondary">Gerar diagnostico</button>
+              <span class="settings-status" id="diagnostico-status" role="status"></span>
             </div>
           </div>
         </div>

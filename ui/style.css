@@ -267,12 +267,18 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* Assinatura de quem criou o sistema, logo abaixo do slogan. */
 .sidebar-autor {
-  margin-top: 8px;
-  padding: 0 0 16px 8px;
+  margin: 8px 0 8px;
+  padding: 0 0 0 8px;
   border-left: 2px solid var(--yellow);
   font-size: 10px;
   line-height: 1.3;
   color: #667085;
+}
+
+.sidebar-versao {
+  padding: 0 0 16px 10px;
+  font-size: 10px;
+  color: #5b6478;
 }
 
 .sidebar-autor strong {
@@ -350,6 +356,26 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
 .indicator-corner { vertical-align: bottom; border-bottom-color: var(--card-border); }
+
+/* Sombra na borda da coluna fixa: mostra que as semanas passam por
+   baixo dela ao rolar. */
+.indicator-corner::after,
+.indicator-name::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -12px;
+  bottom: 0;
+  width: 12px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.25), transparent);
+  pointer-events: none;
+}
+
+@media (max-width: 1100px) {
+  .indicator-corner,
+  .indicator-name { width: 170px; min-width: 170px; }
+  .corner-operation { font-size: 16px; }
+}
 
 .corner-label {
   font-size: 11px;
@@ -476,6 +502,15 @@ th.peak-col .col-title { color: var(--yellow); }
 }
 
 .progress-card { flex: 1; max-width: none; }
+
+/* Sem min-width: 0, item flex nao encolhe abaixo do conteudo e o card
+   do andamento passava da margem direita em janela estreita. */
+.params-card,
+.progress-card { min-width: 0; }
+
+@media (max-width: 1000px) {
+  .extract-layout { flex-direction: column; }
+}
 .history-card { width: 100%; max-width: none; }
 
 .field-row { display: flex; gap: 12px; }
@@ -527,6 +562,7 @@ th.peak-col .col-title { color: var(--yellow); }
 .linha-fonte-periodo { display: block; }
 
 .period-options {
+  container-type: inline-size;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -1219,3 +1255,70 @@ button.acao {
   .hc-funcoes:not([hidden]),
   .esqueleto { animation: none; }
 }
+
+
+/* ---------- Configuracoes: diagnostico ---------- */
+
+.settings-card + .settings-card { margin-top: 20px; }
+.settings-status { font-size: 12px; color: var(--text-muted); word-break: break-all; }
+.settings-status.erro { color: #f97066; }
+
+/* ---------- Aba Coverage (em construcao) ---------- */
+
+.coverage-card {
+  width: 100%;
+  max-width: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.coverage-icone {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255, 204, 0, 0.08);
+  color: var(--yellow);
+}
+
+.coverage-icone svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.coverage-texto p { margin: 0 0 16px; max-width: 640px; font-size: 13px; line-height: 1.6; color: var(--text-muted); }
+
+.coverage-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.coverage-meta-rotulo { color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px; font-weight: 700; }
+.coverage-meta-valor { color: var(--text); font-weight: 700; }
+
+
+/* Janela estreita (a padrao e 980 px): os tres periodos continuam numa
+   linha so, sem o icone e com o texto um pouco menor. */
+@container (max-width: 420px) {
+  .period-option { flex: 1 1 0; justify-content: center; padding: 12px 6px; }
+  .period-option .source-icon { display: none; }
+  .period-option strong { font-size: 13px; white-space: nowrap; }
+}
+
+.hc-varia { color: var(--text-muted); font-style: italic; }
+
+.settings-texto { max-width: 760px; }

@@ -240,6 +240,9 @@ async function loadIndicators() {
 
   desenharCabecalho(tabela);
   desenharLinhas(tabela);
+  // Abre mostrando o fim da tabela: o mes e o pico sao o que se olha
+  // primeiro, e numa janela estreita eles ficariam escondidos a direita.
+  indicatorsWrap.scrollLeft = indicatorsWrap.scrollWidth;
 }
 
 function desenharCabecalho(tabela) {
@@ -968,6 +971,25 @@ multiStopBtn.addEventListener('click', async () => {
   await pywebview.api.cancel_multi_extraction();
 });
 
+const diagnosticoBtn = document.getElementById('diagnostico-btn');
+const diagnosticoStatus = document.getElementById('diagnostico-status');
+
+diagnosticoBtn.addEventListener('click', async () => {
+  diagnosticoBtn.disabled = true;
+  diagnosticoStatus.textContent = 'Gerando...';
+  const resultado = await pywebview.api.gerar_diagnostico();
+  diagnosticoStatus.textContent = resultado.message;
+  diagnosticoStatus.classList.toggle('erro', !resultado.success);
+  diagnosticoBtn.disabled = false;
+});
+
+async function carregarVersao() {
+  const info = await pywebview.api.get_app_info();
+  const el = document.getElementById('app-versao');
+  el.textContent = `Versao ${info.versao}`;
+  el.title = info.build ? `Build ${info.build}${info.commit ? ' · ' + info.commit : ''}` : '';
+}
+
 chooseFolderBtn.addEventListener('click', async () => {
   const result = await pywebview.api.choose_sharepoint_folder();
   if (result.success) {
@@ -983,6 +1005,7 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 window.addEventListener('pywebviewready', () => {
+  carregarVersao();
   showLogin();
 });
 
@@ -1190,15 +1213,24 @@ function desenharTabelaHc(tela) {
   if (!tela.linhas.length) return;
   const t = tela.total;
   const tr = document.createElement('tr');
+  // Gestores de escalas diferentes (a espanhola trabalha os dois
+  // ultimos sabados) tem dias uteis diferentes no mesmo periodo: um
+  // numero so no total seria o de uma escala e nao o da linha de cima.
+  const diasDasLinhas = new Set(tela.linhas.map((l) => l.dias_uteis));
+  const diasTotal = diasDasLinhas.size > 1 ? 'varia' : t.dias_uteis;
   const celulas = [
     'TOTAL CONSOLIDADO',
     plural(t.gestores, 'gestor', 'gestores'),
-    t.hc, t.dias_uteis, t.horas_dia, t.faltas,
+    t.hc, diasTotal, t.horas_dia, t.faltas,
   ];
   celulas.forEach((texto, indice) => {
     const td = document.createElement('td');
     if (indice >= 2) td.className = 'num';
     td.textContent = texto;
+    if (texto === 'varia') {
+      td.classList.add('hc-varia');
+      td.title = 'Cada gestor usa os dias uteis da escala da operacao dele.';
+    }
     tr.appendChild(td);
   });
   const tdTotal = document.createElement('td');

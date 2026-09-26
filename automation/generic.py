@@ -16,15 +16,7 @@ from automation.base import (
     Navegador,
     take_screenshot,
 )
-from config.operations import DEFAULT_DATE_RANGE, OPERATIONS
-
-# Tipo de extracao -> subpasta da operacao onde o arquivo e salvo. Os
-# nomes precisam bater com as pastas do SharePoint.
-PASTAS_DO_PERIODO = {
-    "week": "Week",
-    "month": "Month",
-    "peak": "Dias de Pico",
-}
+from config.operations import DEFAULT_DATE_RANGE, OPERATIONS, PASTAS_DO_PERIODO
 
 # Dias de pico: uma linha por dia do mes, sem quebra por pessoa — so a
 # hora direta sai daqui; efetividade e dispersao vem do mensal.
