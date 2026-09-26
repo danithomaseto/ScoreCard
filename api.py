@@ -636,8 +636,26 @@ class Api:
             return {"success": False, "message": str(exc)}
         return {"success": True}
 
+    def edit_gestor(self, gestor_id, nome, operacao):
+        """Corrige o nome ou muda a operacao de um gestor. O quadro
+        digitado (HC, dias, horas) fica como estava."""
+        if operacao not in OPERATIONS:
+            return {"success": False, "message": "Escolha a operacao do gestor."}
+        try:
+            gestor = headcount_store.editar_gestor(gestor_id, nome, operacao)
+        except ValueError as exc:
+            return {"success": False, "message": str(exc)}
+        # So o id: nome de gestor nao vai para o log (o diagnostico leva o
+        # log, e ele nao pode levar dados das pessoas).
+        log.info("gestor %s editado", gestor_id)
+        return {"success": True, "gestor": gestor}
+
     def remove_gestor(self, gestor_id):
-        return {"success": headcount_store.remover_gestor(gestor_id)}
+        removido = headcount_store.remover_gestor(gestor_id)
+        if not removido:
+            return {"success": False, "message": "Gestor nao encontrado."}
+        log.info("gestor %s excluido", gestor_id)
+        return {"success": True}
 
     def add_funcao(self, nome, operacao):
         """Uma funcao a mais que passa a contar como falta nos gestores da

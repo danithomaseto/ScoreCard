@@ -522,6 +522,23 @@
               <button type="button" class="secondary" data-cancelar="gestor">Cancelar</button>
             </div>
 
+            <div class="hc-inline" id="hc-inline-editar" hidden>
+              <label for="hc-editar-nome">Nome do gestor</label>
+              <input type="text" id="hc-editar-nome" placeholder="Como aparece na planilha de faltas">
+              <label for="hc-editar-op">Operacao</label>
+              <select id="hc-editar-op"></select>
+              <span class="hc-inline-nota" title="As faltas sao ligadas ao gestor pelo nome.">O quadro digitado continua. Use o nome igual ao da planilha de faltas.</span>
+              <button type="button" id="hc-confirmar-editar">Salvar</button>
+              <button type="button" class="secondary" data-cancelar="editar">Cancelar</button>
+            </div>
+
+            <div class="hc-inline hc-inline-perigo" id="hc-inline-excluir" hidden>
+              <span class="hc-inline-pergunta" id="hc-excluir-texto"></span>
+              <span class="hc-inline-nota">O HC, os dias uteis e as horas/dia digitados saem junto. As faltas da planilha nao sao apagadas.</span>
+              <button type="button" class="excluir-definitivo" id="hc-confirmar-excluir">Excluir</button>
+              <button type="button" class="secondary" data-cancelar="excluir">Cancelar</button>
+            </div>
+
             <div class="hc-inline" id="hc-inline-funcao" hidden>
               <label for="hc-nova-funcao">Funcao que conta como falta</label>
               <input type="text" id="hc-nova-funcao" placeholder="Ex.: Operador de Ponte Rolante">

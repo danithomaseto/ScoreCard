@@ -1436,3 +1436,62 @@ button.secondary.carregando::after { border-color: rgba(255, 255, 255, 0.2); bor
   button.carregando::after { transition: none; animation: none; }
   button:active:not(:disabled) { transform: none; }
 }
+
+
+/* ---------- Headcount: editar e excluir gestor ---------- */
+
+.hc-gestor { position: relative; }
+
+/* Os icones ficam discretos e acendem ao passar na linha (ou ao chegar
+   neles pelo teclado). */
+.hc-gestor-acoes {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  padding-left: 8px;
+  opacity: 0.35;
+  transition: opacity 150ms ease;
+}
+
+.hc-tabela tbody tr:hover .hc-gestor-acoes,
+.hc-gestor-acoes:focus-within,
+.hc-tabela tbody tr.em-edicao .hc-gestor-acoes { opacity: 1; }
+
+button.hc-icone {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--text-muted);
+}
+
+button.hc-icone svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+button.hc-icone-editar:hover { background: rgba(255, 204, 0, 0.12); color: var(--yellow); }
+button.hc-icone-excluir:hover { background: rgba(249, 112, 102, 0.12); color: #f97066; }
+
+/* A linha em edicao fica marcada, para nao haver duvida de quem esta
+   sendo alterado ou excluido. */
+.hc-tabela tbody tr.em-edicao td { background: rgba(255, 204, 0, 0.06); }
+.hc-tabela tbody tr.em-edicao td:first-child { box-shadow: inset 3px 0 0 var(--yellow); }
+
+.hc-inline-perigo {
+  background: rgba(249, 112, 102, 0.08);
+  border-color: rgba(249, 112, 102, 0.4);
+}
+
+.hc-inline-pergunta { font-size: 13px; color: var(--text); }
+.hc-inline-pergunta strong { font-weight: 700; }
+
+button.excluir-definitivo { background: #d92d20; color: #fff; }
+button.excluir-definitivo:hover { background: #b42318; }

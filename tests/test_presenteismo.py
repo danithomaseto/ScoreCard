@@ -498,3 +498,73 @@ def test_inicio_filtra_a_planilha_uma_vez_so(app, monkeypatch):
 
     assert len(chamadas) == 1
     assert presenteismo["2026-09-07"] == "98,4%", "mesmo resultado de antes"
+
+
+# ---------------- Editar e excluir gestor ----------------
+
+def test_corrigir_o_nome_liga_as_faltas_da_planilha(app):
+    """Gestor cadastrado com o nome diferente da planilha fica sem
+    faltas; corrigido o nome, elas aparecem, e o HC digitado continua."""
+    api_obj, headcount_store, _ = app
+    gestor = _preparar(app)
+    api_obj.edit_gestor(gestor["id"], "G5", "hugo_boss")
+    assert api_obj.get_headcount("hugo_boss", "semanal", "2026-09", "todas")["cards"]["faltas"] == 0
+
+    resposta = api_obj.edit_gestor(gestor["id"], "G05", "hugo_boss")
+
+    assert resposta["success"]
+    tela = api_obj.get_headcount("hugo_boss", "semanal", "2026-09", "todas")
+    assert tela["cards"]["faltas"] == 3
+    assert tela["linhas"][0]["hc"] == 25, "o HC digitado nao se perde"
+
+
+def test_mudar_a_operacao_leva_o_gestor_e_o_quadro(app):
+    api_obj, headcount_store, _ = app
+    gestor = _preparar(app)
+
+    resposta = api_obj.edit_gestor(gestor["id"], "G05", "lego")
+
+    assert resposta["success"]
+    assert headcount_store.listar_gestores("hugo_boss") == []
+    movido = headcount_store.listar_gestores("lego")[0]
+    assert (movido["id"], movido["hc"]) == (gestor["id"], 25)
+
+
+def test_funcao_da_operacao_acompanha_o_gestor_que_mudou(app):
+    """Funcao cadastrada na Lego passa a valer para o gestor quando ele
+    muda para a Lego."""
+    api_obj, headcount_store, _ = app
+    gestor = _preparar(app)
+    api_obj.add_funcao("ASSISTENTE DE LOGISTICA", "lego")
+    assert headcount_store.arquivo()["resumo"]["consideradas"] == 3
+
+    api_obj.edit_gestor(gestor["id"], "G05", "lego")
+
+    assert headcount_store.arquivo()["resumo"]["consideradas"] == 4
+
+
+def test_edicao_invalida_nao_muda_nada(app):
+    api_obj, headcount_store, _ = app
+    gestor = _preparar(app)
+    headcount_store.adicionar_gestor("Marina Duarte", "hugo_boss")
+
+    assert not api_obj.edit_gestor(gestor["id"], "   ", "hugo_boss")["success"]
+    assert not api_obj.edit_gestor(gestor["id"], "G05", "todas")["success"]
+    repetido = api_obj.edit_gestor(gestor["id"], "marina duarte", "hugo_boss")
+    assert not repetido["success"] and "ja esta cadastrado" in repetido["message"]
+    assert not api_obj.edit_gestor("nao-existe", "X", "hugo_boss")["success"]
+    assert headcount_store.listar_gestores("hugo_boss")[0]["nome"] == "G05"
+
+
+def test_excluir_gestor_tira_do_headcount_e_do_inicio(app):
+    api_obj, headcount_store, _ = app
+    _extrair_semanas(app, "2026-09-07")
+    gestor = _preparar(app)
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,4%"
+
+    assert api_obj.remove_gestor(gestor["id"])["success"]
+
+    assert headcount_store.listar_gestores() == []
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "", "sem gestor, sem presenteismo"
+    assert headcount_store.arquivo()["resumo"]["linhas"] == 18, "a planilha continua"
+    assert not api_obj.remove_gestor(gestor["id"])["success"]

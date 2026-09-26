@@ -125,6 +125,38 @@ def atualizar_gestor(gestor_id, campos):
     raise ValueError("Gestor nao encontrado.")
 
 
+def editar_gestor(gestor_id, nome, operacao):
+    """Corrige o nome ou muda a operacao de um gestor, mantendo HC, dias
+    uteis e horas/dia digitados.
+
+    O nome e o que liga o gestor as faltas da planilha: corrigi-lo para
+    ficar igual ao GESTOR_NAME do arquivo faz as faltas aparecerem na
+    hora, sem reenviar nada.
+    """
+    nome = (nome or "").strip()
+    if not nome:
+        raise ValueError("Informe o nome do gestor.")
+    if not operacao or operacao == TODAS:
+        raise ValueError("Escolha a operacao do gestor.")
+
+    dados = ler()
+    gestor = next((g for g in dados["gestores"] if g["id"] == gestor_id), None)
+    if gestor is None:
+        raise ValueError("Gestor nao encontrado.")
+    repetido = any(
+        g["id"] != gestor_id and g["nome"].casefold() == nome.casefold() and g["operacao"] == operacao
+        for g in dados["gestores"]
+    )
+    if repetido:
+        raise ValueError(f"{nome} ja esta cadastrado nesta operacao.")
+
+    gestor["nome"] = nome
+    gestor["operacao"] = operacao
+    gestor["editado_em"] = datetime.now().isoformat(timespec="seconds")
+    _gravar(dados)
+    return gestor
+
+
 def remover_gestor(gestor_id):
     dados = ler()
     antes = len(dados["gestores"])

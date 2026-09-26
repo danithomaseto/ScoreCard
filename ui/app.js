@@ -1230,6 +1230,103 @@ function campoNumero(valor, gestorId, campo, passo) {
   return input;
 }
 
+// ---- Editar e excluir gestor ----
+// Os dois abrem uma faixa acima da tabela, no mesmo estilo das de
+// adicionar; a linha do gestor fica destacada enquanto isso.
+
+let hcEdicao = null;
+
+const ICONE_EDITAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+const ICONE_EXCLUIR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
+
+function acoesDoGestor(linha) {
+  const acoes = document.createElement('div');
+  acoes.className = 'hc-gestor-acoes';
+  for (const [tipo, icone, rotulo] of [
+    ['editar', ICONE_EDITAR, `Editar ${linha.gestor}`],
+    ['excluir', ICONE_EXCLUIR, `Excluir ${linha.gestor}`],
+  ]) {
+    const botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = `hc-icone hc-icone-${tipo}`;
+    botao.innerHTML = icone;
+    botao.title = rotulo;
+    botao.setAttribute('aria-label', rotulo);
+    botao.addEventListener('click', () => abrirEdicao(tipo, linha));
+    acoes.appendChild(botao);
+  }
+  return acoes;
+}
+
+function marcarLinhaEmEdicao() {
+  hcCorpo.querySelectorAll('tr').forEach((tr) => {
+    tr.classList.toggle('em-edicao', Boolean(hcEdicao) && tr.dataset.gestor === hcEdicao.id);
+  });
+}
+
+function abrirEdicao(tipo, linha) {
+  abrirFaixa(tipo);
+  hcEdicao = { id: linha.id, nome: linha.gestor, operacao: linha.operacao_key, rotulo: linha.operacao };
+  marcarLinhaEmEdicao();
+  const faixa = document.getElementById(`hc-inline-${tipo}`);
+  if (tipo === 'editar') {
+    const operacoes = (hcTela ? hcTela.operacoes : []).filter((o) => o.key !== 'todas');
+    preencherSelect(document.getElementById('hc-editar-op'), operacoes, linha.operacao_key, 'key', 'label');
+    const campo = document.getElementById('hc-editar-nome');
+    campo.value = linha.gestor;
+    campo.focus();
+    campo.select();
+  } else {
+    const texto = document.getElementById('hc-excluir-texto');
+    texto.textContent = '';
+    texto.append('Excluir ');
+    const nome = document.createElement('strong');
+    nome.textContent = linha.gestor;
+    texto.append(nome, ` (${linha.operacao})?`);
+    document.getElementById('hc-confirmar-excluir').focus();
+  }
+  faixa.scrollIntoView({ block: 'nearest', behavior: SEM_ANIMACAO ? 'auto' : 'smooth' });
+}
+
+async function salvarEdicao() {
+  if (!hcEdicao) return;
+  const nome = document.getElementById('hc-editar-nome').value.trim();
+  const seletor = document.getElementById('hc-editar-op');
+  if (!nome) {
+    hcStatus.textContent = 'Informe o nome do gestor.';
+    document.getElementById('hc-editar-nome').focus();
+    return;
+  }
+  const resposta = await pywebview.api.edit_gestor(hcEdicao.id, nome, seletor.value);
+  if (!resposta.success) {
+    hcStatus.textContent = resposta.message;
+    return;
+  }
+  const mudouOperacao = seletor.value !== hcEdicao.operacao;
+  const novaOperacao = seletor.options[seletor.selectedIndex]?.text || seletor.value;
+  const saiDaLista = mudouOperacao && hcEstado.operacao !== 'todas';
+  abrirFaixa(null);
+  await carregarHeadcount();
+  hcStatus.textContent = saiDaLista
+    ? `${nome} foi para ${novaOperacao} e sai desta lista. O HC digitado foi junto.`
+    : mudouOperacao
+      ? `${nome} agora esta em ${novaOperacao}. O HC digitado foi junto.`
+      : `${nome} atualizado. As faltas da planilha ja sao ligadas pelo nome novo.`;
+}
+
+async function confirmarExclusao() {
+  if (!hcEdicao) return;
+  const { id, nome } = hcEdicao;
+  const resposta = await pywebview.api.remove_gestor(id);
+  if (!resposta.success) {
+    hcStatus.textContent = resposta.message;
+    return;
+  }
+  abrirFaixa(null);
+  await carregarHeadcount();
+  hcStatus.textContent = `${nome} excluido. A aba Inicio ja reflete a mudanca.`;
+}
+
 function desenharTabelaHc(tela) {
   hcTabelaTitulo.textContent = tela.visualizacao === 'mes'
     ? 'Resultado do mes por gestor · folha ponto'
@@ -1261,8 +1358,11 @@ function desenharTabelaHc(tela) {
     nomes.appendChild(nota);
     caixa.appendChild(avatar);
     caixa.appendChild(nomes);
+    caixa.appendChild(acoesDoGestor(linha));
     tdGestor.appendChild(caixa);
     tr.appendChild(tdGestor);
+    tr.dataset.gestor = linha.id;
+    if (hcEdicao && hcEdicao.id === linha.id) tr.classList.add('em-edicao');
 
     const tdOperacao = document.createElement('td');
     const op = document.createElement('div');
@@ -1498,13 +1598,21 @@ function preencherOperacaoDaFaixa(select) {
 }
 
 function abrirFaixa(qual) {
-  const gestor = document.getElementById('hc-inline-gestor');
-  const funcao = document.getElementById('hc-inline-funcao');
-  gestor.hidden = qual !== 'gestor';
-  funcao.hidden = qual !== 'funcao';
-  if (qual) preencherOperacaoDaFaixa(SELETOR_DE_OPERACAO[qual]);
-  const campo = document.getElementById(qual === 'gestor' ? 'hc-novo-gestor' : 'hc-nova-funcao');
-  if (qual) { campo.value = ''; campo.focus(); }
+  // Uma faixa aberta por vez: adicionar gestor, adicionar funcao, editar
+  // ou excluir.
+  for (const tipo of ['gestor', 'funcao', 'editar', 'excluir']) {
+    document.getElementById(`hc-inline-${tipo}`).hidden = qual !== tipo;
+  }
+  if (qual !== 'editar' && qual !== 'excluir' && hcEdicao) {
+    hcEdicao = null;
+    marcarLinhaEmEdicao();
+  }
+  if (qual === 'gestor' || qual === 'funcao') {
+    preencherOperacaoDaFaixa(SELETOR_DE_OPERACAO[qual]);
+    const campo = document.getElementById(qual === 'gestor' ? 'hc-novo-gestor' : 'hc-nova-funcao');
+    campo.value = '';
+    campo.focus();
+  }
 }
 
 document.getElementById('hc-add-gestor').addEventListener('click', () => abrirFaixa('gestor'));
@@ -1566,11 +1674,27 @@ for (const [botao, campo, qual] of [
   });
 }
 
-for (const seletor of [hcNovoGestorOp, hcNovaFuncaoOp]) {
+for (const seletor of [hcNovoGestorOp, hcNovaFuncaoOp, document.getElementById('hc-editar-op')]) {
   seletor.addEventListener('keydown', (evento) => {
     if (evento.key === 'Escape') abrirFaixa(null);
   });
 }
+
+const hcConfirmarEditar = document.getElementById('hc-confirmar-editar');
+const hcConfirmarExcluir = document.getElementById('hc-confirmar-excluir');
+hcConfirmarEditar.addEventListener('click', () => comCarregando(hcConfirmarEditar, salvarEdicao));
+hcConfirmarExcluir.addEventListener('click', () => comCarregando(hcConfirmarExcluir, confirmarExclusao));
+document.getElementById('hc-editar-nome').addEventListener('keydown', (evento) => {
+  if (evento.key === 'Enter') {
+    evento.preventDefault();
+    comCarregando(hcConfirmarEditar, salvarEdicao);
+  } else if (evento.key === 'Escape') {
+    abrirFaixa(null);
+  }
+});
+hcConfirmarExcluir.addEventListener('keydown', (evento) => {
+  if (evento.key === 'Escape') abrirFaixa(null);
+});
 
 for (const [id, qual] of [['hc-novo-gestor', 'gestor'], ['hc-nova-funcao', 'funcao']]) {
   document.getElementById(id).addEventListener('keydown', async (evento) => {
