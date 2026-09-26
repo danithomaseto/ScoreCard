@@ -114,16 +114,31 @@ def _card_periodo(visualizacao, mes, periodos, periodo_id, dias):
     return f"{inicio} a {fim}", f"S{periodo['numero']} · {uteis}"
 
 
+def _por_gestor(lancamentos):
+    """As faltas agrupadas pelo nome do gestor (sem diferenciar
+    maiusculas), feito uma vez: sem isso cada gestor varria a planilha
+    inteira, e com dezenas de gestores e milhares de linhas a tela
+    demorava."""
+    indice = {}
+    for falta in lancamentos:
+        indice.setdefault(falta["gestor"].casefold(), []).append(falta)
+    return indice
+
+
+def _do_gestor(lancamentos, nome):
+    if isinstance(lancamentos, dict):
+        return lancamentos.get(nome.casefold(), [])
+    return [f for f in lancamentos if f["gestor"].casefold() == nome.casefold()]
+
+
 def _usuarios_do_gestor(lancamentos, nome):
-    return len({f["usuario"] for f in lancamentos
-                if f["gestor"].casefold() == nome.casefold() and f["usuario"]})
+    return len({f["usuario"] for f in _do_gestor(lancamentos, nome) if f["usuario"]})
 
 
 def _faltas_do_gestor(lancamentos, nome, inicio, fim):
     return sum(
-        f.get("dias", 1) for f in lancamentos
-        if f["gestor"].casefold() == nome.casefold()
-        and (not inicio or f["data"] >= inicio)
+        f.get("dias", 1) for f in _do_gestor(lancamentos, nome)
+        if (not inicio or f["data"] >= inicio)
         and (not fim or f["data"] <= fim)
     )
 
@@ -136,6 +151,7 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
     meta = config["meta"]
     arquivo = headcount_store.arquivo(dados)
     lancamentos = arquivo["faltas"] if arquivo else []
+    faltas_por_gestor = _por_gestor(lancamentos)
 
     meses = _meses_disponiveis(hoje)
     mes = mes or meses[0]["id"]
@@ -181,7 +197,7 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
         dias = gestor.get("dias_uteis")
         dias = int(dias) if dias is not None else dias_do_gestor
         horas_dia = float(gestor.get("horas_dia") or config["horas_dia"])
-        faltas = _faltas_do_gestor(lancamentos, gestor["nome"], inicio, fim)
+        faltas = _faltas_do_gestor(faltas_por_gestor, gestor["nome"], inicio, fim)
         valor = presenteismo.calcular(hc, dias, horas_dia, faltas)
 
         hc_total += hc
@@ -193,7 +209,7 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
             "id": gestor["id"],
             "gestor": gestor["nome"],
             "iniciais": _iniciais(gestor["nome"]),
-            "usuarios": _usuarios_do_gestor(lancamentos, gestor["nome"]),
+            "usuarios": _usuarios_do_gestor(faltas_por_gestor, gestor["nome"]),
             "operacao": OPERATIONS.get(gestor["operacao"], {}).get(
                 "label", gestor["operacao"]),
             "operacao_key": gestor["operacao"],
@@ -351,17 +367,21 @@ def cobertura_do_arquivo(arquivo):
     return inicio, fim
 
 
-def presenteismo_do_intervalo(operacao, inicio, fim, hoje=None, dados=None):
+def presenteismo_do_intervalo(operacao, inicio, fim, hoje=None, dados=None, arquivo=None):
     """Presenteismo de uma operacao entre duas datas, ou None.
 
     None quando nao da pra afirmar nada: sem gestor com HC, sem arquivo,
     ou com dia util do intervalo fora do que a planilha cobre. Um
     periodo que ainda esta correndo e calculado ate onde ha dado — igual
     ao ciclo "Em aberto" da tela de Headcount.
+
+    arquivo e o headcount_store.arquivo(dados) ja filtrado: quem calcula
+    varios periodos seguidos filtra a planilha uma vez so e repassa.
     """
     hoje = hoje or datetime.date.today()
     dados = dados or headcount_store.ler()
-    arquivo = headcount_store.arquivo(dados)
+    if arquivo is None:
+        arquivo = headcount_store.arquivo(dados)
     janela = cobertura_do_arquivo(arquivo)
     if not janela:
         return None
@@ -431,7 +451,8 @@ def presenteismo_por_periodo(operacao, hoje=None):
     segunda = cobre_de - datetime.timedelta(days=cobre_de.weekday())
     while segunda <= limite:
         domingo = segunda + datetime.timedelta(days=6)
-        valor = presenteismo_do_intervalo(operacao, segunda, domingo, hoje=hoje, dados=dados)
+        valor = presenteismo_do_intervalo(operacao, segunda, domingo, hoje=hoje, dados=dados,
+                                          arquivo=arquivo)
         if valor is not None:
             resultado["week"][segunda.isoformat()] = {
                 "presenteismo": valor,
@@ -444,7 +465,8 @@ def presenteismo_por_periodo(operacao, hoje=None):
         fim = datetime.date.fromisoformat(ciclo["fim"])
         if fim < cobre_de or inicio > limite:
             continue
-        valor = presenteismo_do_intervalo(operacao, inicio, fim, hoje=hoje, dados=dados)
+        valor = presenteismo_do_intervalo(operacao, inicio, fim, hoje=hoje, dados=dados,
+                                          arquivo=arquivo)
         if valor is not None:
             resultado["month"][ciclo["mes_referencia"]] = {
                 "presenteismo": valor,

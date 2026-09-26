@@ -28,7 +28,7 @@ def test_stores_gravam_pelo_caminho_seguro(tmp_path, monkeypatch):
     gravados = []
     original = arquivo_seguro.gravar_json
     monkeypatch.setattr(arquivo_seguro, "gravar_json",
-                        lambda caminho, dados: (gravados.append(caminho), original(caminho, dados)))
+                        lambda caminho, dados, **k: (gravados.append(caminho), original(caminho, dados, **k)))
 
     headcount_store.adicionar_gestor("G05", "hugo_boss")
 

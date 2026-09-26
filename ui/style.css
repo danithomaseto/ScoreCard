@@ -1322,3 +1322,117 @@ button.acao {
 .hc-varia { color: var(--text-muted); font-style: italic; }
 
 .settings-texto { max-width: 760px; }
+
+
+/* ================================================================
+   Fluidez: transicoes entre telas e opcoes (so apresentacao)
+   ================================================================ */
+
+/* Troca de aba: a pagina antiga esmaece e a nova sobe um pouco. Feito
+   pela View Transitions API; o menu lateral fica parado. */
+.content-area { view-transition-name: conteudo; }
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; }
+::view-transition-group(conteudo) { animation-duration: 0s; }
+::view-transition-old(conteudo) { animation: vt-sair 110ms ease-in both; }
+::view-transition-new(conteudo) { animation: vt-entrar 210ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+@keyframes vt-sair { to { opacity: 0; transform: translateY(-4px); } }
+@keyframes vt-entrar { from { opacity: 0; transform: translateY(6px); } }
+
+/* Com a View Transitions ativa, a animacao de CSS da pagina sairia
+   dobrada. */
+.vt .page:not([hidden]) { animation: none; }
+
+/* Menu lateral: a barra amarela desliza ate o item ativo. */
+.sidebar { position: relative; }
+.nav-item { position: relative; z-index: 1; transition: color 180ms ease, background-color 150ms ease; }
+.nav-item .nav-icon { transition: transform 180ms ease; }
+.nav-item:hover .nav-icon { transform: translateX(1px); }
+
+.nav-indicador {
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 42px;
+  border-radius: 6px;
+  background: var(--yellow);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nav-indicador.visivel { opacity: 1; }
+.nav-indicador.pronto { transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), height 260ms ease; }
+.nav-indicador.visivel ~ .nav-item.active,
+.nav-indicador.visivel ~ .nav-item.active:hover { background: transparent; }
+
+/* Seletor Semanal / Resultado do Mes: o fundo amarelo desliza. */
+.segmentado { position: relative; }
+.segmentado::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  width: var(--seg-w, 0);
+  transform: translateX(var(--seg-x, 0));
+  border-radius: 6px;
+  background: var(--yellow);
+  opacity: 0;
+}
+.segmentado.com-destaque::before { opacity: 1; }
+.segmentado.pronto::before { transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), width 240ms ease; }
+.segmentado.com-destaque .seg-opcao.active { background: transparent; }
+.seg-opcao { position: relative; z-index: 1; transition: color 180ms ease, background-color 150ms ease; }
+
+/* Botoes, campos e cards de opcao respondem ao toque. */
+button {
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease,
+              opacity 150ms ease, transform 90ms ease;
+}
+button:active:not(:disabled) { transform: scale(0.97); }
+.nav-item:active:not(:disabled) { transform: none; }
+
+input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease; }
+
+.period-option,
+.source-option,
+.multi-operation,
+.hc-funcao-chip { transition: border-color 180ms ease, background-color 180ms ease, transform 90ms ease; }
+
+/* Botao ocupado: o texto some e um giro ocupa o lugar. */
+button.carregando { position: relative; color: transparent !important; transition: none; }
+button.carregando > * { visibility: hidden; }
+button.carregando::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: #151515;
+  border-radius: 50%;
+  animation: girar 700ms linear infinite;
+}
+button.secondary.carregando::after { border-color: rgba(255, 255, 255, 0.2); border-top-color: var(--text); }
+
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* Linhas da tabela entrando uma apos a outra (so no primeiro desenho). */
+.linha-entrando { animation: linha-entra 260ms ease-out both; }
+@keyframes linha-entra { from { opacity: 0; transform: translateY(4px); } }
+
+/* Os numeros dos cards do Headcount trocam suavemente. */
+.hc-card strong,
+.hc-card .hc-card-valor { transition: color 200ms ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-indicador.pronto,
+  .segmentado.pronto::before,
+  button,
+  .linha-entrando,
+  button.carregando::after { transition: none; animation: none; }
+  button:active:not(:disabled) { transform: none; }
+}

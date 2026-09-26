@@ -54,6 +54,16 @@ const multiHistoryTableBody = document.getElementById('multi-history-table-body'
 // disso ele so piscaria na tela, o que parece mais lento, nao menos.
 const ESPERA_DO_ESQUELETO = 150;
 
+// As linhas aparecem uma apos a outra (30 ms de diferenca), so no
+// primeiro desenho da tabela; nas atualizacoes elas so trocam o valor.
+function entrarEmSequencia(tbody) {
+  if (SEM_ANIMACAO) return;
+  Array.from(tbody.rows).forEach((tr, i) => {
+    tr.classList.add('linha-entrando');
+    tr.style.animationDelay = `${i * 30}ms`;
+  });
+}
+
 function desenharEsqueleto(tbody, colunas, linhas = 4) {
   tbody.innerHTML = '';
   for (let i = 0; i < linhas; i += 1) {
@@ -71,6 +81,11 @@ function desenharEsqueleto(tbody, colunas, linhas = 4) {
 }
 
 async function comEsqueleto(tbody, colunas, carregar, antesDeMostrar) {
+  // Voltando a uma aba que ja tem dados, eles ficam na tela enquanto a
+  // atualizacao chega: trocar por barras cinza pareceria mais lento.
+  if (tbody.querySelector('tr:not(.linha-esqueleto)')) {
+    return carregar();
+  }
   const timer = setTimeout(() => {
     if (antesDeMostrar) antesDeMostrar();
     desenharEsqueleto(tbody, colunas);
@@ -178,15 +193,78 @@ async function showApp() {
   await loadOperations();
   await loadGroupByOptions();
   await showPage('home');
+  preCarregar();
 }
 
-async function showPage(pageName) {
+// Depois que o Inicio abriu, as outras abas carregam em segundo plano:
+// a primeira visita a elas ja encontra a tela montada.
+function preCarregar() {
+  const quandoOcioso = window.requestIdleCallback || ((fn) => setTimeout(fn, 300));
+  quandoOcioso(async () => {
+    try {
+      await loadHistoryTable(historyTableBody);
+      await loadHistoryTable(multiHistoryTableBody);
+      await carregarHeadcount();
+    } catch (err) {
+      // pre-carregar e so um adiantamento; a aba carrega de novo ao abrir
+    }
+  });
+}
+
+// ---------------------------------------------------------------
+// Transicoes e fluidez
+// ---------------------------------------------------------------
+// So apresentacao: nada aqui muda o que e calculado ou mostrado.
+
+const SEM_ANIMACAO = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TEM_VIEW_TRANSITION = typeof document.startViewTransition === 'function' && !SEM_ANIMACAO;
+if (TEM_VIEW_TRANSITION) document.documentElement.classList.add('vt');
+
+const contentArea = document.querySelector('.content-area');
+const navIndicador = document.getElementById('nav-indicador');
+
+// A barra amarela do menu desliza ate o item ativo, em vez de pular.
+function moverIndicadorDoMenu() {
+  const ativo = document.querySelector('.nav-item.active');
+  if (!ativo || !navIndicador) return;
+  navIndicador.style.transform = `translateY(${ativo.offsetTop}px)`;
+  navIndicador.style.height = `${ativo.offsetHeight}px`;
+  ligarTransicaoDepois(navIndicador, 'visivel');
+}
+
+// Na primeira vez o elemento aparece ja no lugar; a animacao so vale a
+// partir do quadro seguinte (senao ele deslizaria vindo do topo).
+function ligarTransicaoDepois(elemento, classe) {
+  if (elemento.classList.contains(classe)) return;
+  elemento.classList.add(classe);
+  requestAnimationFrame(() => requestAnimationFrame(() => elemento.classList.add('pronto')));
+}
+window.addEventListener('resize', moverIndicadorDoMenu);
+
+function trocarPagina(pageName) {
   for (const btn of navItems) {
     btn.classList.toggle('active', btn.dataset.page === pageName);
   }
   for (const page of pages) {
     page.hidden = page.id !== `page-${pageName}`;
   }
+  contentArea.scrollTop = 0;
+  moverIndicadorDoMenu();
+}
+
+// Com a View Transitions API do navegador, a pagina antiga esmaece
+// enquanto a nova entra; sem ela, cai na animacao de CSS (.page).
+function trocarComTransicao(pageName) {
+  const atual = document.querySelector('.page:not([hidden])');
+  if (!TEM_VIEW_TRANSITION || !atual || atual.id === `page-${pageName}`) {
+    trocarPagina(pageName);
+    return;
+  }
+  document.startViewTransition(() => trocarPagina(pageName));
+}
+
+async function showPage(pageName) {
+  trocarComTransicao(pageName);
   if (pageName === 'home') {
     await loadHome();
   } else if (pageName === 'extract') {
@@ -238,8 +316,10 @@ async function loadIndicators() {
   indicatorsLegend.hidden = !temDados;
   if (!temDados) return;
 
+  const primeiraVez = !indicatorsBody.querySelector('tr:not(.linha-esqueleto)');
   desenharCabecalho(tabela);
   desenharLinhas(tabela);
+  if (primeiraVez) entrarEmSequencia(indicatorsBody);
   // Abre mostrando o fim da tabela: o mes e o pico sao o que se olha
   // primeiro, e numa janela estreita eles ficariam escondidos a direita.
   indicatorsWrap.scrollLeft = indicatorsWrap.scrollWidth;
@@ -975,12 +1055,10 @@ const diagnosticoBtn = document.getElementById('diagnostico-btn');
 const diagnosticoStatus = document.getElementById('diagnostico-status');
 
 diagnosticoBtn.addEventListener('click', async () => {
-  diagnosticoBtn.disabled = true;
   diagnosticoStatus.textContent = 'Gerando...';
-  const resultado = await pywebview.api.gerar_diagnostico();
+  const resultado = await comCarregando(diagnosticoBtn, () => pywebview.api.gerar_diagnostico());
   diagnosticoStatus.textContent = resultado.message;
   diagnosticoStatus.classList.toggle('erro', !resultado.success);
-  diagnosticoBtn.disabled = false;
 });
 
 async function carregarVersao() {
@@ -1098,7 +1176,18 @@ function desenharFiltrosHc(tela) {
   for (const botao of hcVisualizacao.querySelectorAll('.seg-opcao')) {
     botao.classList.toggle('active', botao.dataset.visualizacao === tela.visualizacao);
   }
+  moverDestaque(hcVisualizacao);
 }
+
+// O fundo amarelo do seletor desliza ate a opcao ativa.
+function moverDestaque(grupo) {
+  const ativo = grupo.querySelector('.seg-opcao.active');
+  if (!ativo || !ativo.offsetWidth) return;
+  grupo.style.setProperty('--seg-x', `${ativo.offsetLeft}px`);
+  grupo.style.setProperty('--seg-w', `${ativo.offsetWidth}px`);
+  ligarTransicaoDepois(grupo, 'com-destaque');
+}
+window.addEventListener('resize', () => moverDestaque(hcVisualizacao));
 
 function desenharCardsHc(tela) {
   const c = tela.cards;
@@ -1119,9 +1208,23 @@ function campoNumero(valor, gestorId, campo, passo) {
   input.min = '0';
   if (passo) input.step = passo;
   input.value = valor;
+  input.dataset.gestor = gestorId;
+  input.dataset.campo = campo;
   input.addEventListener('change', async () => {
+    // A tabela e redesenhada com os numeros novos; quem ja tinha ido pro
+    // proximo campo (Tab) continua nele, sem perder o cursor.
+    // O "change" dispara antes de o cursor chegar no proximo campo; depois
+    // da gravacao ele ja esta la, e e ele que se guarda.
     await pywebview.api.update_gestor(gestorId, { [campo]: input.value });
+    const foco = document.activeElement;
+    const destino = foco && foco.dataset && foco.dataset.gestor
+      ? { gestor: foco.dataset.gestor, campo: foco.dataset.campo } : null;
     await carregarHeadcount();
+    if (destino) {
+      const alvo = hcCorpo.querySelector(
+        `input[data-gestor="${destino.gestor}"][data-campo="${destino.campo}"]`);
+      if (alvo) { alvo.focus(); alvo.select(); }
+    }
     hcStatus.textContent = 'Quadro atualizado. A aba Inicio ja reflete a mudanca.';
   });
   return input;
@@ -1370,6 +1473,9 @@ hcPeriodo.addEventListener('change', async () => {
 hcVisualizacao.addEventListener('click', async (evento) => {
   const botao = evento.target.closest('.seg-opcao');
   if (!botao) return;
+  // O destaque anda ja no clique; os numeros chegam logo depois.
+  hcVisualizacao.querySelectorAll('.seg-opcao').forEach((b) => b.classList.toggle('active', b === botao));
+  moverDestaque(hcVisualizacao);
   hcEstado.visualizacao = botao.dataset.visualizacao;
   hcEstado.periodo_id = null;
   await carregarHeadcount();
@@ -1405,6 +1511,19 @@ document.getElementById('hc-add-gestor').addEventListener('click', () => abrirFa
 document.getElementById('hc-add-funcao').addEventListener('click', () => abrirFaixa('funcao'));
 for (const botao of document.querySelectorAll('[data-cancelar]')) {
   botao.addEventListener('click', () => abrirFaixa(null));
+}
+
+// Botao ocupado: desabilita e mostra o giro enquanto o Python responde,
+// para ninguem clicar duas vezes achando que nao pegou.
+async function comCarregando(botao, acao) {
+  botao.disabled = true;
+  botao.classList.add('carregando');
+  try {
+    return await acao();
+  } finally {
+    botao.disabled = false;
+    botao.classList.remove('carregando');
+  }
 }
 
 async function confirmarFaixa(qual, valor) {
@@ -1443,7 +1562,7 @@ for (const [botao, campo, qual] of [
       document.getElementById(campo).focus();
       return;
     }
-    await confirmarFaixa(qual, valor);
+    await comCarregando(document.getElementById(botao), () => confirmarFaixa(qual, valor));
   });
 }
 

@@ -47,7 +47,7 @@ def _ler():
 
 
 def _gravar(dados):
-    arquivo_seguro.gravar_json(_store_path(), dados)
+    arquivo_seguro.gravar_json(_store_path(), dados, compacto=True)
 
 
 def get_indicators(operation_key=None):

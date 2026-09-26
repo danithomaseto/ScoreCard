@@ -60,7 +60,7 @@ def ler():
 
 
 def _gravar(dados):
-    arquivo_seguro.gravar_json(_caminho(), dados)
+    arquivo_seguro.gravar_json(_caminho(), dados, compacto=True)
     return dados
 
 

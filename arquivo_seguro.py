@@ -17,13 +17,19 @@ import tempfile
 import time
 
 
-def gravar_json(caminho, dados):
+def gravar_json(caminho, dados, compacto=False):
+    """compacto=True grava sem indentacao: para os arquivos grandes (a
+    planilha de faltas fica guardada linha a linha no headcount.json),
+    o arquivo fica bem menor e abre mais rapido a cada tela."""
     pasta = os.path.dirname(os.path.abspath(caminho))
     os.makedirs(pasta, exist_ok=True)
     descritor, temporario = tempfile.mkstemp(prefix=".gravando-", suffix=".json", dir=pasta)
     try:
         with os.fdopen(descritor, "w", encoding="utf-8") as fh:
-            json.dump(dados, fh, indent=2, ensure_ascii=False)
+            if compacto:
+                json.dump(dados, fh, ensure_ascii=False, separators=(",", ":"))
+            else:
+                json.dump(dados, fh, indent=2, ensure_ascii=False)
             fh.flush()
             os.fsync(fh.fileno())
         _substituir(temporario, caminho)

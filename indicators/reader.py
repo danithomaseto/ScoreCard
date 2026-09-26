@@ -17,6 +17,7 @@ Ver docs/INDICADORES.md, secao 10.1.
 """
 
 import datetime
+import functools
 import unicodedata
 
 # openpyxl e xlrd sao importados dentro das funcoes que leem: juntos
@@ -54,7 +55,14 @@ def normalizar(texto):
     coisa."""
     if texto is None:
         return ""
-    texto = str(texto)
+    return _normalizar_texto(str(texto))
+
+
+# Memorizado: a planilha de faltas repete os mesmos poucos textos
+# (motivo, contrato, funcao) em milhares de linhas, e ela e refiltrada a
+# cada vez que a aba Inicio ou a de Headcount abre.
+@functools.lru_cache(maxsize=8192)
+def _normalizar_texto(texto):
     texto = unicodedata.normalize("NFKD", texto)
     texto = "".join(c for c in texto if not unicodedata.combining(c))
     return " ".join(texto.lower().split())

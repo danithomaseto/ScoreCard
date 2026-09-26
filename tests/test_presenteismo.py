@@ -480,3 +480,21 @@ def test_funcao_gravada_por_versao_antiga_vale_para_todas(app):
 
     assert tela["arquivo"]["resumo"]["consideradas"] == 4
     assert tela["funcoes"][0]["operacao_label"] == "Todas"
+
+
+def test_inicio_filtra_a_planilha_uma_vez_so(app, monkeypatch):
+    """Desempenho: a planilha de faltas e filtrada uma vez por montagem
+    da aba Inicio, e nao uma vez por semana e por ciclo (com milhares
+    de linhas isso levava quase um segundo)."""
+    api_obj, headcount_store, _ = app
+    _extrair_semanas(app, "2026-08-31", "2026-09-07", "2026-09-14")
+    _extrair_mes(app, "2026-08")
+    _preparar(app)
+
+    chamadas = []
+    original = headcount_store.arquivo
+    monkeypatch.setattr(headcount_store, "arquivo", lambda *a, **k: chamadas.append(1) or original(*a, **k))
+    presenteismo = _celulas(api_obj, "presenteismo")
+
+    assert len(chamadas) == 1
+    assert presenteismo["2026-09-07"] == "98,4%", "mesmo resultado de antes"
