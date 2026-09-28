@@ -125,6 +125,38 @@ def atualizar_gestor(gestor_id, campos):
     raise ValueError("Gestor nao encontrado.")
 
 
+def lancar_faltas(gestor_id, periodo_id, valor):
+    """Faltas (em dias) digitadas para um gestor num periodo: uma semana
+    do mes ("2026-09-S2") ou um ciclo da folha ("2026-09-13").
+
+    Vazio apaga o lancamento. So numero inteiro e nao negativo: falta e
+    contada em dias.
+    """
+    if not periodo_id or periodo_id == "todas":
+        raise ValueError("Escolha uma semana ou um ciclo para lancar as faltas.")
+    texto = "" if valor is None else str(valor).strip().replace(",", ".")
+    if texto:
+        try:
+            numero = float(texto)
+        except ValueError:
+            raise ValueError("Faltas precisam ser um numero.") from None
+        if numero < 0 or not numero.is_integer():
+            raise ValueError("Faltas sao contadas em dias inteiros (0, 1, 2...).")
+
+    dados = ler()
+    for gestor in dados["gestores"]:
+        if gestor["id"] != gestor_id:
+            continue
+        lancadas = gestor.setdefault("faltas_lancadas", {})
+        if texto:
+            lancadas[periodo_id] = int(float(texto))
+        else:
+            lancadas.pop(periodo_id, None)
+        _gravar(dados)
+        return gestor
+    raise ValueError("Gestor nao encontrado.")
+
+
 def editar_gestor(gestor_id, nome, operacao):
     """Corrige o nome ou muda a operacao de um gestor, mantendo HC, dias
     uteis e horas/dia digitados.

@@ -1064,7 +1064,7 @@ diagnosticoBtn.addEventListener('click', async () => {
 async function carregarVersao() {
   const info = await pywebview.api.get_app_info();
   const el = document.getElementById('app-versao');
-  el.textContent = `Versao ${info.versao}`;
+  el.textContent = info.versao;
   el.title = info.build ? `Build ${info.build}${info.commit ? ' · ' + info.commit : ''}` : '';
 }
 
@@ -1200,6 +1200,55 @@ function desenharCardsHc(tela) {
   document.getElementById('hc-card-presenteismo').textContent = hcPercentual(c.presenteismo);
   document.getElementById('hc-card-meta').textContent =
     c.presenteismo === null ? 'Sem HC lancado' : (c.dentro_da_meta ? 'Dentro da meta' : 'Abaixo da meta');
+}
+
+// Faltas em dias, digitadas por gestor na semana (ou no ciclo) escolhido.
+// Com "Todas as semanas" o campo mostra a soma e fica travado: nao da pra
+// saber em qual semana lancar.
+function campoFaltas(linha, periodoId) {
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  input.step = '1';
+  input.inputMode = 'numeric';
+  input.className = 'hc-faltas-input';
+  input.value = linha.faltas;
+  input.dataset.gestor = linha.id;
+  input.dataset.campo = 'faltas';
+  if (!linha.faltas_editavel) {
+    input.disabled = true;
+    input.title = 'Soma das semanas. Escolha uma semana do mes para lancar as faltas.';
+    return input;
+  }
+  // So digito: sinal, virgula, ponto e "e" (notacao cientifica) ficam de fora.
+  input.addEventListener('keydown', (evento) => {
+    if (['-', '+', 'e', 'E', ',', '.'].includes(evento.key)) evento.preventDefault();
+  });
+  input.addEventListener('change', async () => {
+    const resposta = await pywebview.api.set_faltas(linha.id, periodoId, input.value);
+    if (!resposta.success) {
+      hcStatus.textContent = resposta.message;
+      input.value = linha.faltas;
+      return;
+    }
+    await redesenharMantendoFoco();
+    hcStatus.textContent = 'Faltas lancadas. A aba Inicio ja reflete a mudanca.';
+  });
+  return input;
+}
+
+// Redesenha a tabela e devolve o cursor ao campo em que ele estava (o
+// "change" dispara ao sair do campo; nessa hora o foco ja foi pro proximo).
+async function redesenharMantendoFoco() {
+  const foco = document.activeElement;
+  const destino = foco && foco.dataset && foco.dataset.gestor
+    ? { gestor: foco.dataset.gestor, campo: foco.dataset.campo } : null;
+  await carregarHeadcount();
+  if (destino) {
+    const alvo = hcCorpo.querySelector(
+      `input[data-gestor="${destino.gestor}"][data-campo="${destino.campo}"]`);
+    if (alvo && !alvo.disabled) { alvo.focus(); alvo.select(); }
+  }
 }
 
 function campoNumero(valor, gestorId, campo, passo) {
@@ -1353,7 +1402,11 @@ function desenharTabelaHc(tela) {
     nome.textContent = linha.gestor;
     const nota = document.createElement('div');
     nota.className = 'hc-gestor-nota';
-    nota.textContent = `${plural(linha.usuarios, 'usuario', 'usuarios')} na planilha`;
+    // Com faltas digitadas nao ha "usuarios na planilha" para mostrar.
+    nota.textContent = tela.faltas_manuais
+      ? ''
+      : `${plural(linha.usuarios, 'usuario', 'usuarios')} na planilha`;
+    nota.hidden = tela.faltas_manuais;
     nomes.appendChild(nome);
     nomes.appendChild(nota);
     caixa.appendChild(avatar);
@@ -1384,6 +1437,10 @@ function desenharTabelaHc(tela) {
 
     const tdFaltas = document.createElement('td');
     tdFaltas.className = 'num';
+    if (tela.faltas_manuais) {
+      tdFaltas.appendChild(campoFaltas(linha, tela.periodo_id));
+      tr.appendChild(tdFaltas);
+    } else {
     const faltas = document.createElement('span');
     faltas.className = 'hc-faltas';
     const valorFaltas = document.createElement('span');
@@ -1397,6 +1454,7 @@ function desenharTabelaHc(tela) {
     faltas.appendChild(selo);
     tdFaltas.appendChild(faltas);
     tr.appendChild(tdFaltas);
+    }
 
     const tdResultado = document.createElement('td');
     tdResultado.className = 'num';
@@ -1457,7 +1515,10 @@ function desenharFormulaHc(tela) {
 
 function desenharFuncoesHc(tela) {
   hcFuncoes.innerHTML = '';
-  hcFuncoes.hidden = !tela.funcoes.length;
+  // Funcoes filtram a planilha de faltas; com faltas digitadas, nao se
+  // aplicam (a planilha volta numa melhoria futura).
+  hcFuncoes.hidden = tela.faltas_manuais || !tela.funcoes.length;
+  if (tela.faltas_manuais) return;
   for (const funcao of tela.funcoes) {
     const chip = document.createElement('span');
     chip.className = 'hc-funcao-chip';
@@ -1480,6 +1541,7 @@ function desenharFuncoesHc(tela) {
 }
 
 function desenharArquivoHc(tela) {
+  if (tela.faltas_manuais) return;
   const arquivo = tela.arquivo;
   if (!arquivo) {
     hcArquivoInfo.innerHTML =

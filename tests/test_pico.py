@@ -182,7 +182,7 @@ def test_cubo_do_pico_usa_a_hora_direta_do_pico(api, operations, monkeypatch):
     operations("mock", "Mock Co", "MockCo")
     indicators_store.salvar_extracao("mock", "month", {"2026-09": {"efetividade": 1.004, "hora_direta": 0.93}})
     indicators_store.salvar_extracao("mock", "peak", {"2026-09": {"hora_direta": 0.965699, "dias": []}})
-    monkeypatch.setattr(headcount, "presenteismo_por_periodo", lambda op, hoje=None: {
+    monkeypatch.setattr(headcount, "presenteismo_por_periodo", lambda op, **k: {
         "week": {}, "month": {"2026-09": {"presenteismo": 0.99, "de": "2026-09-13", "ate": "2026-10-12"}}})
 
     tabela = api.get_indicator_table("mock")

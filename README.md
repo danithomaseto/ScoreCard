@@ -70,13 +70,11 @@ o **CUBO** (o produto dos tres primeiros) depende do presenteismo —
 entao os tres aparecem como `—` por enquanto, nunca como zero.
 
 **PRESENTEISMO** vem da aba **Headcount**: o quadro (HC, dias uteis e
-horas/dia) e digitado ali e as faltas vem de uma planilha de ausencias,
-que nunca sao digitadas. A planilha e filtrada — ferias nao e falta,
-temporario fica de fora e so entram as funcoes que compoem o quadro
-(Log I, Log II, Operador, mais as que forem cadastradas na tela para
-a operacao do gestor). Cada
-falta e roteada pela data para a semana do mes e para o ciclo da folha
-ponto (dia 13 ao dia 12) ao mesmo tempo.
+horas/dia) e as **faltas, em dias**, sao digitados ali, por gestor — na
+semana do mes (visao Semanal) ou no ciclo da folha ponto, do dia 13 ao
+dia 12 (Resultado do Mes). A leitura da planilha de ausencias esta
+desligada por enquanto e volta numa versao futura
+(`headcount.FALTAS_DA_PLANILHA`).
 
 Nada precisa ser "aplicado": a aba Inicio **calcula o presenteismo na
 hora**, do quadro e das faltas, sempre que abre. Por isso qualquer
@@ -160,8 +158,17 @@ o ambiente da maquina num zip na pasta Downloads, pronto para mandar a
 quem da suporte. Leva so contagens e tamanhos dos dados — nenhum nome de
 gestor, matricula, usuario ou senha.
 
-A versao (data do build) aparece no rodape da barra lateral, abaixo do
-nome do criador; passando o mouse, mostra a hora do build e o commit.
+A versao (V.01.0) aparece no rodape da barra lateral, abaixo do nome
+do criador; passando o mouse, mostra a data do build e o commit. O
+numero fica no arquivo `VERSAO`. Para uma atualizacao nova, rode antes
+do build:
+
+```powershell
+python tools/subir_versao.py
+```
+
+Ele sobe o ultimo digito (V.01.0 -> V.01.1 ... V.01.9) e depois a
+dezena (V.01.9 -> V.02.0).
 
 Antes de abrir o navegador, cada extracao confere se o servidor da
 operacao responde. Sem VPN, a mensagem aparece em segundos, em vez de

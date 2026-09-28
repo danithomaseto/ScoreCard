@@ -443,7 +443,7 @@
       <section id="page-headcount" class="page" hidden>
         <div class="page-wide-wrap">
           <h2 class="page-heading">Calculo de Presenteismo</h2>
-          <p class="subtitle">As faltas vem da planilha de ausencias; o quadro e digitado aqui.</p>
+          <p class="subtitle">O quadro e as faltas sao digitados aqui, por semana do mes ou por ciclo da folha.</p>
 
           <!-- Filtros -->
           <div class="card filtros-card">
@@ -486,7 +486,7 @@
               <div class="hc-card-valor" id="hc-card-hc">0</div>
             </div>
             <div class="hc-card">
-              <div class="hc-card-label">Faltas (planilha)</div>
+              <div class="hc-card-label">Faltas (dias)</div>
               <div class="hc-card-valor vermelho" id="hc-card-faltas">0</div>
               <div class="hc-card-nota" id="hc-card-horas">0h perdidas</div>
             </div>
@@ -506,35 +506,37 @@
               </div>
               <div class="hc-acoes">
                 <button type="button" class="secondary" id="hc-add-gestor">+ Adicionar Gestor</button>
-                <button type="button" class="secondary" id="hc-add-funcao">+ Adicionar Funcao</button>
-                <button type="button" class="secondary perigo" id="hc-limpar">Limpar Faltas</button>
+                <!-- Funcao e Limpar Faltas servem a planilha de faltas, que volta numa
+                     melhoria futura (headcount.FALTAS_DA_PLANILHA). -->
+                <button type="button" class="secondary" id="hc-add-funcao" hidden>+ Adicionar Funcao</button>
+                <button type="button" class="secondary perigo" id="hc-limpar" hidden>Limpar Faltas</button>
                 <button type="button" id="hc-calcular">Ver no Inicio</button>
               </div>
             </div>
 
             <div class="hc-inline" id="hc-inline-gestor" hidden>
               <label for="hc-novo-gestor">Nome do gestor</label>
-              <input type="text" id="hc-novo-gestor" placeholder="Como aparece na planilha de faltas">
+              <input type="text" id="hc-novo-gestor" placeholder="Nome do gestor">
               <label for="hc-novo-gestor-op">Operacao</label>
               <select id="hc-novo-gestor-op"></select>
-              <span class="hc-inline-nota">HC e faltas comecam zerados.</span>
+              <span class="hc-inline-nota">HC e faltas comecam zerados; preencha na tabela.</span>
               <button type="button" id="hc-confirmar-gestor">Adicionar</button>
               <button type="button" class="secondary" data-cancelar="gestor">Cancelar</button>
             </div>
 
             <div class="hc-inline" id="hc-inline-editar" hidden>
               <label for="hc-editar-nome">Nome do gestor</label>
-              <input type="text" id="hc-editar-nome" placeholder="Como aparece na planilha de faltas">
+              <input type="text" id="hc-editar-nome" placeholder="Nome do gestor">
               <label for="hc-editar-op">Operacao</label>
               <select id="hc-editar-op"></select>
-              <span class="hc-inline-nota" title="As faltas sao ligadas ao gestor pelo nome.">O quadro digitado continua. Use o nome igual ao da planilha de faltas.</span>
+              <span class="hc-inline-nota">HC, dias uteis, horas/dia e faltas digitadas continuam como estao.</span>
               <button type="button" id="hc-confirmar-editar">Salvar</button>
               <button type="button" class="secondary" data-cancelar="editar">Cancelar</button>
             </div>
 
             <div class="hc-inline hc-inline-perigo" id="hc-inline-excluir" hidden>
               <span class="hc-inline-pergunta" id="hc-excluir-texto"></span>
-              <span class="hc-inline-nota">O HC, os dias uteis e as horas/dia digitados saem junto. As faltas da planilha nao sao apagadas.</span>
+              <span class="hc-inline-nota">O HC, os dias uteis, as horas/dia e as faltas digitadas saem junto.</span>
               <button type="button" class="excluir-definitivo" id="hc-confirmar-excluir">Excluir</button>
               <button type="button" class="secondary" data-cancelar="excluir">Cancelar</button>
             </div>
@@ -562,7 +564,7 @@
                     <th scope="col" class="num">Horas/dia</th>
                     <th scope="col" class="num">
                       Faltas (dias)
-                      <button type="button" class="hc-ajuda" id="hc-ajuda-faltas" aria-label="De onde vem as faltas">?</button>
+                      <button type="button" class="hc-ajuda" id="hc-ajuda-faltas" aria-label="De onde vem as faltas" hidden>?</button>
                     </th>
                     <th scope="col" class="num">Presenteismo</th>
                   </tr>
@@ -573,11 +575,11 @@
             </div>
 
             <p class="hc-vazio" id="hc-vazio" hidden>
-              Nenhum gestor cadastrado nesta operacao. Use "+ Adicionar Gestor" com o
-              nome exatamente como ele aparece na planilha de faltas.
+              Nenhum gestor cadastrado nesta operacao. Use "+ Adicionar Gestor" e
+              depois preencha o HC e as faltas de cada semana.
             </p>
 
-            <div class="hc-status" id="hc-status">Nenhuma planilha de faltas carregada.</div>
+            <div class="hc-status" id="hc-status">Escolha uma semana (ou um ciclo em Resultado do Mes) e digite as faltas de cada gestor, em dias.</div>
           </div>
 
           <!-- Formula -->
@@ -599,7 +601,7 @@
           </div>
 
           <!-- Arquivo de faltas -->
-          <div class="card hc-arquivo-card">
+          <div class="card hc-arquivo-card" hidden>
             <strong>Lancar arquivo de faltas</strong>
             <div class="hc-arquivo-colunas">
               <div>

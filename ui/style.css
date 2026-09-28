@@ -1495,3 +1495,11 @@ button.hc-icone-excluir:hover { background: rgba(249, 112, 102, 0.12); color: #f
 
 button.excluir-definitivo { background: #d92d20; color: #fff; }
 button.excluir-definitivo:hover { background: #b42318; }
+
+
+/* ---------- Faltas digitadas ---------- */
+
+/* Mesmo campo do HC, com a borda em tom de falta para nao confundir. */
+.hc-faltas-input { border-color: rgba(249, 112, 102, 0.45); color: #fda29b; font-weight: 700; }
+.hc-faltas-input:focus { border-color: #f97066; }
+.hc-faltas-input:disabled { opacity: 0.7; cursor: not-allowed; }

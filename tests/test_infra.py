@@ -91,11 +91,29 @@ def test_versao_do_build_e_de_desenvolvimento(tmp_path, monkeypatch):
     import versao
 
     monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path), raising=False)
-    assert versao.info()["versao"] == "desenvolvimento"
+    assert versao.info()["versao"] == versao.numero(), "do codigo-fonte, le o arquivo VERSAO"
 
     from datetime import datetime
-    versao.gerar(str(tmp_path / versao.ARQUIVO), agora=datetime(2026, 9, 26, 14, 30), commit="a1b2c3d")
-    assert versao.info() == {"versao": "2026.09.26", "build": "26/09/2026 14:30", "commit": "a1b2c3d"}
+    versao.gerar(str(tmp_path / versao.ARQUIVO), agora=datetime(2026, 9, 26, 14, 30),
+                 commit="a1b2c3d", versao="V.01.0")
+    assert versao.info() == {"versao": "V.01.0", "build": "26/09/2026 14:30", "commit": "a1b2c3d"}
+
+
+def test_numero_da_versao_sobe_de_um_em_um_e_vira_a_dezena():
+    import versao
+
+    assert versao.proxima("V.01.0") == "V.01.1"
+    assert versao.proxima("V.01.8") == "V.01.9"
+    assert versao.proxima("V.01.9") == "V.02.0"
+    assert versao.proxima("V.09.9") == "V.10.0"
+    with pytest.raises(ValueError):
+        versao.proxima("2026.09.26")
+
+
+def test_versao_do_projeto_esta_no_formato():
+    import versao
+
+    assert versao.FORMATO.match(versao.numero())
 
 
 # ---------------- Checagem de conexao ----------------

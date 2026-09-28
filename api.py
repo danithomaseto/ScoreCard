@@ -501,7 +501,11 @@ class Api:
         # Presenteismo calculado agora, do quadro e das faltas. Nao se usa
         # valor gravado: qualquer mudanca na aba Headcount ja vale aqui, e
         # nao sobra numero antigo preso no indicador.
-        ao_vivo = headcount.presenteismo_por_periodo(operation_key)
+        ao_vivo = headcount.presenteismo_por_periodo(
+            operation_key,
+            semanas=list(guardado.get("week", {})),
+            meses=list(set(guardado.get("month", {})) | set(guardado.get("peak", {}))),
+        )
         colunas = []
 
         # So entra na aba Inicio a semana ou o mes que veio do Summary: e
@@ -633,6 +637,15 @@ class Api:
         try:
             headcount_store.atualizar_gestor(gestor_id, campos or {})
         except (ValueError, TypeError) as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True}
+
+    def set_faltas(self, gestor_id, periodo_id, valor):
+        """Faltas em dias digitadas na tela de Headcount, por gestor e por
+        semana (ou ciclo da folha). Valem na hora na aba Inicio."""
+        try:
+            headcount_store.lancar_faltas(gestor_id, periodo_id, valor)
+        except ValueError as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True}
 

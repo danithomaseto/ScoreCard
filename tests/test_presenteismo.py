@@ -178,6 +178,17 @@ def test_contagem_de_faltas_por_gestor_e_periodo():
 
 # ---------------- Da tela ate o indicador ----------------
 
+@pytest.fixture(autouse=True)
+def faltas_da_planilha(monkeypatch):
+    """Os testes deste arquivo sao do caminho da planilha de faltas, que
+    esta desligada na tela (melhoria futura). Continuam rodando com a
+    chave ligada, para o codigo guardado nao apodrecer. As faltas
+    digitadas estao em test_faltas_manuais.py."""
+    import headcount
+
+    monkeypatch.setattr(headcount, "FALTAS_DA_PLANILHA", True)
+
+
 @pytest.fixture
 def app(tmp_path, monkeypatch):
     """Api com os stores numa pasta temporaria."""

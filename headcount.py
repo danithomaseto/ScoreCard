@@ -13,6 +13,19 @@ from indicators import presenteismo
 
 TODAS = "todas"
 
+# De onde vem as faltas. A planilha de ausencias (ABS) fica desligada
+# por enquanto — melhoria futura —, e as faltas sao digitadas na tela,
+# por gestor e por periodo (semana do mes ou ciclo da folha). O codigo
+# da planilha continua aqui: ligar de novo e trocar para True.
+FALTAS_DA_PLANILHA = False
+
+
+def _faltas_lancadas(gestor, periodo_ids):
+    """Soma das faltas digitadas para um gestor nos periodos pedidos.
+    Periodo sem lancamento conta como zero falta, igual a tela mostra."""
+    lancadas = gestor.get("faltas_lancadas") or {}
+    return sum(int(lancadas.get(periodo_id, 0)) for periodo_id in periodo_ids)
+
 
 def _iniciais(nome):
     partes = [p for p in (nome or "").split() if p]
@@ -191,13 +204,21 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
                 _periodos(visualizacao, mes, hoje, escala), periodo_id)
         return dias_por_escala[escala]
 
+    # Com "Todas as semanas", as faltas de cada gestor sao a soma das
+    # semanas; digitar so da com uma semana (ou um ciclo) escolhido.
+    ids_do_periodo = ([p["id"] for p in periodos] if periodo_id == TODAS or not periodo_id
+                      else [periodo_id])
+
     for gestor in sorted(gestores, key=lambda g: g["nome"].casefold()):
         hc = int(gestor.get("hc") or 0)
         dias_do_gestor = dias_da_escala(escala_espanhola(gestor["operacao"]))
         dias = gestor.get("dias_uteis")
         dias = int(dias) if dias is not None else dias_do_gestor
         horas_dia = float(gestor.get("horas_dia") or config["horas_dia"])
-        faltas = _faltas_do_gestor(faltas_por_gestor, gestor["nome"], inicio, fim)
+        if FALTAS_DA_PLANILHA:
+            faltas = _faltas_do_gestor(faltas_por_gestor, gestor["nome"], inicio, fim)
+        else:
+            faltas = _faltas_lancadas(gestor, ids_do_periodo)
         valor = presenteismo.calcular(hc, dias, horas_dia, faltas)
 
         hc_total += hc
@@ -219,6 +240,7 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
             "dias_do_periodo": dias_do_gestor,
             "horas_dia": horas_dia,
             "faltas": faltas,
+            "faltas_editavel": not FALTAS_DA_PLANILHA and len(ids_do_periodo) == 1,
             "presenteismo": valor,
             "abaixo_da_meta": valor is not None and valor < meta,
         })
@@ -277,6 +299,7 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
         ],
         "config": config,
         "meta": meta,
+        "faltas_manuais": not FALTAS_DA_PLANILHA,
     }
 
 
@@ -430,15 +453,21 @@ def presenteismo_do_intervalo(operacao, inicio, fim, hoje=None, dados=None, arqu
     return round(1 - perdidas / disponiveis, 6)
 
 
-def presenteismo_por_periodo(operacao, hoje=None):
+def presenteismo_por_periodo(operacao, hoje=None, semanas=None, meses=None):
     """Tudo que da pra afirmar para uma operacao, nos periodos da aba
     Inicio: {"week": {segunda: {...}}, "month": {"2026-09": {...}}}.
 
     - Semana: segunda a domingo, a mesma semana do Summary, chave na
       segunda-feira. Nao e a semana cortada no mes da tela de Headcount.
     - Mes: o ciclo da folha ponto que comeca no dia 13 desse mes.
+
+    semanas e meses sao as chaves que a aba Inicio vai mostrar (as que
+    vieram do Summary); sem elas, calcula os periodos recentes.
     """
     hoje = hoje or datetime.date.today()
+    if not FALTAS_DA_PLANILHA:
+        return _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses)
+
     dados = headcount_store.ler()
     arquivo = headcount_store.arquivo(dados)
     janela = cobertura_do_arquivo(arquivo)
@@ -469,6 +498,82 @@ def presenteismo_por_periodo(operacao, hoje=None):
                                           arquivo=arquivo)
         if valor is not None:
             resultado["month"][ciclo["mes_referencia"]] = {
+                "presenteismo": valor,
+                "de": ciclo["inicio"],
+                "ate": ciclo["fim"],
+                "em_aberto": ciclo["status"] == "Em aberto",
+            }
+    return resultado
+
+
+# ---------------------------------------------------------------
+# Presenteismo das faltas digitadas, para a aba Inicio
+# ---------------------------------------------------------------
+# E a mesma conta da tela de Headcount: o numero que aparece la para uma
+# semana ou um ciclo e o que vai para o Inicio e para o cubo.
+
+def _agregar(gestores, periodo_ids, dias, config):
+    disponiveis = perdidas = 0.0
+    for gestor in gestores:
+        horas_dia = float(gestor.get("horas_dia") or config["horas_dia"])
+        dias_do_gestor = gestor.get("dias_uteis")
+        dias_do_gestor = int(dias_do_gestor) if dias_do_gestor is not None else dias
+        disponiveis += int(gestor["hc"]) * dias_do_gestor * horas_dia
+        perdidas += _faltas_lancadas(gestor, periodo_ids) * horas_dia
+    if disponiveis <= 0:
+        return None
+    return round(1 - perdidas / disponiveis, 6)
+
+
+def _pedacos_da_semana(segunda, hoje, escala):
+    """As semanas da tela de Headcount (cortadas no mes) que formam uma
+    semana do Summary. Quase sempre e uma so; na virada do mes sao duas
+    (31/08 a 06/09 = S6 de agosto + S1 de setembro)."""
+    domingo = segunda + datetime.timedelta(days=6)
+    meses = sorted({(segunda.year, segunda.month), (domingo.year, domingo.month)})
+    pedacos = []
+    for ano, mes in meses:
+        for semana in presenteismo.semanas_do_mes(ano, mes, hoje=hoje, escala_espanhola=escala):
+            if semana["inicio"] >= segunda.isoformat() and semana["fim"] <= domingo.isoformat():
+                pedacos.append(semana)
+    return pedacos
+
+
+def _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses):
+    dados = headcount_store.ler()
+    config = dados["config"]
+    escala = escala_espanhola(operacao)
+    resultado = {"week": {}, "month": {}}
+    gestores = [g for g in dados["gestores"]
+                if g["operacao"] == operacao and (g.get("hc") or 0) > 0]
+    if not gestores:
+        return resultado
+
+    if semanas is None:
+        esta = hoje - datetime.timedelta(days=hoje.weekday())
+        semanas = [(esta - datetime.timedelta(weeks=n)).isoformat() for n in range(26)]
+    for chave in semanas:
+        segunda = datetime.date.fromisoformat(chave)
+        if segunda > hoje:
+            continue  # semana que nem comecou
+        pedacos = _pedacos_da_semana(segunda, hoje, escala)
+        dias = sum(p["dias_uteis"] for p in pedacos)
+        valor = _agregar(gestores, [p["id"] for p in pedacos], dias, config)
+        if valor is not None:
+            resultado["week"][chave] = {
+                "presenteismo": valor,
+                "parcial": segunda <= hoje <= segunda + datetime.timedelta(days=6),
+            }
+
+    ciclos = {c["mes_referencia"]: c
+              for c in presenteismo.ciclos_folha(hoje=hoje, anteriores=24, escala_espanhola=escala)}
+    for chave in (meses if meses is not None else list(ciclos)):
+        ciclo = ciclos.get(chave)
+        if not ciclo or ciclo["dias_uteis"] <= 0:
+            continue  # ciclo que ainda nao abriu, ou antigo demais
+        valor = _agregar(gestores, [ciclo["id"]], ciclo["dias_uteis"], config)
+        if valor is not None:
+            resultado["month"][chave] = {
                 "presenteismo": valor,
                 "de": ciclo["inicio"],
                 "ate": ciclo["fim"],

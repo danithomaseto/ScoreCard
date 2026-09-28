@@ -975,3 +975,41 @@ e folgam os primeiros. Esses sabados:
 
 Na tela de Headcount com "Todas as Operacoes", cada gestor usa os dias
 uteis da escala da operacao dele.
+
+
+## 19. Faltas digitadas e versao V.01.0 (28/09/2026)
+
+### Faltas digitadas (a planilha fica para uma versao futura)
+
+A planilha de ausencias saiu da tela: o campo de importar, o "+
+Adicionar Funcao" e o "Limpar Faltas" estao escondidos. As faltas
+voltaram a ser **digitadas**, em dias inteiros, por gestor:
+
+- **Semanal**: na semana do mes escolhida (S1, S2...). Com "Todas as
+  semanas" o campo mostra a soma e fica travado.
+- **Resultado do Mes**: no ciclo da folha escolhido (13 -> 12).
+
+O codigo da planilha continua no projeto, desligado pela chave
+`FALTAS_DA_PLANILHA = False` em headcount.py; os testes dele rodam com a
+chave ligada.
+
+### O que vai para a aba Inicio
+
+O numero do Headcount e o numero do Inicio, e com ele o cubo:
+
+- **Semana do Summary** (segunda a domingo): as faltas lancadas na
+  semana do mes correspondente. Na virada do mes a semana tem dois
+  pedacos e os dois somam (31/08 a 06/09 = S6 de agosto + S1 de
+  setembro), faltas e dias uteis.
+- **Mes**: as faltas lancadas no ciclo da folha que comeca no dia 13.
+- Semana ou ciclo **sem lancamento conta como zero falta** (100%),
+  igual a tela de Headcount mostra. Semana que ainda nao comecou e
+  operacao sem gestor com HC ficam sem numero.
+- O ajuste de dias uteis do gestor, se preenchido, vale nos dois.
+
+### Versao
+
+O numero da versao e V.01.0 e fica no arquivo `VERSAO`. A cada
+atualizacao sobe o ultimo digito (V.01.1 ... V.01.9) e depois a dezena
+(V.02.0): `python tools/subir_versao.py`. O build grava o numero no
+app e ele aparece no rodape; passando o mouse, a data do build.
