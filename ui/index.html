@@ -10,9 +10,9 @@
 <div id="login-view" class="center-wrap" hidden>
   <div class="card">
     <h2>Score Card</h2>
-    <p class="subtitle">Entre com seu usuario e senha do Summary.</p>
+    <p class="subtitle">Entre com seu usuário e senha do Summary.</p>
     <form id="login-form">
-      <label for="login-username">Usuario</label>
+      <label for="login-username">Usuário</label>
       <input id="login-username" type="text" autocomplete="username">
       <label for="login-password">Senha</label>
       <input id="login-password" type="password" autocomplete="current-password">
@@ -36,7 +36,7 @@
           <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>
           <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
         </svg>
-        <span>Inicio</span>
+        <span>Início</span>
       </button>
       <button class="nav-item" data-page="extract">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -52,7 +52,7 @@
           <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/>
           <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>
         </svg>
-        <span>Extrair Multiplos</span>
+        <span>Extrair Múltiplos</span>
       </button>
       <button class="nav-item" data-page="headcount">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -75,7 +75,7 @@
           <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
           <circle cx="12" cy="12" r="3"/>
         </svg>
-        <span>Configuracoes</span>
+        <span>Configurações</span>
       </button>
       <button class="nav-item nav-item-logout" id="logout-btn">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -90,7 +90,7 @@
           <span class="status-dot"></span>
           <div>
             <div class="status-title">Sistema Online</div>
-            <div class="status-sub">Pronto para extracao</div>
+            <div class="status-sub">Pronto para extração</div>
           </div>
         </div>
         <div class="sidebar-brand-footer">DHL &mdash; Excellence. Simply delivered.</div>
@@ -102,25 +102,25 @@
     <div class="content-area">
       <section id="page-home" class="page" hidden>
         <div class="page-wide-wrap">
-          <h2 class="page-heading">Inicio</h2>
-          <p class="subtitle">Indicadores por semana, com o mes no final. Atualiza a cada extracao.</p>
+          <h2 class="page-heading">Início</h2>
+          <p class="subtitle">Indicadores por semana, com o mês no final. Atualiza a cada extração.</p>
 
           <div class="card filter-card">
             <div class="filter-field">
-              <label for="home-operation">Operacao</label>
+              <label for="home-operation">Operação</label>
               <select id="home-operation"></select>
             </div>
             <div class="filter-field">
-              <label for="home-mes">Mes</label>
+              <label for="home-mes">Mês</label>
               <select id="home-mes" class="filtro-mes"></select>
             </div>
-            <p class="filter-note" id="home-last-run">Nenhuma extracao ainda</p>
+            <p class="filter-note" id="home-last-run">Nenhuma extração ainda</p>
           </div>
 
           <div class="card indicators-card">
             <p class="indicators-empty" id="indicators-empty" hidden>
-              Nenhum indicador desta operacao neste mes. Cada semana extraida do
-              mes vira uma coluna, e o mes e o pico entram no final.
+              Nenhum indicador desta operação neste mês. Cada semana extraída do
+              mês vira uma coluna, e o mês e o pico entram no final.
             </p>
 
             <div class="table-wrap" id="indicators-wrap">
@@ -134,8 +134,8 @@
               <span class="legend-item"><span class="legend-dot verde"></span>dentro da meta</span>
               <span class="legend-item"><span class="legend-dot vermelho"></span>abaixo da meta</span>
               <span class="legend-item"><span class="legend-dot azul"></span>acima do teto</span>
-              <span class="legend-item"><span class="legend-dash">&mdash;</span>ainda sem numero</span>
-              <span class="legend-note">O mes vem de extracao propria e nao e a soma das semanas.</span>
+              <span class="legend-item"><span class="legend-dash">&mdash;</span>ainda sem número</span>
+              <span class="legend-note">O mês vem de extração própria e não é a soma das semanas.</span>
             </div>
           </div>
         </div>
@@ -144,11 +144,11 @@
       <section id="page-extract" class="page" hidden>
         <div class="page-wide-wrap">
           <h2 class="page-heading">Extrair Dados</h2>
-          <p class="subtitle">Escolha a operacao, as datas e o agrupamento, e acompanhe o andamento da extracao.</p>
+          <p class="subtitle">Escolha a operação, as datas e o agrupamento, e acompanhe o andamento da extração.</p>
 
           <div class="extract-layout">
             <div class="card params-card">
-              <div class="section-title">Parametros da extracao</div>
+              <div class="section-title">Parâmetros da extração</div>
 
               <div class="field-row linha-fonte-periodo">
                 <div>
@@ -161,7 +161,7 @@
                   </div>
                 </div>
                 <div>
-                  <label>Periodo do indicador</label>
+                  <label>Período do indicador</label>
                   <div class="period-options" id="period-options">
                     <button type="button" class="period-option active" data-period="week">
                       <div class="source-icon"><svg class="source-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div>
@@ -176,7 +176,7 @@
                       </div>
                     </button>
                     <button type="button" class="period-option" data-period="peak"
-                            title="Hora direta dos 5 dias de pico do mes. Group By 1 fixo em Report Date.">
+                            title="Hora direta dos 5 dias de pico do mês. Group By 1 fixo em Report Date.">
                       <div class="source-icon"><svg class="source-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></div>
                       <div>
                         <strong>Dias de Pico</strong>
@@ -186,14 +186,14 @@
                 </div>
               </div>
 
-              <label for="operation">Operacao</label>
+              <label for="operation">Operação</label>
               <select id="operation"></select>
 
               <div class="field-header">
-                <label>Periodo</label>
+                <label>Período</label>
                 <div class="field-actions" data-date-shortcuts="single">
                   <button type="button" class="link-btn" data-range="last-week">Semana passada</button>
-                  <button type="button" class="link-btn" data-range="last-month">Mes passado</button>
+                  <button type="button" class="link-btn" data-range="last-month">Mês passado</button>
                 </div>
               </div>
               <div class="field-row">
@@ -210,7 +210,7 @@
               <label for="group-by">Group By 1</label>
               <select id="group-by"></select>
 
-              <button id="run-btn"><svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg><span class="btn-texto">Iniciar extracao</span></button>
+              <button id="run-btn"><svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg><span class="btn-texto">Iniciar extração</span></button>
 
               <div id="run-status" class="status" hidden></div>
               <div id="run-actions" class="run-actions" hidden></div>
@@ -222,7 +222,7 @@
                 <span class="badge" id="progress-badge">Aguardando</span>
               </div>
               <div class="progress-detail-row">
-                <span id="progress-detail">Nenhuma extracao em andamento</span>
+                <span id="progress-detail">Nenhuma extração em andamento</span>
                 <span id="progress-percent">0%</span>
               </div>
               <div class="steps" id="progress-steps">
@@ -237,34 +237,34 @@
                   <div class="step-number">2</div>
                   <div class="step-content">
                     <div class="step-title">Fazendo login</div>
-                    <div class="step-subtitle">Autenticando no Summary com o seu usuario</div>
+                    <div class="step-subtitle">Autenticando no Summary com o seu usuário</div>
                   </div>
                 </div>
                 <div class="step" data-step="menu">
                   <div class="step-number">3</div>
                   <div class="step-content">
                     <div class="step-title">Abrindo o menu Reports</div>
-                    <div class="step-subtitle">Navegando ate a area de relatorios</div>
+                    <div class="step-subtitle">Navegando até a área de relatórios</div>
                   </div>
                 </div>
                 <div class="step" data-step="frame">
                   <div class="step-number">4</div>
                   <div class="step-content">
-                    <div class="step-title">Localizando a lista de relatorios</div>
-                    <div class="step-subtitle">Encontrando o quadro interno da pagina</div>
+                    <div class="step-title">Localizando a lista de relatórios</div>
+                    <div class="step-subtitle">Encontrando o quadro interno da página</div>
                   </div>
                 </div>
                 <div class="step" data-step="report">
                   <div class="step-number">5</div>
                   <div class="step-content">
-                    <div class="step-title">Abrindo o relatorio</div>
+                    <div class="step-title">Abrindo o relatório</div>
                     <div class="step-subtitle">rptLMUserSummaryRaw</div>
                   </div>
                 </div>
                 <div class="step" data-step="period">
                   <div class="step-number">6</div>
                   <div class="step-content">
-                    <div class="step-title">Aplicando o periodo</div>
+                    <div class="step-title">Aplicando o período</div>
                     <div class="step-subtitle">Data inicial e data final escolhidas</div>
                   </div>
                 </div>
@@ -272,7 +272,7 @@
                   <div class="step-number">7</div>
                   <div class="step-content">
                     <div class="step-title">Aplicando o Group By 1</div>
-                    <div class="step-subtitle">Week na semana, User ID no mes, Report Date no pico</div>
+                    <div class="step-subtitle">Week na semana, User ID no mês, Report Date no pico</div>
                   </div>
                 </div>
                 <div class="step" data-step="groupby2">
@@ -301,17 +301,17 @@
           </div>
 
           <div class="card history-card">
-            <div class="section-title">Historico de extracoes</div>
+            <div class="section-title">Histórico de extrações</div>
             <div class="table-wrap">
               <table class="history-table">
                 <thead>
                   <tr>
                     <th>Data/Hora</th>
-                    <th>Operacao</th>
+                    <th>Operação</th>
                     <th>Tipo</th>
-                    <th>Periodo</th>
+                    <th>Período</th>
                     <th>Group By 1</th>
-                    <th>Duracao</th>
+                    <th>Duração</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -324,12 +324,12 @@
 
       <section id="page-multi" class="page" hidden>
         <div class="page-wide-wrap">
-          <h2 class="page-heading">Extrair Multiplos</h2>
-          <p class="subtitle">Selecione varias operacoes e extraia todas em sequencia, usando os mesmos filtros.</p>
+          <h2 class="page-heading">Extrair Múltiplos</h2>
+          <p class="subtitle">Selecione várias operações e extraia todas em sequência, usando os mesmos filtros.</p>
 
           <div class="extract-layout">
             <div class="card params-card">
-              <div class="section-title">Parametros da extracao</div>
+              <div class="section-title">Parâmetros da extração</div>
 
               <div class="field-row linha-fonte-periodo">
                 <div>
@@ -342,7 +342,7 @@
                   </div>
                 </div>
                 <div>
-                  <label>Periodo do indicador</label>
+                  <label>Período do indicador</label>
                   <div class="period-options" id="multi-period-options">
                     <button type="button" class="period-option active" data-period="week">
                       <div class="source-icon"><svg class="source-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div>
@@ -357,7 +357,7 @@
                       </div>
                     </button>
                     <button type="button" class="period-option" data-period="peak"
-                            title="Hora direta dos 5 dias de pico do mes. Group By 1 fixo em Report Date.">
+                            title="Hora direta dos 5 dias de pico do mês. Group By 1 fixo em Report Date.">
                       <div class="source-icon"><svg class="source-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></div>
                       <div>
                         <strong>Dias de Pico</strong>
@@ -368,7 +368,7 @@
               </div>
 
               <div class="field-header">
-                <label>Operacoes</label>
+                <label>Operações</label>
                 <div class="field-actions">
                   <button type="button" class="link-btn" id="multi-select-all">Selecionar todas</button>
                   <button type="button" class="link-btn" id="multi-clear">Limpar</button>
@@ -377,10 +377,10 @@
               <div class="ops-list" id="multi-operations"></div>
 
               <div class="field-header">
-                <label>Periodo</label>
+                <label>Período</label>
                 <div class="field-actions" data-date-shortcuts="multi">
                   <button type="button" class="link-btn" data-range="last-week">Semana passada</button>
-                  <button type="button" class="link-btn" data-range="last-month">Mes passado</button>
+                  <button type="button" class="link-btn" data-range="last-month">Mês passado</button>
                 </div>
               </div>
               <div class="field-row">
@@ -398,7 +398,7 @@
               <select id="multi-group-by"></select>
 
               <div class="multi-run-row">
-                <button id="multi-run-btn"><svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg><span class="btn-texto">Iniciar extracao</span></button>
+                <button id="multi-run-btn"><svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg><span class="btn-texto">Iniciar extração</span></button>
                 <button id="multi-stop-btn" class="secondary" hidden>Parar apos a atual</button>
               </div>
 
@@ -412,27 +412,27 @@
                 <span class="badge" id="multi-progress-badge">Aguardando</span>
               </div>
               <div class="progress-detail-row">
-                <span id="multi-progress-detail">Nenhuma extracao em andamento</span>
+                <span id="multi-progress-detail">Nenhuma extração em andamento</span>
                 <span id="multi-progress-percent">0%</span>
               </div>
               <div class="steps" id="multi-progress-steps">
-                <p class="subtitle" id="multi-steps-empty">Selecione as operacoes ao lado para ver a fila aqui.</p>
+                <p class="subtitle" id="multi-steps-empty">Selecione as operações ao lado para ver a fila aqui.</p>
               </div>
             </div>
           </div>
 
           <div class="card history-card">
-            <div class="section-title">Historico de extracoes</div>
+            <div class="section-title">Histórico de extrações</div>
             <div class="table-wrap">
               <table class="history-table">
                 <thead>
                   <tr>
                     <th>Data/Hora</th>
-                    <th>Operacao</th>
+                    <th>Operação</th>
                     <th>Tipo</th>
-                    <th>Periodo</th>
+                    <th>Período</th>
                     <th>Group By 1</th>
-                    <th>Duracao</th>
+                    <th>Duração</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -445,29 +445,29 @@
 
       <section id="page-headcount" class="page" hidden>
         <div class="page-wide-wrap">
-          <h2 class="page-heading">Calculo de Presenteismo</h2>
-          <p class="subtitle">O quadro e as faltas sao digitados aqui, por semana do mes ou por ciclo da folha.</p>
+          <h2 class="page-heading">Cálculo de Presenteísmo</h2>
+          <p class="subtitle">O quadro e as faltas são digitados aqui, por semana do mês ou por ciclo da folha.</p>
 
           <!-- Filtros -->
           <div class="card filtros-card">
             <div class="filtros-linha">
               <div class="filtro-campo">
-                <label for="hc-operacao">Operacao</label>
+                <label for="hc-operacao">Operação</label>
                 <select id="hc-operacao"></select>
               </div>
               <div class="filtro-campo largo">
-                <label for="hc-mes" id="hc-mes-label">Mes vigente</label>
+                <label for="hc-mes" id="hc-mes-label">Mês vigente</label>
                 <select id="hc-mes"></select>
               </div>
               <div class="filtro-campo">
-                <label for="hc-periodo">Semana do mes vigente</label>
+                <label for="hc-periodo">Semana do mês vigente</label>
                 <select id="hc-periodo"></select>
               </div>
               <div class="filtro-campo">
-                <label>Visualizacao</label>
+                <label>Visualização</label>
                 <div class="segmentado" id="hc-visualizacao">
                   <button type="button" class="seg-opcao active" data-visualizacao="semanal">Semanal</button>
-                  <button type="button" class="seg-opcao" data-visualizacao="mes">Resultado do Mes</button>
+                  <button type="button" class="seg-opcao" data-visualizacao="mes">Resultado do Mês</button>
                 </div>
               </div>
             </div>
@@ -476,11 +476,11 @@
           <!-- Cards de indicadores -->
           <div class="hc-cards">
             <div class="hc-card">
-              <div class="hc-card-label">Operacao selecionada</div>
+              <div class="hc-card-label">Operação</div>
               <div class="hc-card-valor texto" id="hc-card-operacao">-</div>
             </div>
             <div class="hc-card">
-              <div class="hc-card-label">Periodo</div>
+              <div class="hc-card-label">Período</div>
               <div class="hc-card-valor texto" id="hc-card-periodo">-</div>
               <div class="hc-card-nota" id="hc-card-periodo-nota"></div>
             </div>
@@ -494,7 +494,7 @@
               <div class="hc-card-nota" id="hc-card-horas">0h perdidas</div>
             </div>
             <div class="hc-card destaque">
-              <div class="hc-card-label">Presenteismo</div>
+              <div class="hc-card-label">Presenteísmo</div>
               <div class="hc-card-valor" id="hc-card-presenteismo">-</div>
               <div class="hc-card-nota" id="hc-card-meta">-</div>
             </div>
@@ -511,18 +511,18 @@
                 <button type="button" class="secondary" id="hc-add-gestor">+ Adicionar Gestor</button>
                 <!-- Funcao e Limpar Faltas servem a planilha de faltas, que volta numa
                      melhoria futura (headcount.FALTAS_DA_PLANILHA). -->
-                <button type="button" class="secondary" id="hc-add-funcao" hidden>+ Adicionar Funcao</button>
+                <button type="button" class="secondary" id="hc-add-funcao" hidden>+ Adicionar Função</button>
                 <button type="button" class="secondary perigo" id="hc-limpar" hidden>Limpar Faltas</button>
-                <button type="button" id="hc-calcular">Ver no Inicio</button>
+                <button type="button" id="hc-calcular">Ver no Início</button>
               </div>
             </div>
 
             <div class="hc-inline" id="hc-inline-gestor" hidden>
               <label for="hc-novo-gestor">Nome do gestor</label>
               <input type="text" id="hc-novo-gestor" placeholder="Nome do gestor">
-              <label for="hc-novo-gestor-op">Operacao</label>
+              <label for="hc-novo-gestor-op">Operação</label>
               <select id="hc-novo-gestor-op"></select>
-              <span class="hc-inline-nota">HC e faltas comecam zerados; preencha na tabela.</span>
+              <span class="hc-inline-nota">HC e faltas começam zerados; preencha na tabela.</span>
               <button type="button" id="hc-confirmar-gestor">Adicionar</button>
               <button type="button" class="secondary" data-cancelar="gestor">Cancelar</button>
             </div>
@@ -530,26 +530,26 @@
             <div class="hc-inline" id="hc-inline-editar" hidden>
               <label for="hc-editar-nome">Nome do gestor</label>
               <input type="text" id="hc-editar-nome" placeholder="Nome do gestor">
-              <label for="hc-editar-op">Operacao</label>
+              <label for="hc-editar-op">Operação</label>
               <select id="hc-editar-op"></select>
-              <span class="hc-inline-nota">HC, dias uteis, horas/dia e faltas digitadas continuam como estao.</span>
+              <span class="hc-inline-nota">HC, dias úteis, horas/dia e faltas digitadas continuam como estão.</span>
               <button type="button" id="hc-confirmar-editar">Salvar</button>
               <button type="button" class="secondary" data-cancelar="editar">Cancelar</button>
             </div>
 
             <div class="hc-inline hc-inline-perigo" id="hc-inline-excluir" hidden>
               <span class="hc-inline-pergunta" id="hc-excluir-texto"></span>
-              <span class="hc-inline-nota">O HC, os dias uteis, as horas/dia e as faltas digitadas saem junto.</span>
+              <span class="hc-inline-nota">O HC, os dias úteis, as horas/dia e as faltas digitadas saem junto.</span>
               <button type="button" class="excluir-definitivo" id="hc-confirmar-excluir">Excluir</button>
               <button type="button" class="secondary" data-cancelar="excluir">Cancelar</button>
             </div>
 
             <div class="hc-inline" id="hc-inline-funcao" hidden>
-              <label for="hc-nova-funcao">Funcao que conta como falta</label>
+              <label for="hc-nova-funcao">Função que conta como falta</label>
               <input type="text" id="hc-nova-funcao" placeholder="Ex.: Operador de Ponte Rolante">
-              <label for="hc-nova-funcao-op">Operacao</label>
+              <label for="hc-nova-funcao-op">Operação</label>
               <select id="hc-nova-funcao-op"></select>
-              <span class="hc-inline-nota">Soma-se a Log I, Log II e Operador, so nesta operacao.</span>
+              <span class="hc-inline-nota">Soma-se a Log I, Log II e Operador, só nesta operação.</span>
               <button type="button" id="hc-confirmar-funcao">Adicionar</button>
               <button type="button" class="secondary" data-cancelar="funcao">Cancelar</button>
             </div>
@@ -561,15 +561,15 @@
                 <thead>
                   <tr>
                     <th scope="col">Gestor</th>
-                    <th scope="col">Operacao · Periodo</th>
+                    <th scope="col">Operação</th>
                     <th scope="col" class="num">HC</th>
-                    <th scope="col" class="num">Dias uteis</th>
+                    <th scope="col" class="num">Dias úteis</th>
                     <th scope="col" class="num">Horas/dia</th>
                     <th scope="col" class="num">
                       Faltas (dias)
                       <button type="button" class="hc-ajuda" id="hc-ajuda-faltas" aria-label="De onde vem as faltas" hidden>?</button>
                     </th>
-                    <th scope="col" class="num">Presenteismo</th>
+                    <th scope="col" class="num">Presenteísmo</th>
                   </tr>
                 </thead>
                 <tbody id="hc-corpo"></tbody>
@@ -578,23 +578,23 @@
             </div>
 
             <p class="hc-vazio" id="hc-vazio" hidden>
-              Nenhum gestor cadastrado nesta operacao. Use "+ Adicionar Gestor" e
+              Nenhum gestor cadastrado nesta operação. Use "+ Adicionar Gestor" e
               depois preencha o HC e as faltas de cada semana.
             </p>
 
-            <div class="hc-status" id="hc-status">Escolha uma semana (ou um ciclo em Resultado do Mes) e digite as faltas de cada gestor, em dias.</div>
+            <div class="hc-status" id="hc-status">Escolha uma semana (ou um ciclo em Resultado do Mês) e digite as faltas de cada gestor, em dias.</div>
           </div>
 
           <!-- Formula -->
           <div class="card hc-formula-card" id="hc-formula-card">
             <div class="hc-formula-topo">
-              <strong>Como o numero foi calculado</strong>
+              <strong>Como o número foi calculado</strong>
               <button type="button" class="link-btn" id="hc-toggle-formula">ocultar</button>
             </div>
             <div class="hc-formula-corpo" id="hc-formula-corpo">
-              <pre class="hc-formula"><code>Presenteismo = 1 &minus; ((Faltas &times; Horas/Dia) &divide; ((HC &times; Dias Uteis) &times; Horas/Dia))</code></pre>
+              <pre class="hc-formula"><code>Presenteísmo = 1 &minus; ((Faltas &times; Horas/Dia) &divide; ((HC &times; Dias Úteis) &times; Horas/Dia))</code></pre>
               <dl class="hc-memoria">
-                <div><dt>Horas disponiveis</dt><dd id="hc-mem-disponiveis">-</dd></div>
+                <div><dt>Horas disponíveis</dt><dd id="hc-mem-disponiveis">-</dd></div>
                 <div><dt>Horas perdidas</dt><dd id="hc-mem-perdidas">-</dd></div>
                 <div><dt>Horas efetivas</dt><dd id="hc-mem-efetivas">-</dd></div>
                 <div><dt>Resultado</dt><dd id="hc-mem-resultado">-</dd></div>
@@ -605,7 +605,7 @@
 
           <!-- Arquivo de faltas -->
           <div class="card hc-arquivo-card" hidden>
-            <strong>Lancar arquivo de faltas</strong>
+            <strong>Lançar arquivo de faltas</strong>
             <div class="hc-arquivo-colunas">
               <div>
                 <div class="hc-dropzone" id="hc-dropzone" tabindex="0" role="button"
@@ -616,7 +616,7 @@
                     <line x1="12" y1="3" x2="12" y2="15"></line>
                   </svg>
                   <p class="hc-drop-titulo">Arraste a planilha aqui ou clique para escolher</p>
-                  <p class="hc-drop-nota">.xlsx, .xls ou .csv, ate 10 MB</p>
+                  <p class="hc-drop-nota">.xlsx, .xls ou .csv, até 10 MB</p>
                   <div class="hc-chips">
                     <span class="hc-chip">GESTOR_NAME</span>
                     <span class="hc-chip">NOME</span>
@@ -631,7 +631,7 @@
 
               <div class="hc-arquivo-info" id="hc-arquivo-info">
                 <p class="hc-arquivo-vazio" id="hc-arquivo-vazio">
-                  Sem planilha, as faltas ficam zeradas e o presenteismo aparece como 100%.
+                  Sem planilha, as faltas ficam zeradas e o presenteísmo aparece como 100%.
                 </p>
               </div>
             </div>
@@ -642,18 +642,18 @@
       <section id="page-coverage" class="page" hidden>
         <div class="page-wide-wrap">
           <h2 class="page-heading">Coverage</h2>
-          <p class="subtitle">Cobertura da operacao. A regra do calculo ainda vai ser definida.</p>
+          <p class="subtitle">Cobertura da operação. A regra do cálculo ainda vai ser definida.</p>
 
           <div class="card coverage-card">
             <div class="coverage-icone" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
             </div>
             <div class="coverage-texto">
-              <h3 class="card-title">Em construcao</h3>
+              <h3 class="card-title">Em construção</h3>
               <p>
-                Esta aba vai receber o calculo do Coverage. Enquanto a regra nao
+                Esta aba vai receber o cálculo do Coverage. Enquanto a regra não
                 estiver definida, o indicador aparece como <strong>&mdash;</strong>
-                na aba Inicio.
+                na aba Início.
               </p>
               <div class="coverage-meta">
                 <span class="coverage-meta-rotulo">Meta</span>
@@ -666,12 +666,12 @@
 
       <section id="page-settings" class="page" hidden>
         <div class="page-wide-wrap">
-          <h2 class="page-heading">Configuracoes</h2>
-          <p class="subtitle">Preferencias do aplicativo, guardadas so nesta maquina.</p>
+          <h2 class="page-heading">Configurações</h2>
+          <p class="subtitle">Preferências do aplicativo, guardadas só nesta máquina.</p>
 
           <div class="card settings-card">
             <h3 class="card-title">Pasta do SharePoint</h3>
-            <p class="settings-texto">Onde os relatorios extraidos sao salvos, cada operacao na sua subpasta.</p>
+            <p class="settings-texto">Onde os relatórios extraídos são salvos, cada operação na sua subpasta.</p>
             <div class="settings-linha">
               <div class="folder-box" id="folder-path">Nenhuma pasta selecionada.</div>
               <button id="choose-folder-btn" class="secondary">Alterar pasta</button>
@@ -679,14 +679,14 @@
           </div>
 
           <div class="card settings-card">
-            <h3 class="card-title">Diagnostico</h3>
+            <h3 class="card-title">Diagnóstico</h3>
             <p class="settings-texto">
-              Quando algo der errado, gere o diagnostico e mande o arquivo para quem
-              da suporte. Ele leva o log, a versao e o ambiente desta maquina &mdash;
-              nunca usuario, senha ou dados das pessoas.
+              Quando algo der errado, gere o diagnóstico e mande o arquivo para quem
+              dá suporte. Ele leva o log, a versão e o ambiente desta máquina &mdash;
+              nunca usuário, senha ou dados das pessoas.
             </p>
             <div class="settings-linha">
-              <button id="diagnostico-btn" class="secondary">Gerar diagnostico</button>
+              <button id="diagnostico-btn" class="secondary">Gerar diagnóstico</button>
               <span class="settings-status" id="diagnostico-status" role="status"></span>
             </div>
           </div>

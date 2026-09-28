@@ -110,7 +110,7 @@ def test_headcount_usa_a_escala_de_cada_gestor():
 
     ciclo = headcount.montar("nike_fisia", "mes", None, "2026-09-13", hoje=hoje)
     assert ciclo["linhas"][0]["dias_uteis"] == 23
-    assert ciclo["cards"]["periodo_nota"].endswith("23 dias uteis")
+    assert ciclo["cards"]["periodo_nota"].endswith("23 dias úteis")
 
 
 # ---------------- Extracao e a coluna Pico ----------------

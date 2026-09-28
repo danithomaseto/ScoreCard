@@ -25,7 +25,7 @@ META_PADRAO = 0.98
 HORAS_DIA_PADRAO = 8.0
 
 MESES = [
-    "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ]
 

@@ -8,7 +8,7 @@ serve so de rotulo e nao entra em calculo nenhum.
 from datetime import date, timedelta
 
 MESES = [
-    "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ]
 

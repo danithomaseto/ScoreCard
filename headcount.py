@@ -33,14 +33,38 @@ def _mesmo_tipo(a, b):
     return ("-S" in a) == ("-S" in b)
 
 
+def _inicio_da_semana_do_mes(periodo_id):
+    """Data de inicio de uma semana do mes ("2026-09-S4" -> 2026-09-21)."""
+    ano, mes = int(periodo_id[:4]), int(periodo_id[5:7])
+    numero = int(periodo_id.split("-S")[1])
+    for semana in presenteismo.semanas_do_mes(ano, mes):
+        if semana["numero"] == numero:
+            return semana["inicio"]
+    return None
+
+
 def _herdado(gestor, periodo_id, campo):
     """(valor, de onde veio) do ultimo periodo anterior, do mesmo tipo,
-    com esse campo digitado."""
+    com esse campo digitado.
+
+    Um ciclo da folha sem valor proprio nem ciclo anterior usa o ultimo
+    valor digitado nas semanas ate o fim dele: o HC da semana e o mesmo
+    quadro de pessoas, e sem isso o mes ficaria zerado."""
     quadro = gestor.get("quadro") or {}
     anteriores = sorted(p for p, v in quadro.items()
                         if p < periodo_id and _mesmo_tipo(p, periodo_id) and campo in v)
     if anteriores:
         return quadro[anteriores[-1]][campo], anteriores[-1]
+    if "-S" not in periodo_id:
+        inicio = datetime.date.fromisoformat(periodo_id)
+        fim_do_ciclo = (datetime.date(inicio.year + (inicio.month == 12), inicio.month % 12 + 1, 13)
+                        - datetime.timedelta(days=1)).isoformat()
+        semanas = sorted(
+            (_inicio_da_semana_do_mes(p), p) for p, v in quadro.items()
+            if "-S" in p and campo in v)
+        semanas = [(d, p) for d, p in semanas if d and d <= fim_do_ciclo]
+        if semanas:
+            return quadro[semanas[-1][1]][campo], semanas[-1][1]
     return None, None
 
 
@@ -165,7 +189,7 @@ def _dias_do_periodo(periodos, periodo_id):
 
 def _rotulo_periodo(visualizacao, periodos, periodo_id):
     if periodo_id == TODAS or not periodo_id:
-        return "Todas as semanas do mes"
+        return "Todas as semanas do mês"
     periodo = _periodo_selecionado(periodos, periodo_id)
     if not periodo:
         return ""
@@ -185,7 +209,7 @@ def _card_periodo(visualizacao, mes, periodos, periodo_id, dias):
     em tres linhas no card e esticava os cinco cards juntos; aqui ele e
     dividido entre o valor e a linha de nota.
     """
-    uteis = _plural(dias, "dia util", "dias uteis")
+    uteis = _plural(dias, "dia útil", "dias úteis")
     if visualizacao == "mes":
         periodo = _periodo_selecionado(periodos, periodo_id)
         if not periodo:
@@ -339,7 +363,7 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
         total = round(1 - (horas_perdidas / horas_disponiveis), 6)
 
     return {
-        "operacoes": ([{"key": TODAS, "label": "Todas as Operacoes"}]
+        "operacoes": ([{"key": TODAS, "label": "Todas as Operações"}]
                       + [{"key": k, "label": v["label"]} for k, v in OPERATIONS.items()]),
         "operacao": operacao or TODAS,
         "visualizacao": visualizacao,
@@ -351,7 +375,7 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
         "periodo_rotulo": rotulo,
         "cards": {
             "operacao": next((o["label"] for o in
-                              [{"key": TODAS, "label": "Todas as Operacoes"}]
+                              [{"key": TODAS, "label": "Todas as Operações"}]
                               + [{"key": k, "label": v["label"]} for k, v in OPERATIONS.items()]
                               if o["key"] == (operacao or TODAS)), ""),
             "periodo": periodo_titulo,
@@ -620,25 +644,41 @@ def _agregar(gestores, pedacos, config):
     for gestor in gestores:
         for periodo in pedacos:
             q = quadro_do_periodo(gestor, periodo["id"], periodo["dias_uteis"], config)
-            disponiveis += q["hc"] * q["dias_uteis"] * q["horas_dia"]
+            dias = q["dias_uteis"]
+            # Pedaco que entra so em parte na semana do Summary conta so
+            # os dias uteis que caem nela.
+            if periodo.get("dias_na_semana", dias) < periodo["dias_uteis"]:
+                dias = periodo["dias_na_semana"]
+            disponiveis += q["hc"] * dias * q["horas_dia"]
             perdidas += q["faltas"] * q["horas_dia"]
     if disponiveis <= 0:
         return None
     return round(1 - perdidas / disponiveis, 6)
 
 
-def _pedacos_da_semana(segunda, hoje, escala):
-    """As semanas da tela de Headcount (cortadas no mes) que formam uma
-    semana do Summary. Quase sempre e uma so; na virada do mes sao duas
-    (31/08 a 06/09 = S6 de agosto + S1 de setembro)."""
-    domingo = segunda + datetime.timedelta(days=6)
-    meses = sorted({(segunda.year, segunda.month), (domingo.year, domingo.month)})
-    pedacos = []
-    for ano, mes in meses:
-        for semana in presenteismo.semanas_do_mes(ano, mes, hoje=hoje, escala_espanhola=escala):
-            if semana["inicio"] >= segunda.isoformat() and semana["fim"] <= domingo.isoformat():
-                pedacos.append(semana)
-    return pedacos
+def _pedacos_da_semana(inicio, hoje, escala):
+    """As semanas da tela de Headcount (segunda a domingo, cortadas no
+    mes) que formam uma semana do Summary, casadas pelos dias de
+    trabalho.
+
+    O Summary pode fechar a semana no domingo (ABB: 20/09 a 26/09) ou na
+    segunda (21/09 a 27/09): cada dia util da semana do Summary cai numa
+    semana do Headcount, e e ela que da os numeros. Quase sempre e uma
+    so; na virada do mes sao duas (31/08 = agosto, 01 a 04/09 = setembro).
+    Cada pedaco leva quantos dias uteis dele caem dentro da semana.
+    """
+    fim = inicio + datetime.timedelta(days=6)
+    meses = sorted({(inicio.year, inicio.month), (fim.year, fim.month)})
+    semanas = [s for ano, mes in meses
+               for s in presenteismo.semanas_do_mes(ano, mes, hoje=hoje, escala_espanhola=escala)]
+    pedacos = {}
+    dia = inicio
+    while dia <= fim:
+        if presenteismo.dia_util(dia, escala):
+            semana = next(s for s in semanas if s["inicio"] <= dia.isoformat() <= s["fim"])
+            pedacos.setdefault(semana["id"], {**semana, "dias_na_semana": 0})["dias_na_semana"] += 1
+        dia += datetime.timedelta(days=1)
+    return list(pedacos.values())
 
 
 def _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses):
@@ -654,14 +694,14 @@ def _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses):
         esta = hoje - datetime.timedelta(days=hoje.weekday())
         semanas = [(esta - datetime.timedelta(weeks=n)).isoformat() for n in range(26)]
     for chave in semanas:
-        segunda = datetime.date.fromisoformat(chave)
-        if segunda > hoje:
+        inicio = datetime.date.fromisoformat(chave)
+        if inicio > hoje:
             continue  # semana que nem comecou
-        valor = _agregar(gestores, _pedacos_da_semana(segunda, hoje, escala), config)
+        valor = _agregar(gestores, _pedacos_da_semana(inicio, hoje, escala), config)
         if valor is not None:
             resultado["week"][chave] = {
                 "presenteismo": valor,
-                "parcial": segunda <= hoje <= segunda + datetime.timedelta(days=6),
+                "parcial": inicio <= hoje <= inicio + datetime.timedelta(days=6),
             }
 
     ciclos = {c["mes_referencia"]: c

@@ -256,7 +256,7 @@ def test_arquivo_salvo_sem_indicador_nao_se_apresenta_como_concluida(
 
     assert resultado["success"] is True, "o arquivo foi salvo de verdade"
     assert resultado["status"] == "warning", "mas nao e uma extracao concluida"
-    assert "nao deu pra calcular" in resultado["indicators_message"]
+    assert "não deu pra calcular" in resultado["indicators_message"]
     assert store.get_indicators("mock") == {}
 
 

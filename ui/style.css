@@ -1499,8 +1499,9 @@ button.excluir-definitivo:hover { background: #b42318; }
 
 /* ---------- Faltas digitadas ---------- */
 
-/* Mesmo campo do HC, com a borda em tom de falta para nao confundir. */
-.hc-faltas-input { border-color: rgba(249, 112, 102, 0.45); color: #fda29b; font-weight: 700; }
+/* Faltas: neutro com zero; com falta, borda e numero em tom de alerta. */
+.hc-faltas-input { font-weight: 700; }
+.hc-faltas-input.tem-falta { border-color: rgba(249, 112, 102, 0.55); color: #fda29b; }
 .hc-faltas-input:focus { border-color: #f97066; }
 .hc-faltas-input:disabled { opacity: 0.7; cursor: not-allowed; }
 
@@ -1514,3 +1515,12 @@ button.excluir-definitivo:hover { background: #b42318; }
 .hc-faltas-input.valor-herdado { color: #fda29b; }
 
 .filter-field select.filtro-mes { width: 220px; }
+
+
+/* Inicio: em janela estreita a nota da ultima extracao vai para a linha
+   de baixo, em vez de espremer ao lado dos filtros. */
+.filter-card { flex-wrap: wrap; }
+.filter-card .filter-note { flex: 1 1 240px; }
+@media (max-width: 1100px) {
+  .filter-card .filter-note { flex-basis: 100%; margin: 0; }
+}

@@ -167,7 +167,7 @@ function showRunActions(container, { houveSucesso, houveFalha }) {
     btn.addEventListener('click', async () => {
       const result = await acao();
       if (result && !result.success) {
-        alert(result.message || 'Nao foi possivel abrir.');
+        alert(result.message || 'Não foi possível abrir.');
       }
     });
     container.appendChild(btn);
@@ -288,14 +288,14 @@ async function loadHome() {
 async function loadLastRun() {
   const history = await pywebview.api.get_report_history();
   if (!history.length) {
-    homeLastRunEl.textContent = 'Nenhuma extracao ainda';
+    homeLastRunEl.textContent = 'Nenhuma extração ainda';
     return;
   }
   const last = history[0];
   const desfecho = desfechoDe(last);
   const quando = new Date(last.timestamp).toLocaleString('pt-BR');
   const sufixo = desfecho.classe === 'success' ? '' : ` (${desfecho.rotulo.toLowerCase()})`;
-  homeLastRunEl.textContent = `Ultima extracao: ${last.operation}, ${quando}${sufixo}`;
+  homeLastRunEl.textContent = `Última extração: ${last.operation}, ${quando}${sufixo}`;
 }
 
 // O texto e a cor de cada celula vem prontos do Python: as faixas sao
@@ -338,7 +338,7 @@ function desenharCabecalho(tabela) {
   canto.className = 'indicator-corner';
   const rotulo = document.createElement('div');
   rotulo.className = 'corner-label';
-  rotulo.textContent = 'Operacao';
+  rotulo.textContent = 'Operação';
   const nome = document.createElement('div');
   nome.className = 'corner-operation';
   nome.textContent = tabela.operacao;
@@ -428,7 +428,7 @@ function botaoCopiar(indice, titulo) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'copy-btn';
-  btn.setAttribute('aria-label', `Copiar os numeros de ${titulo}`);
+  btn.setAttribute('aria-label', `Copiar os números de ${titulo}`);
   btn.textContent = 'Copiar';
   btn.addEventListener('click', () => copiarColuna(indice, btn));
   return btn;
@@ -468,7 +468,7 @@ async function copiarColuna(indice, btn) {
   const copiado = await copiarTexto(textoDaColuna(indice), tabelaDaColuna(indice));
 
   const original = btn.textContent;
-  btn.textContent = copiado ? 'Copiado' : 'Nao deu';
+  btn.textContent = copiado ? 'Copiado' : 'Não deu';
   btn.classList.toggle('copiado', copiado);
   setTimeout(() => {
     btn.textContent = original;
@@ -540,7 +540,7 @@ async function loadHistoryTable(tbody = historyTableBody) {
     const cell = document.createElement('td');
     cell.colSpan = 7;
     cell.className = 'empty-history-msg';
-    cell.textContent = 'Nenhuma extracao registrada ainda.';
+    cell.textContent = 'Nenhuma extração registrada ainda.';
     row.appendChild(cell);
     tbody.appendChild(row);
     return;
@@ -725,9 +725,9 @@ function refreshMultiQueue() {
   if (!selected.length) {
     const empty = document.createElement('p');
     empty.className = 'subtitle';
-    empty.textContent = 'Selecione as operacoes ao lado para ver a fila aqui.';
+    empty.textContent = 'Selecione as operações ao lado para ver a fila aqui.';
     multiStepsEl.appendChild(empty);
-    multiProgressDetailEl.textContent = 'Nenhuma extracao em andamento';
+    multiProgressDetailEl.textContent = 'Nenhuma extração em andamento';
     multiProgressPercentEl.textContent = '0%';
     return;
   }
@@ -757,7 +757,7 @@ function refreshMultiQueue() {
     multiStepsEl.appendChild(step);
   });
 
-  multiProgressDetailEl.textContent = `${selected.length} operacao(oes) na fila`;
+  multiProgressDetailEl.textContent = `${selected.length} operação(ões) na fila`;
   multiProgressPercentEl.textContent = '0%';
 }
 
@@ -861,7 +861,7 @@ async function ensureFolderConfigured() {
 
   alert(
     'Antes de comecar, selecione a pasta do SharePoint/OneDrive onde os ' +
-    'relatorios extraidos serao salvos.'
+    'relatórios extraídos serão salvos.'
   );
   const result = await pywebview.api.choose_sharepoint_folder();
   if (result.success) {
@@ -882,7 +882,7 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
   loginStatus.hidden = true;
 
   if (!username || !password) {
-    showStatus(loginStatus, 'Preencha usuario e senha.', 'error');
+    showStatus(loginStatus, 'Preencha usuário e senha.', 'error');
     return;
   }
 
@@ -933,7 +933,7 @@ runBtn.addEventListener('click', async () => {
     return;
   }
   if (fromDateInput.value > toDateInput.value) {
-    showStatus(runStatus, 'A "Data inicial" nao pode ser depois da "Data final".', 'error');
+    showStatus(runStatus, 'A "Data inicial" não pode ser depois da "Data final".', 'error');
     return;
   }
   // yyyy-mm-dd (formato nativo do <input type="date">) - a conversao
@@ -943,7 +943,7 @@ runBtn.addEventListener('click', async () => {
 
   const folderOk = await ensureFolderConfigured();
   if (!folderOk) {
-    showStatus(runStatus, 'E necessario selecionar a pasta do SharePoint antes de executar.', 'error');
+    showStatus(runStatus, 'É necessário selecionar a pasta do SharePoint antes de executar.', 'error');
     return;
   }
 
@@ -951,7 +951,7 @@ runBtn.addEventListener('click', async () => {
   runBtn.querySelector('.btn-texto').textContent = 'Executando...';
   resetSteps();
   setBadge('running', 'Em andamento');
-  progressDetailEl.textContent = 'Iniciando a extracao...';
+  progressDetailEl.textContent = 'Iniciando a extração...';
   progressPercentEl.textContent = '0%';
   try {
     const result = await pywebview.api.run_extraction(operationSelect.value, dateRange, groupBySelect.value, getSelectedPeriod());
@@ -978,7 +978,7 @@ runBtn.addEventListener('click', async () => {
     showStatus(runStatus, 'Erro inesperado: ' + err.message, 'error');
   } finally {
     runBtn.disabled = false;
-    runBtn.querySelector('.btn-texto').textContent = 'Iniciar extracao';
+    runBtn.querySelector('.btn-texto').textContent = 'Iniciar extração';
   }
 });
 
@@ -988,7 +988,7 @@ multiRunBtn.addEventListener('click', async () => {
 
   const selected = getSelectedOperations();
   if (!selected.length) {
-    showStatus(multiRunStatus, 'Selecione pelo menos uma operacao.', 'error');
+    showStatus(multiRunStatus, 'Selecione pelo menos uma operação.', 'error');
     return;
   }
   if (!multiFromDateInput.value || !multiToDateInput.value) {
@@ -996,14 +996,14 @@ multiRunBtn.addEventListener('click', async () => {
     return;
   }
   if (multiFromDateInput.value > multiToDateInput.value) {
-    showStatus(multiRunStatus, 'A "Data inicial" nao pode ser depois da "Data final".', 'error');
+    showStatus(multiRunStatus, 'A "Data inicial" não pode ser depois da "Data final".', 'error');
     return;
   }
   const dateRange = { from_date: multiFromDateInput.value, to_date: multiToDateInput.value };
 
   const folderOk = await ensureFolderConfigured();
   if (!folderOk) {
-    showStatus(multiRunStatus, 'E necessario selecionar a pasta do SharePoint antes de executar.', 'error');
+    showStatus(multiRunStatus, 'É necessário selecionar a pasta do SharePoint antes de executar.', 'error');
     return;
   }
 
@@ -1040,7 +1040,7 @@ multiRunBtn.addEventListener('click', async () => {
     showStatus(multiRunStatus, 'Erro inesperado: ' + err.message, 'error');
   } finally {
     multiRunBtn.disabled = false;
-    multiRunBtn.querySelector('.btn-texto').textContent = 'Iniciar extracao';
+    multiRunBtn.querySelector('.btn-texto').textContent = 'Iniciar extração';
     multiStopBtn.hidden = true;
   }
 });
@@ -1050,7 +1050,7 @@ multiStopBtn.addEventListener('click', async () => {
   multiStopBtn.textContent = 'Parando...';
   // A operacao em andamento termina normalmente; a fila para antes da
   // proxima, pra nao deixar um download pela metade.
-  multiProgressDetailEl.textContent = 'Vai parar quando a operacao atual terminar...';
+  multiProgressDetailEl.textContent = 'Vai parar quando a operação atual terminar...';
   await pywebview.api.cancel_multi_extraction();
 });
 
@@ -1120,6 +1120,12 @@ function plural(numero, singular, plural_) {
   return `${numero} ${numero === 1 ? singular : plural_}`;
 }
 
+// Numero no padrao brasileiro: 8,75 e 1.234 (no lugar de 8.75 e 1234).
+function num(valor) {
+  if (typeof valor !== 'number') return valor;
+  return valor.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}
+
 function hcPercentual(valor) {
   if (valor === null || valor === undefined) return '-';
   return (valor * 100).toFixed(2).replace('.', ',') + '%';
@@ -1157,7 +1163,7 @@ function desenharFiltrosHc(tela) {
   const noMes = tela.visualizacao === 'mes';
   // No Resultado do Mes o periodo e o ciclo da folha ponto, entao o
   // seletor de mes vira o seletor de ciclo e o de semana nao se aplica.
-  hcMesLabel.textContent = noMes ? 'Periodo da Folha Ponto' : 'Mes vigente';
+  hcMesLabel.textContent = noMes ? 'Período da Folha Ponto' : 'Mês vigente';
   if (noMes) {
     preencherSelect(hcMes, tela.periodos.map((p) => ({
       id: p.id, rotulo: `${p.rotulo_curto} · ${p.status}`,
@@ -1170,7 +1176,7 @@ function desenharFiltrosHc(tela) {
   // dele explica o porque - uma dica embaixo esticava o card so neste
   // modo e a tela pulava ao alternar.
   if (noMes) {
-    preencherSelect(hcPeriodo, [{ id: '', rotulo: 'Nao se aplica ao ciclo da folha' }], '');
+    preencherSelect(hcPeriodo, [{ id: '', rotulo: 'Não se aplica ao ciclo da folha' }], '');
   } else {
     preencherSelect(hcPeriodo, tela.periodos, tela.periodo_id);
   }
@@ -1197,9 +1203,9 @@ function desenharCardsHc(tela) {
   document.getElementById('hc-card-operacao').textContent = c.operacao;
   document.getElementById('hc-card-periodo').textContent = c.periodo;
   document.getElementById('hc-card-periodo-nota').textContent = c.periodo_nota;
-  document.getElementById('hc-card-hc').textContent = c.hc_total;
+  document.getElementById('hc-card-hc').textContent = num(c.hc_total);
   document.getElementById('hc-card-faltas').textContent = c.faltas;
-  document.getElementById('hc-card-horas').textContent = `${c.horas_perdidas}h perdidas`;
+  document.getElementById('hc-card-horas').textContent = `${num(c.horas_perdidas)} h perdidas`;
   document.getElementById('hc-card-presenteismo').textContent = hcPercentual(c.presenteismo);
   document.getElementById('hc-card-meta').textContent =
     c.presenteismo === null ? 'Sem HC lancado' : (c.dentro_da_meta ? 'Dentro da meta' : 'Abaixo da meta');
@@ -1213,7 +1219,7 @@ function desenharCardsHc(tela) {
 const ORIGENS = {
   herdado: (de) => `Veio de ${de}. Digite para mudar a partir desta semana.`,
   cadastro: () => 'Valor do cadastro do gestor. Digite para mudar a partir desta semana.',
-  calendario: () => 'Dias uteis do calendario desta semana. Digite para ajustar (feriado, por exemplo).',
+  calendario: () => 'Dias úteis do calendário desta semana. Digite para ajustar (feriado, por exemplo).',
 };
 
 function campoQuadro(linha, campo, passo) {
@@ -1225,7 +1231,11 @@ function campoQuadro(linha, campo, passo) {
   input.value = linha[campo];
   input.dataset.gestor = linha.id;
   input.dataset.campo = campo;
-  if (campo === 'faltas') input.classList.add('hc-faltas-input');
+  if (campo === 'faltas') {
+    input.classList.add('hc-faltas-input');
+    // O vermelho so aparece quando ha falta; zero fica neutro.
+    input.classList.toggle('tem-falta', Number(linha.faltas) > 0);
+  }
 
   const origem = { hc: linha.hc_origem, dias_uteis: linha.dias_origem, horas_dia: linha.horas_origem }[campo];
   if (origem && origem !== 'digitado') {
@@ -1250,8 +1260,8 @@ function campoQuadro(linha, campo, passo) {
     }
     await redesenharMantendoFoco();
     hcStatus.textContent = input.value === ''
-      ? 'Valor apagado: volta a valer o herdado. A aba Inicio ja reflete a mudanca.'
-      : 'Salvo so para este periodo. A aba Inicio ja reflete a mudanca.';
+      ? 'Valor apagado: volta a valer o herdado. A aba Início já reflete a mudança.'
+      : 'Salvo só para este período. A aba Início já reflete a mudança.';
   });
   return input;
 }
@@ -1271,7 +1281,7 @@ function campoFaltas(linha, periodoId) {
   input.dataset.campo = 'faltas';
   if (!linha.faltas_editavel) {
     input.disabled = true;
-    input.title = 'Soma das semanas. Escolha uma semana do mes para lancar as faltas.';
+    input.title = 'Soma das semanas. Escolha uma semana do mês para lançar as faltas.';
     return input;
   }
   // So digito: sinal, virgula, ponto e "e" (notacao cientifica) ficam de fora.
@@ -1286,7 +1296,7 @@ function campoFaltas(linha, periodoId) {
       return;
     }
     await redesenharMantendoFoco();
-    hcStatus.textContent = 'Faltas lancadas. A aba Inicio ja reflete a mudanca.';
+    hcStatus.textContent = 'Faltas lançadas. A aba Início já reflete a mudança.';
   });
   return input;
 }
@@ -1328,7 +1338,7 @@ function campoNumero(valor, gestorId, campo, passo) {
         `input[data-gestor="${destino.gestor}"][data-campo="${destino.campo}"]`);
       if (alvo) { alvo.focus(); alvo.select(); }
     }
-    hcStatus.textContent = 'Quadro atualizado. A aba Inicio ja reflete a mudanca.';
+    hcStatus.textContent = 'Quadro atualizado. A aba Início já reflete a mudança.';
   });
   return input;
 }
@@ -1414,7 +1424,7 @@ async function salvarEdicao() {
     ? `${nome} foi para ${novaOperacao} e sai desta lista. O HC digitado foi junto.`
     : mudouOperacao
       ? `${nome} agora esta em ${novaOperacao}. O HC digitado foi junto.`
-      : `${nome} atualizado. As faltas da planilha ja sao ligadas pelo nome novo.`;
+      : `${nome} atualizado. As faltas da planilha já são ligadas pelo nome novo.`;
 }
 
 async function confirmarExclusao() {
@@ -1427,12 +1437,12 @@ async function confirmarExclusao() {
   }
   abrirFaixa(null);
   await carregarHeadcount();
-  hcStatus.textContent = `${nome} excluido. A aba Inicio ja reflete a mudanca.`;
+  hcStatus.textContent = `${nome} excluído. A aba Início já reflete a mudança.`;
 }
 
 function desenharTabelaHc(tela) {
   hcTabelaTitulo.textContent = tela.visualizacao === 'mes'
-    ? 'Resultado do mes por gestor · folha ponto'
+    ? 'Resultado do mês por gestor · folha ponto'
     : 'Resultado semanal por gestor';
   hcContador.textContent = plural(tela.linhas.length, 'linha', 'linhas');
   // Sem gestor, a tabela so teria cabecalhos soltos: fica so a mensagem.
@@ -1479,7 +1489,9 @@ function desenharTabelaHc(tela) {
     per.className = 'hc-periodo';
     per.textContent = linha.periodo;
     tdOperacao.appendChild(op);
-    tdOperacao.appendChild(per);
+    // A semana (ou o ciclo) ja esta no filtro e no cartao de periodo;
+    // repetir em cada linha so ocupava espaco.
+    if (!tela.faltas_manuais) tdOperacao.appendChild(per);
     tr.appendChild(tdOperacao);
 
     for (const [campo, passo] of [['hc', '1'], ['dias_uteis', '1'], ['horas_dia', '0.5']]) {
@@ -1505,7 +1517,7 @@ function desenharTabelaHc(tela) {
     const selo = document.createElement('span');
     selo.className = 'hc-selo';
     selo.textContent = 'XLS';
-    selo.title = 'Veio da planilha de faltas, nao e digitado';
+    selo.title = 'Veio da planilha de faltas, não é digitado';
     faltas.appendChild(valorFaltas);
     faltas.appendChild(selo);
     tdFaltas.appendChild(faltas);
@@ -1541,7 +1553,7 @@ function desenharTabelaHc(tela) {
   const celulas = [
     'TOTAL CONSOLIDADO',
     plural(t.gestores, 'gestor', 'gestores'),
-    t.hc, unicoOuVaria('dias_uteis'), unicoOuVaria('horas_dia'), t.faltas,
+    num(t.hc), num(unicoOuVaria('dias_uteis')), num(unicoOuVaria('horas_dia')), num(t.faltas),
   ];
   celulas.forEach((texto, indice) => {
     const td = document.createElement('td');
@@ -1549,7 +1561,7 @@ function desenharTabelaHc(tela) {
     td.textContent = texto;
     if (texto === 'varia') {
       td.classList.add('hc-varia');
-      td.title = 'Os gestores tem numeros diferentes nesta semana (escala ou valor digitado).';
+      td.title = 'Os gestores têm números diferentes nesta semana (escala ou valor digitado).';
     }
     tr.appendChild(td);
   });
@@ -1565,9 +1577,9 @@ function desenharTabelaHc(tela) {
 
 function desenharFormulaHc(tela) {
   const m = tela.memoria;
-  document.getElementById('hc-mem-disponiveis').textContent = `${m.horas_disponiveis} h`;
-  document.getElementById('hc-mem-perdidas').textContent = `${m.horas_perdidas} h`;
-  document.getElementById('hc-mem-efetivas').textContent = `${m.horas_efetivas} h`;
+  document.getElementById('hc-mem-disponiveis').textContent = `${num(m.horas_disponiveis)} h`;
+  document.getElementById('hc-mem-perdidas').textContent = `${num(m.horas_perdidas)} h`;
+  document.getElementById('hc-mem-efetivas').textContent = `${num(m.horas_efetivas)} h`;
   document.getElementById('hc-mem-resultado').textContent = hcPercentual(m.presenteismo);
   document.getElementById('hc-mem-meta').textContent = hcPercentual(m.meta);
 }
@@ -1605,7 +1617,7 @@ function desenharArquivoHc(tela) {
   if (!arquivo) {
     hcArquivoInfo.innerHTML =
       '<p class="hc-arquivo-vazio">Sem planilha, as faltas ficam zeradas e o ' +
-      'presenteismo aparece como 100%.</p>';
+      'presenteísmo aparece como 100%.</p>';
     hcStatus.textContent = 'Nenhuma planilha de faltas carregada.';
     return;
   }
@@ -1627,7 +1639,7 @@ function desenharArquivoHc(tela) {
   }
   partes.push('<div class="hc-contadores">' +
     `<span class="hc-contador-item"><strong>${r.linhas}</strong>linhas lidas</span>` +
-    `<span class="hc-contador-item"><strong>${r.consideradas}</strong>faltas validas</span>` +
+    `<span class="hc-contador-item"><strong>${r.consideradas}</strong>faltas válidas</span>` +
     `<span class="hc-contador-item"><strong>${r.gestores}</strong>gestores</span>` +
     `<span class="hc-contador-item"><strong>${r.dias}</strong>dias faltados</span>` +
     '</div>');
@@ -1637,7 +1649,7 @@ function desenharArquivoHc(tela) {
   const descartes = [];
   if (r.motivo) descartes.push(`${r.motivo} por motivo (ferias)`);
   if (r.contrato) descartes.push(`${r.contrato} por contrato (temporario)`);
-  if (r.funcao) descartes.push(`${r.funcao} por funcao fora do quadro`);
+  if (r.funcao) descartes.push(`${r.funcao} por função fora do quadro`);
   if (r.sem_data) descartes.push(`${r.sem_data} sem data`);
   if (descartes.length) {
     partes.push(`<p class="hc-descartadas">Fora da conta: ${descartes.join(' · ')}.</p>`);
@@ -1665,7 +1677,7 @@ function desenharArquivoHc(tela) {
   });
 
   hcStatus.textContent =
-    `Faltas importadas de ${arquivo.nome} · ${r.linhas} linhas · ultima leitura ${quando}`;
+    `Faltas importadas de ${arquivo.nome} · ${r.linhas} linhas · última leitura ${quando}`;
 }
 
 // ---------------- Acoes ----------------
@@ -1712,7 +1724,7 @@ const SELETOR_DE_OPERACAO = { gestor: hcNovoGestorOp, funcao: hcNovaFuncaoOp };
 // calado na primeira operacao da lista.
 function preencherOperacaoDaFaixa(select) {
   const operacoes = (hcTela ? hcTela.operacoes : []).filter((o) => o.key !== 'todas');
-  const itens = [{ key: '', label: 'Escolha a operacao' }, ...operacoes];
+  const itens = [{ key: '', label: 'Escolha a operação' }, ...operacoes];
   const doFiltro = hcEstado.operacao !== 'todas' ? hcEstado.operacao : '';
   preencherSelect(select, itens, doFiltro, 'key', 'label');
   select.options[0].disabled = true;
@@ -1760,8 +1772,8 @@ async function confirmarFaixa(qual, valor) {
   const destino = seletor.value;
   if (!destino) {
     hcStatus.textContent = qual === 'gestor'
-      ? 'Escolha a operacao do gestor antes de adicionar.'
-      : 'Escolha a operacao da funcao antes de adicionar.';
+      ? 'Escolha a operação do gestor antes de adicionar.'
+      : 'Escolha a operação da função antes de adicionar.';
     seletor.focus();
     return;
   }
@@ -1776,8 +1788,8 @@ async function confirmarFaixa(qual, valor) {
   abrirFaixa(null);
   await carregarHeadcount();
   hcStatus.textContent = qual === 'gestor'
-    ? `${valor} cadastrado em ${nomeOperacao}. Preencha o HC: as faltas ja vem da planilha carregada.`
-    : `${valor} passa a contar como falta em ${nomeOperacao}, ja nesta planilha e na aba Inicio.`;
+    ? `${valor} cadastrado em ${nomeOperacao}. Preencha o HC: as faltas já vêm da planilha carregada.`
+    : `${valor} passa a contar como falta em ${nomeOperacao}, já nesta planilha e na aba Início.`;
 }
 
 for (const [botao, campo, qual] of [
@@ -1787,7 +1799,7 @@ for (const [botao, campo, qual] of [
   document.getElementById(botao).addEventListener('click', async () => {
     const valor = document.getElementById(campo).value.trim();
     if (!valor) {
-      hcStatus.textContent = qual === 'gestor' ? 'Informe o nome do gestor.' : 'Informe o nome da funcao.';
+      hcStatus.textContent = qual === 'gestor' ? 'Informe o nome do gestor.' : 'Informe o nome da função.';
       document.getElementById(campo).focus();
       return;
     }
@@ -1832,7 +1844,7 @@ for (const [id, qual] of [['hc-novo-gestor', 'gestor'], ['hc-nova-funcao', 'func
 document.getElementById('hc-limpar').addEventListener('click', async () => {
   await pywebview.api.clear_faltas();
   await carregarHeadcount();
-  hcStatus.textContent = 'Faltas removidas. Sem planilha, o presenteismo volta a 100%.';
+  hcStatus.textContent = 'Faltas removidas. Sem planilha, o presenteísmo volta a 100%.';
 });
 
 // O presenteismo nao precisa mais ser "aplicado": a aba Inicio calcula
@@ -1853,9 +1865,9 @@ document.getElementById('hc-toggle-formula').addEventListener('click', (evento) 
 
 document.getElementById('hc-ajuda-faltas').addEventListener('click', () => {
   hcStatus.textContent =
-    'As faltas vem da planilha de ausencias: uma linha por dia de falta, com ' +
+    'As faltas vêm da planilha de ausências: uma linha por dia de falta, com ' +
     'GESTOR_NAME, NOME, FUNCAO, MOTIVO, CONTRACT e ABS_DATE. Ferias, temporarios ' +
-    'e funcoes fora do quadro nao entram.';
+    'e funções fora do quadro não entram.';
 });
 
 // ---------------- Arquivo ----------------
@@ -1880,7 +1892,7 @@ async function enviarArquivoFaltas(arquivo) {
   }
   await carregarHeadcount();
   hcStatus.textContent =
-    `${arquivo.name} lido. O presenteismo de cada semana e de cada ciclo ja esta na aba Inicio.`;
+    `${arquivo.name} lido. O presenteísmo de cada semana e de cada ciclo já está na aba Início.`;
 }
 
 hcDropzone.addEventListener('click', () => hcArquivoInput.click());

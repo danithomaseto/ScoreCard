@@ -101,7 +101,7 @@ def adicionar_gestor(nome, operacao, horas_dia=None):
         for g in dados["gestores"]
     )
     if ja_existe:
-        raise ValueError(f"{nome} ja esta cadastrado nesta operacao.")
+        raise ValueError(f"{nome} já está cadastrado nesta operação.")
 
     gestor = {
         "id": uuid.uuid4().hex[:12],
@@ -134,13 +134,13 @@ def atualizar_gestor(gestor_id, campos):
             gestor["dias_uteis"] = int(gestor["dias_uteis"])
         _gravar(dados)
         return gestor
-    raise ValueError("Gestor nao encontrado.")
+    raise ValueError("Gestor não encontrado.")
 
 
 # Campos do quadro digitados por periodo: (nome na tela, inteiro?, maximo).
 CAMPOS_DO_QUADRO = {
     "hc": ("HC", True, None),
-    "dias_uteis": ("Dias uteis", True, 31),
+    "dias_uteis": ("Dias úteis", True, 31),
     "horas_dia": ("Horas/dia", False, 24),
     "faltas": ("Faltas", True, None),
 }
@@ -156,7 +156,7 @@ def definir_quadro(gestor_id, periodo_id, campo, valor):
     calendario, faltas zero).
     """
     if campo not in CAMPOS_DO_QUADRO:
-        raise ValueError("Campo invalido.")
+        raise ValueError("Campo inválido.")
     if not periodo_id or periodo_id == "todas":
         raise ValueError("Escolha uma semana ou um ciclo.")
     nome, inteiro, maximo = CAMPOS_DO_QUADRO[campo]
@@ -166,13 +166,13 @@ def definir_quadro(gestor_id, periodo_id, campo, valor):
         try:
             numero = float(texto)
         except ValueError:
-            raise ValueError(f"{nome} precisa ser um numero.") from None
+            raise ValueError(f"{nome} precisa ser um número.") from None
         if numero < 0:
-            raise ValueError(f"{nome} nao pode ser negativo.")
+            raise ValueError(f"{nome} não pode ser negativo.")
         if inteiro and not numero.is_integer():
-            raise ValueError(f"{nome} e um numero inteiro (0, 1, 2...).")
+            raise ValueError(f"{nome} é um número inteiro (0, 1, 2...).")
         if maximo is not None and numero > maximo:
-            raise ValueError(f"{nome} vai no maximo ate {maximo}.")
+            raise ValueError(f"{nome} vai no máximo até {maximo}.")
         if campo == "horas_dia" and numero == 0:
             raise ValueError("Horas/dia precisa ser maior que zero.")
         numero = int(numero) if inteiro else numero
@@ -191,7 +191,7 @@ def definir_quadro(gestor_id, periodo_id, campo, valor):
             do_periodo[campo] = numero
         _gravar(dados)
         return gestor
-    raise ValueError("Gestor nao encontrado.")
+    raise ValueError("Gestor não encontrado.")
 
 
 def lancar_faltas(gestor_id, periodo_id, valor):
@@ -211,18 +211,18 @@ def editar_gestor(gestor_id, nome, operacao):
     if not nome:
         raise ValueError("Informe o nome do gestor.")
     if not operacao or operacao == TODAS:
-        raise ValueError("Escolha a operacao do gestor.")
+        raise ValueError("Escolha a operação do gestor.")
 
     dados = ler()
     gestor = next((g for g in dados["gestores"] if g["id"] == gestor_id), None)
     if gestor is None:
-        raise ValueError("Gestor nao encontrado.")
+        raise ValueError("Gestor não encontrado.")
     repetido = any(
         g["id"] != gestor_id and g["nome"].casefold() == nome.casefold() and g["operacao"] == operacao
         for g in dados["gestores"]
     )
     if repetido:
-        raise ValueError(f"{nome} ja esta cadastrado nesta operacao.")
+        raise ValueError(f"{nome} já está cadastrado nesta operação.")
 
     gestor["nome"] = nome
     gestor["operacao"] = operacao
@@ -267,15 +267,15 @@ def adicionar_funcao(nome, operacao):
     Ponte" tambem pega "OPERADOR DE PONTE ROLANTE"."""
     nome = (nome or "").strip()
     if not nome:
-        raise ValueError("Informe o nome da funcao.")
+        raise ValueError("Informe o nome da função.")
     if not operacao or operacao == TODAS:
-        raise ValueError("Escolha a operacao da funcao.")
+        raise ValueError("Escolha a operação da função.")
 
     dados = ler()
     funcoes = [_normalizar_funcao(f) for f in dados["funcoes"]]
     if any(f["nome"].casefold() == nome.casefold() and f["operacao"] == operacao
            for f in funcoes):
-        raise ValueError(f"{nome} ja esta na lista desta operacao.")
+        raise ValueError(f"{nome} já está na lista desta operação.")
     funcoes.append({"nome": nome, "operacao": operacao})
     dados["funcoes"] = funcoes
     _gravar(dados)

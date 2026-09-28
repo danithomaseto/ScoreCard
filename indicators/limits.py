@@ -20,8 +20,8 @@ ROTULOS = {
     "cubo": "CUBO",
     "efetividade": "EFETIVIDADE",
     "hora_direta": "HORA DIRETA",
-    "presenteismo": "PRESENTEISMO",
-    "dispersao": "DISPERSAO",
+    "presenteismo": "PRESENTEÍSMO",
+    "dispersao": "DISPERSÃO",
     "coverage": "COVERAGE",
 }
 

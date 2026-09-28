@@ -266,3 +266,35 @@ def test_inicio_mostra_so_o_mes_escolhido(api_obj):
     assert [c["chave"] for c in setembro["colunas"]] == ["2026-08-31", "2026-09-07", "2026-09-28", "2026-09"]
     assert [c["chave"] for c in agosto["colunas"]] == ["2026-08-24", "2026-08-31", "2026-08"]
     assert {"2026-08", "2026-09", "2026-10"} <= {m["id"] for m in setembro["meses"]}
+
+
+# ---------------- Semana do Summary fechando no domingo ----------------
+
+def test_semana_do_summary_de_domingo_a_sabado(api_obj):
+    """ABB: o Summary fecha a semana no domingo (Week 39 = 20/09 a 26/09).
+    Os dias uteis dela (21 a 25/09) sao os da Week 39 do Headcount (21 a
+    27/09), e e dela que vem o presenteismo."""
+    gestor = _gestor(operacao="abb", hc=0)
+    indicators_store.salvar_extracao("abb", "week", {
+        "2026-08-30": {"efetividade": 1.0}, "2026-09-20": {"efetividade": 0.927, "hora_direta": 0.884}})
+    for campo, valor in (("hc", "10"), ("horas_dia", "8.75"), ("faltas", "2")):
+        api_obj.set_quadro(gestor["id"], "2026-09-S4", campo, valor)
+
+    presenteismo = _celulas(api_obj, "presenteismo", operacao="abb")
+    cubo = _celulas(api_obj, "cubo", operacao="abb")
+
+    assert presenteismo["2026-09-20"] == "96,0%", "o mesmo 96,00% da tela de Headcount"
+    assert cubo["2026-09-20"] == limits.formatar(0.927 * 0.884 * 0.96)
+    # 30/08 a 05/09: seg 31/08 (agosto) + ter a sex 01 a 04/09 (setembro),
+    # ambos com o HC do cadastro (0) -> sem numero, e nao um 100% falso.
+    assert presenteismo["2026-08-30"] == ""
+
+
+def test_mes_sem_hc_proprio_usa_o_das_semanas(api_obj):
+    gestor = _gestor(operacao="abb", hc=0)
+    api_obj.set_quadro(gestor["id"], "2026-09-S4", "hc", "10")
+
+    ciclo = _linha("2026-09-13", visualizacao="mes", mes=None, operacao="abb")
+    assert (ciclo["hc"], ciclo["hc_origem"], ciclo["hc_de"]) == (10, "herdado", "Week 39")
+    vivo = headcount.presenteismo_por_periodo("abb", hoje=HOJE, semanas=[], meses=["2026-09"])
+    assert vivo["month"]["2026-09"]["presenteismo"] == 1.0

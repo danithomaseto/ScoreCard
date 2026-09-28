@@ -119,7 +119,7 @@ def test_operacao_invalida_e_rejeitada(api):
     result = api.run_extraction("nao_existe", date_range=DATAS)
 
     assert result["success"] is False
-    assert "invalida" in result["message"].lower()
+    assert "inválida" in result["message"].lower()
 
 
 def test_group_by_fora_da_lista_e_rejeitado(api, operations):
@@ -161,7 +161,7 @@ def test_abrir_caminho_inexistente_avisa_em_vez_de_quebrar(api):
     resultado = api.open_last_folder()
 
     assert resultado["success"] is False
-    assert "nao encontrada" in resultado["message"].lower()
+    assert "não encontrada" in resultado["message"].lower()
 
 
 def test_credenciais_nunca_sao_persistidas(api, operations, isolated_history):

@@ -56,7 +56,7 @@ class Api:
         username = (username or "").strip()
         password = password or ""
         if not username or not password:
-            return {"success": False, "message": "Informe usuario e senha."}
+            return {"success": False, "message": "Informe usuário e senha."}
         self._username = username
         self._password = password
         # So em memoria, para o filtro do log trocar por *** se algum
@@ -90,7 +90,7 @@ class Api:
 
     def choose_sharepoint_folder(self):
         if not self._window:
-            return {"success": False, "message": "Janela nao inicializada."}
+            return {"success": False, "message": "Janela não inicializada."}
 
         current = settings_store.get_sharepoint_folder()
         result = self._window.create_file_dialog(
@@ -109,7 +109,7 @@ class Api:
         if not folder:
             return {"valid": False, "message": "Nenhuma pasta configurada ainda."}
         if not os.path.isdir(folder):
-            return {"valid": False, "message": f"A pasta configurada nao existe mais: {folder}"}
+            return {"valid": False, "message": f"A pasta configurada não existe mais: {folder}"}
         return {"valid": True, "folder": folder}
 
     # ---------------- Extracao ----------------
@@ -126,7 +126,7 @@ class Api:
 
     def _record_history(self, operation_key, result):
         log.info(
-            "extracao %s: %s em %ss - %s%s",
+            "extração %s: %s em %ss - %s%s",
             operation_key, self._status_da_extracao(result),
             result.get("duration_seconds"), result.get("message"),
             f" | {result['indicators_message']}" if result.get("indicators_message") else "",
@@ -172,8 +172,8 @@ class Api:
         try:
             lido = reader.ler(result["file_path"])
         except Exception as exc:  # noqa: BLE001 - arquivo fora do esperado
-            log.exception("nao deu pra ler %s", result["file_path"])
-            result["indicators_message"] = f"Relatorio salvo, mas nao deu pra calcular: {exc}"
+            log.exception("não deu pra ler %s", result["file_path"])
+            result["indicators_message"] = f"Relatório salvo, mas não deu pra calcular: {exc}"
             return
 
         nivel_detalhe = result.get("group_by")
@@ -189,15 +189,15 @@ class Api:
             chave = result.get("month_key")
             if not chave:
                 result["indicators_message"] = (
-                    "Relatorio salvo, mas nao deu pra identificar de que mes "
-                    "ele e: informe o periodo na tela e extraia de novo."
+                    "Relatório salvo, mas não deu pra identificar de que mês "
+                    "ele é: informe o período na tela e extraia de novo."
                 )
                 return
             calculado = pico.calcular(lido["linhas"], chave,
                                       escala_espanhola=escala_espanhola(operation_key))
             if calculado["hora_direta"] is None:
                 result["indicators_message"] = (
-                    "Relatorio salvo, mas nenhum dia valido do mes veio com "
+                    "Relatório salvo, mas nenhum dia válido do mês veio com "
                     "horas: confira se o Group By 1 saiu como Report Date."
                 )
                 return
@@ -208,8 +208,8 @@ class Api:
             chave = result.get("month_key")
             if not chave:
                 result["indicators_message"] = (
-                    "Relatorio salvo, mas nao deu pra identificar de que mes "
-                    "ele e: informe o periodo na tela e extraia de novo."
+                    "Relatório salvo, mas não deu pra identificar de que mês "
+                    "ele é: informe o período na tela e extraia de novo."
                 )
                 return
             resultados = {chave: weekly.totais(lido["linhas"], nivel_detalhe=nivel_detalhe)}
@@ -217,8 +217,8 @@ class Api:
         else:
             if not lido["tem_semana"]:
                 result["indicators_message"] = (
-                    "Relatorio salvo, mas veio sem a coluna de semana: "
-                    "nao deu pra separar por semana."
+                    "Relatório salvo, mas veio sem a coluna de semana: "
+                    "não deu pra separar por semana."
                 )
                 return
             resultados = weekly.por_semana(lido["linhas"], nivel_detalhe=nivel_detalhe)
@@ -233,13 +233,13 @@ class Api:
         """Validacoes comuns as duas abas de extracao. Devolve None quando
         esta tudo certo, ou um dict de erro pra devolver pra tela."""
         if not self.is_logged_in():
-            return {"success": False, "message": "Faca login antes de executar."}
+            return {"success": False, "message": "Faça login antes de executar."}
 
         if group_by and group_by not in GROUP_BY_OPTIONS:
-            return {"success": False, "message": "Opcao de 'Group By 1' invalida."}
+            return {"success": False, "message": "Opção de 'Group By 1' inválida."}
 
         if period and period not in ("week", "month", "peak"):
-            return {"success": False, "message": "Periodo do indicador invalido."}
+            return {"success": False, "message": "Período do indicador inválido."}
 
         folder_check = self.validate_sharepoint_folder()
         if not folder_check["valid"]:
@@ -249,7 +249,7 @@ class Api:
 
     def run_extraction(self, operation_key, date_range=None, group_by=None, period=None):
         if operation_key not in OPERATIONS:
-            return {"success": False, "message": "Operacao invalida."}
+            return {"success": False, "message": "Operação inválida."}
 
         error = self._check_extraction_params(group_by, period)
         if error:
@@ -261,7 +261,7 @@ class Api:
         headless = os.environ.get("SCORECARD_HEADLESS", "1") != "0"
 
         # Sem VPN o login so falharia no timeout, com o navegador aberto.
-        self._emit_js("updateProgress", "verificando a conexao com o servidor...")
+        self._emit_js("updateProgress", "verificando a conexão com o servidor...")
         if not conexao.alcancavel(OPERATIONS[operation_key]["login_url"]):
             result = self._sem_conexao(operation_key, date_range, group_by, period)
             self._record_history(operation_key, result)
@@ -301,7 +301,7 @@ class Api:
         else:
             rotulo = DEFAULT_DATE_RANGE["week" if tipo == "week" else "month"]
         mensagem = conexao.mensagem(config["login_url"])
-        log.warning("extracao %s barrada: %s", operation_key, mensagem)
+        log.warning("extração %s barrada: %s", operation_key, mensagem)
         return {
             "operation": operation_key,
             "operation_label": config["label"],
@@ -326,7 +326,7 @@ class Api:
         resumo no final diz quantas deram certo."""
         operation_keys = [key for key in (operation_keys or []) if key in OPERATIONS]
         if not operation_keys:
-            return {"success": False, "message": "Selecione pelo menos uma operacao."}
+            return {"success": False, "message": "Selecione pelo menos uma operação."}
 
         error = self._check_extraction_params(group_by, period)
         if error:
@@ -347,7 +347,7 @@ class Api:
         from automation import generic
         from automation.base import Navegador
 
-        log.info("fila de %s operacoes (%s)", total, period or "week")
+        log.info("fila de %s operações (%s)", total, period or "week")
         navegador = None
         servidores_fora = set()  # sem VPN, nao tenta de novo o mesmo servidor
         try:
@@ -375,7 +375,7 @@ class Api:
                     })
 
                 url = OPERATIONS[operation_key]["login_url"]
-                on_progress("verificando a conexao com o servidor...")
+                on_progress("verificando a conexão com o servidor...")
                 if conexao.destino(url) in servidores_fora or not conexao.alcancavel(url):
                     servidores_fora.add(conexao.destino(url))
                     result = self._sem_conexao(operation_key, date_range, group_by, period)
@@ -418,7 +418,7 @@ class Api:
                 navegador.fechar()
 
         failed = total - succeeded - cancelled
-        message = f"{succeeded} de {total} extracoes concluidas"
+        message = f"{succeeded} de {total} extrações concluídas"
         if failed:
             message += f", {failed} com falha"
         if sem_indicador:
@@ -446,18 +446,18 @@ class Api:
         try:
             caminho = diagnostico.gerar()
         except OSError as exc:
-            log.exception("nao deu pra gerar o diagnostico")
-            return {"success": False, "message": f"Nao deu pra gerar o diagnostico: {exc}"}
-        log.info("diagnostico gerado em %s", caminho)
+            log.exception("não deu pra gerar o diagnóstico")
+            return {"success": False, "message": f"Não deu pra gerar o diagnóstico: {exc}"}
+        log.info("diagnóstico gerado em %s", caminho)
         if sys.platform == "win32":
             try:  # abre o Explorer ja com o zip selecionado
                 subprocess.Popen(["explorer", "/select,", caminho])
             except OSError:
                 pass
         else:
-            self._open_path(os.path.dirname(caminho), "Pasta do diagnostico")
+            self._open_path(os.path.dirname(caminho), "Pasta do diagnóstico")
         return {"success": True, "caminho": caminho,
-                "message": f"Diagnostico salvo em {caminho}"}
+                "message": f"Diagnóstico salvo em {caminho}"}
 
     # ---------------- Abrir arquivos ----------------
 
@@ -465,7 +465,7 @@ class Api:
     def _open_path(path, descricao):
         """Abre um arquivo ou pasta no gerenciador do sistema."""
         if not path or not os.path.exists(path):
-            return {"success": False, "message": f"{descricao} nao encontrada."}
+            return {"success": False, "message": f"{descricao} não encontrada."}
         try:
             if sys.platform == "win32":
                 os.startfile(path)
@@ -478,7 +478,7 @@ class Api:
         return {"success": True}
 
     def open_last_folder(self):
-        return self._open_path(self._last_folder, "Pasta do ultimo relatorio")
+        return self._open_path(self._last_folder, "Pasta do último relatório")
 
     def open_error_screenshot(self):
         return self._open_path(self._last_screenshot, "Imagem do erro")
@@ -602,7 +602,7 @@ class Api:
             "titulo": "Pico",
             "subtitulo": f"{titulo} · {len(dias)} dias",
             "parcial": bool(entrada_pico.get("parcial")),
-            "aviso": "mes em andamento",
+            "aviso": "mês em andamento",
             "dica": "Dias de pico: " + ", ".join(dias) if dias else "",
             # O pico vai do CUBO a DISPERSAO; coverage nao se aplica.
             "sem": ["coverage"],
@@ -637,7 +637,7 @@ class Api:
         na primeira operacao da lista e o HC dele somava no lugar
         errado."""
         if operacao not in OPERATIONS:
-            return {"success": False, "message": "Escolha a operacao do gestor."}
+            return {"success": False, "message": "Escolha a operação do gestor."}
         try:
             gestor = headcount_store.adicionar_gestor(nome, operacao)
         except ValueError as exc:
@@ -673,7 +673,7 @@ class Api:
         """Corrige o nome ou muda a operacao de um gestor. O quadro
         digitado (HC, dias, horas) fica como estava."""
         if operacao not in OPERATIONS:
-            return {"success": False, "message": "Escolha a operacao do gestor."}
+            return {"success": False, "message": "Escolha a operação do gestor."}
         try:
             gestor = headcount_store.editar_gestor(gestor_id, nome, operacao)
         except ValueError as exc:
@@ -686,8 +686,8 @@ class Api:
     def remove_gestor(self, gestor_id):
         removido = headcount_store.remover_gestor(gestor_id)
         if not removido:
-            return {"success": False, "message": "Gestor nao encontrado."}
-        log.info("gestor %s excluido", gestor_id)
+            return {"success": False, "message": "Gestor não encontrado."}
+        log.info("gestor %s excluído", gestor_id)
         return {"success": True}
 
     def add_funcao(self, nome, operacao):
@@ -695,7 +695,7 @@ class Api:
         operacao escolhida. Vale na hora: o filtro roda toda vez que as
         faltas sao lidas, entao nao precisa reenviar a planilha."""
         if operacao not in OPERATIONS:
-            return {"success": False, "message": "Escolha a operacao da funcao."}
+            return {"success": False, "message": "Escolha a operação da função."}
         try:
             funcoes = headcount_store.adicionar_funcao(nome, operacao)
         except ValueError as exc:
@@ -718,7 +718,7 @@ class Api:
         try:
             bruto = base64.b64decode((conteudo_base64 or "").split(",")[-1])
         except Exception:  # noqa: BLE001 - conteudo invalido vindo da tela
-            return {"success": False, "message": "Nao consegui ler o arquivo enviado."}
+            return {"success": False, "message": "Não consegui ler o arquivo enviado."}
 
         if len(bruto) > 10 * 1024 * 1024:
             return {"success": False, "message": "O arquivo passa de 10 MB."}
@@ -734,8 +734,8 @@ class Api:
             log.warning("planilha de faltas %s recusada: %s", nome_arquivo, exc)
             return {"success": False, "message": str(exc)}
         except Exception as exc:  # noqa: BLE001 - arquivo fora do esperado
-            log.exception("nao deu pra ler a planilha de faltas %s", nome_arquivo)
-            return {"success": False, "message": f"Nao deu pra ler a planilha: {exc}"}
+            log.exception("não deu pra ler a planilha de faltas %s", nome_arquivo)
+            return {"success": False, "message": f"Não deu pra ler a planilha: {exc}"}
         finally:
             if caminho and os.path.exists(caminho):
                 try:

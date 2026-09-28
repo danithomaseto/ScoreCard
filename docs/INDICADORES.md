@@ -1048,3 +1048,20 @@ A aba Inicio mostra so o mes escolhido (abre no mes atual): as semanas
 que tem algum dia nele (31/08 a 06/09 e de setembro) e o mes e o pico
 dele. Semana de mes que ja passou nao entra. O seletor de mes deixa
 olhar o anterior — no comeco do mes e ali que esta o fechamento.
+
+## 21. Semana do Summary de domingo e textos acentuados (28/09/2026)
+
+- **Semana que fecha no domingo**: algumas operacoes (ABB) entregam a
+  semana do Summary de domingo a sabado (Week 39 = 20/09 a 26/09); a
+  tela de Headcount e de segunda a domingo (21/09 a 27/09). A aba Inicio
+  casa as duas pelos **dias de trabalho**: cada dia util da semana do
+  Summary cai numa semana do Headcount, e e dela que vem o numero. Vale
+  para semana que comeca no domingo ou na segunda, em todas as
+  operacoes.
+- **Mes sem HC proprio**: o ciclo da folha que nao tem HC (ou horas/dia)
+  digitado nem ciclo anterior usa o ultimo valor digitado nas semanas
+  ate o fim do ciclo.
+- A interface passou a ter acentuacao (Inicio -> Inicio com acento,
+  Operacao, Periodo, Presenteismo...) e numeros no padrao brasileiro
+  (8,75; 1.273,75 h). Mensagens comparadas pelo codigo (as etapas da
+  automacao) continuam como estavam.

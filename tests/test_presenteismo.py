@@ -438,7 +438,7 @@ def test_sem_operacao_escolhida_o_gestor_nao_e_cadastrado(app):
     for invalida in ("todas", "", None, "nao_existe"):
         resposta = api_obj.add_gestor("Marina Duarte", invalida)
         assert resposta["success"] is False
-        assert "operacao" in resposta["message"].lower()
+        assert "operação" in resposta["message"].lower()
 
     assert headcount_store.listar_gestores() == []
 
@@ -562,7 +562,7 @@ def test_edicao_invalida_nao_muda_nada(app):
     assert not api_obj.edit_gestor(gestor["id"], "   ", "hugo_boss")["success"]
     assert not api_obj.edit_gestor(gestor["id"], "G05", "todas")["success"]
     repetido = api_obj.edit_gestor(gestor["id"], "marina duarte", "hugo_boss")
-    assert not repetido["success"] and "ja esta cadastrado" in repetido["message"]
+    assert not repetido["success"] and "já está cadastrado" in repetido["message"]
     assert not api_obj.edit_gestor("nao-existe", "X", "hugo_boss")["success"]
     assert headcount_store.listar_gestores("hugo_boss")[0]["nome"] == "G05"
 

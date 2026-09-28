@@ -42,6 +42,6 @@ def alcancavel(url, tempo_limite=TEMPO_LIMITE):
 def mensagem(url):
     host = (destino(url) or ("o servidor", 0))[0]
     return (
-        f"Sem conexao com o servidor da operacao ({host}). "
-        "Confira se a VPN da DHL esta conectada e tente de novo."
+        f"Sem conexão com o servidor da operação ({host}). "
+        "Confira se a VPN da DHL está conectada e tente de novo."
     )
