@@ -53,10 +53,22 @@ def ler():
             dados = {}
 
     dados.setdefault("gestores", [])
+    for gestor in dados["gestores"]:
+        _migrar_faltas_lancadas(gestor)
     dados.setdefault("funcoes", [])
     dados.setdefault("arquivo", None)
     dados["config"] = {**PADRAO_CONFIG, **(dados.get("config") or {})}
     return dados
+
+
+def _migrar_faltas_lancadas(gestor):
+    """Versao anterior guardava so as faltas por periodo; agora o quadro
+    inteiro (HC, dias uteis, horas/dia e faltas) e por periodo."""
+    antigas = gestor.pop("faltas_lancadas", None)
+    if antigas:
+        quadro = gestor.setdefault("quadro", {})
+        for periodo_id, faltas in antigas.items():
+            quadro.setdefault(periodo_id, {}).setdefault("faltas", faltas)
 
 
 def _gravar(dados):
@@ -125,36 +137,66 @@ def atualizar_gestor(gestor_id, campos):
     raise ValueError("Gestor nao encontrado.")
 
 
-def lancar_faltas(gestor_id, periodo_id, valor):
-    """Faltas (em dias) digitadas para um gestor num periodo: uma semana
-    do mes ("2026-09-S2") ou um ciclo da folha ("2026-09-13").
+# Campos do quadro digitados por periodo: (nome na tela, inteiro?, maximo).
+CAMPOS_DO_QUADRO = {
+    "hc": ("HC", True, None),
+    "dias_uteis": ("Dias uteis", True, 31),
+    "horas_dia": ("Horas/dia", False, 24),
+    "faltas": ("Faltas", True, None),
+}
 
-    Vazio apaga o lancamento. So numero inteiro e nao negativo: falta e
-    contada em dias.
+
+def definir_quadro(gestor_id, periodo_id, campo, valor):
+    """Um numero do quadro de um gestor num periodo: uma semana do mes
+    ("2026-09-S2") ou um ciclo da folha ("2026-09-13").
+
+    Cada semana e cada ciclo tem os seus numeros — HC e dias uteis mudam
+    de uma semana pra outra. Vazio apaga o valor do periodo, e ele volta
+    a herdar (HC e horas/dia da semana anterior, dias uteis do
+    calendario, faltas zero).
     """
+    if campo not in CAMPOS_DO_QUADRO:
+        raise ValueError("Campo invalido.")
     if not periodo_id or periodo_id == "todas":
-        raise ValueError("Escolha uma semana ou um ciclo para lancar as faltas.")
+        raise ValueError("Escolha uma semana ou um ciclo.")
+    nome, inteiro, maximo = CAMPOS_DO_QUADRO[campo]
     texto = "" if valor is None else str(valor).strip().replace(",", ".")
+    numero = None
     if texto:
         try:
             numero = float(texto)
         except ValueError:
-            raise ValueError("Faltas precisam ser um numero.") from None
-        if numero < 0 or not numero.is_integer():
-            raise ValueError("Faltas sao contadas em dias inteiros (0, 1, 2...).")
+            raise ValueError(f"{nome} precisa ser um numero.") from None
+        if numero < 0:
+            raise ValueError(f"{nome} nao pode ser negativo.")
+        if inteiro and not numero.is_integer():
+            raise ValueError(f"{nome} e um numero inteiro (0, 1, 2...).")
+        if maximo is not None and numero > maximo:
+            raise ValueError(f"{nome} vai no maximo ate {maximo}.")
+        if campo == "horas_dia" and numero == 0:
+            raise ValueError("Horas/dia precisa ser maior que zero.")
+        numero = int(numero) if inteiro else numero
 
     dados = ler()
     for gestor in dados["gestores"]:
         if gestor["id"] != gestor_id:
             continue
-        lancadas = gestor.setdefault("faltas_lancadas", {})
-        if texto:
-            lancadas[periodo_id] = int(float(texto))
+        quadro = gestor.setdefault("quadro", {})
+        do_periodo = quadro.setdefault(periodo_id, {})
+        if numero is None:
+            do_periodo.pop(campo, None)
+            if not do_periodo:
+                quadro.pop(periodo_id)
         else:
-            lancadas.pop(periodo_id, None)
+            do_periodo[campo] = numero
         _gravar(dados)
         return gestor
     raise ValueError("Gestor nao encontrado.")
+
+
+def lancar_faltas(gestor_id, periodo_id, valor):
+    """Faltas (em dias) de um gestor num periodo."""
+    return definir_quadro(gestor_id, periodo_id, "faltas", valor)
 
 
 def editar_gestor(gestor_id, nome, operacao):

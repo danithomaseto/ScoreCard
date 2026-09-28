@@ -485,7 +485,7 @@ class Api:
 
     # ---------------- Indicadores ----------------
 
-    def get_indicator_table(self, operation_key):
+    def get_indicator_table(self, operation_key, mes=None):
         """Monta a tabela da aba Inicio ja pronta pra desenhar: os seis
         indicadores nas linhas, as semanas nas colunas e os meses no
         fim, com o texto e a cor de cada celula.
@@ -495,9 +495,17 @@ class Api:
         dois lugares vira duas regras diferentes na primeira mudanca.
         """
         if operation_key not in OPERATIONS:
-            return {"operacao": "", "colunas": [], "linhas": []}
+            return {"operacao": "", "colunas": [], "linhas": [], "meses": [], "mes": None}
 
-        guardado = indicators_store.get_indicators(operation_key)
+        tudo = indicators_store.get_indicators(operation_key)
+        # A aba Inicio mostra um mes so: as semanas que tem algum dia nele
+        # (31/08 a 06/09 e de setembro), e o mes e o pico dele. Semana de
+        # mes que ja passou nao entra. Abre no mes atual; o seletor deixa
+        # olhar o anterior (no comeco do mes, e ali que esta o fechamento).
+        meses_com_dado = periodos.meses_com_dados(tudo)
+        atual = datetime.date.today().strftime("%Y-%m")
+        mes = mes if mes in meses_com_dado or mes == atual else atual
+        guardado = periodos.so_do_mes(tudo, mes)
         # Presenteismo calculado agora, do quadro e das faltas. Nao se usa
         # valor gravado: qualquer mudanca na aba Headcount ja vale aqui, e
         # nao sobra numero antigo preso no indicador.
@@ -574,6 +582,9 @@ class Api:
             "operacao": OPERATIONS[operation_key]["label"],
             "colunas": colunas,
             "linhas": linhas,
+            "mes": mes,
+            "meses": [{"id": m, "rotulo": periodos.rotulo_mes_ano(m)}
+                      for m in sorted(set(meses_com_dado) | {atual}, reverse=True)],
         }
 
     def _coluna_pico(self, chave, entrada_pico, entrada_mes, vivo):
@@ -637,6 +648,15 @@ class Api:
         try:
             headcount_store.atualizar_gestor(gestor_id, campos or {})
         except (ValueError, TypeError) as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True}
+
+    def set_quadro(self, gestor_id, periodo_id, campo, valor):
+        """HC, dias uteis, horas/dia ou faltas de um gestor numa semana (ou
+        ciclo da folha). Cada periodo tem os seus numeros."""
+        try:
+            headcount_store.definir_quadro(gestor_id, periodo_id, campo, valor)
+        except ValueError as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True}
 

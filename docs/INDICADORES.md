@@ -1013,3 +1013,38 @@ O numero da versao e V.01.0 e fica no arquivo `VERSAO`. A cada
 atualizacao sobe o ultimo digito (V.01.1 ... V.01.9) e depois a dezena
 (V.02.0): `python tools/subir_versao.py`. O build grava o numero no
 app e ele aparece no rodape; passando o mouse, a data do build.
+
+## 20. Quadro por semana e Inicio de um mes so (28/09/2026)
+
+### HC, dias uteis, horas/dia e faltas por periodo
+
+Cada semana do mes (e cada ciclo da folha, no Resultado do Mes) tem os
+seus quatro numeros por gestor — o quadro muda de semana pra semana.
+O que nao foi digitado no periodo aparece esmaecido e vem de:
+
+| Campo | Sem valor digitado no periodo |
+|---|---|
+| HC | ultimo HC digitado numa semana anterior (ou ciclo anterior); senao o do cadastro |
+| Horas/dia | idem |
+| Dias uteis | o calendario da semana (com os sabados da escala espanhola) |
+| Faltas | zero |
+
+Mudar o HC numa semana vale dali pra frente, nas semanas sem valor
+proprio; as anteriores nao mudam. Apagar o campo volta a herdar.
+Semana e ciclo nao se misturam. Os dados da versao anterior (HC unico
+no gestor e faltas_lancadas) viram o valor do cadastro e as faltas por
+periodo; o ajuste de dias uteis unico deixou de valer.
+
+### Semanas
+
+- Sem "Todas as semanas": a tela abre na ultima semana ja encerrada do
+  mes (em 28/09, a Week 39 · 21/09 a 27/09).
+- O nome e o da aba Inicio: "Week 36 · 01/09 a 06/09" — o numero da
+  semana do Summary que contem a semana do mes.
+
+### Aba Inicio: um mes por vez
+
+A aba Inicio mostra so o mes escolhido (abre no mes atual): as semanas
+que tem algum dia nele (31/08 a 06/09 e de setembro) e o mes e o pico
+dele. Semana de mes que ja passou nao entra. O seletor de mes deixa
+olhar o anterior — no comeco do mes e ali que esta o fechamento.

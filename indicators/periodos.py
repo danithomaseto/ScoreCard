@@ -72,3 +72,46 @@ def mes_parcial(chave, de, ate):
     ano, mes = (int(p) for p in chave.split("-"))
     proximo = date(ano + (mes == 12), mes % 12 + 1, 1)
     return date.fromisoformat(ate) < proximo - timedelta(days=1)
+
+
+def _limites_do_mes(chave):
+    ano, mes = (int(p) for p in chave.split("-"))
+    primeiro = date(ano, mes, 1)
+    proximo = date(ano + (mes == 12), mes % 12 + 1, 1)
+    return primeiro, proximo - timedelta(days=1)
+
+
+def semana_no_mes(segunda_iso, chave_mes):
+    """A semana (segunda a domingo) tem algum dia dentro do mes?"""
+    primeiro, ultimo = _limites_do_mes(chave_mes)
+    segunda = date.fromisoformat(segunda_iso)
+    return segunda <= ultimo and segunda + timedelta(days=6) >= primeiro
+
+
+def meses_das_semanas(segunda_iso):
+    segunda = date.fromisoformat(segunda_iso)
+    domingo = segunda + timedelta(days=6)
+    return {segunda.strftime("%Y-%m"), domingo.strftime("%Y-%m")}
+
+
+def meses_com_dados(guardado):
+    """Os meses que tem alguma semana, mes ou pico extraido."""
+    meses = set(guardado.get("month", {})) | set(guardado.get("peak", {}))
+    for segunda in guardado.get("week", {}):
+        meses |= meses_das_semanas(segunda)
+    return sorted(meses)
+
+
+def so_do_mes(guardado, chave_mes):
+    """O que foi extraido, filtrado para um mes: as semanas que tem dia
+    nele, e o mes e o pico dele."""
+    return {
+        "week": {k: v for k, v in guardado.get("week", {}).items() if semana_no_mes(k, chave_mes)},
+        "month": {k: v for k, v in guardado.get("month", {}).items() if k == chave_mes},
+        "peak": {k: v for k, v in guardado.get("peak", {}).items() if k == chave_mes},
+    }
+
+
+def rotulo_mes_ano(chave):
+    ano, mes = chave.split("-")
+    return f"{MESES[int(mes) - 1]}/{ano}"

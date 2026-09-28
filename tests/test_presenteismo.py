@@ -252,9 +252,9 @@ def _extrair_semanas(app, *segundas):
         "hugo_boss", "week", {s: {"efetividade": 1.0} for s in segundas})
 
 
-def _celulas(api_obj, indicador):
+def _celulas(api_obj, indicador, mes="2026-09"):
     """{chave da coluna: texto da celula} de uma linha da aba Inicio."""
-    tabela = api_obj.get_indicator_table("hugo_boss")
+    tabela = api_obj.get_indicator_table("hugo_boss", mes=mes)
     linha = next(l for l in tabela["linhas"] if l["chave"] == indicador)
     return {c["chave"]: cel["texto"] for c, cel in zip(tabela["colunas"], linha["celulas"])}
 
@@ -281,7 +281,7 @@ def test_mes_do_inicio_e_o_ciclo_da_folha(app):
     _extrair_mes(app, "2026-08")
     _preparar(app)
 
-    presenteismo = _celulas(api_obj, "presenteismo")
+    presenteismo = _celulas(api_obj, "presenteismo", mes="2026-08")
 
     assert presenteismo["2026-08"] == limits_formatar(1 - 2 / (25 * 22))
 
@@ -327,7 +327,7 @@ def test_semana_fora_da_planilha_fica_sem_numero(app):
     _extrair_semanas(app, "2026-08-10")
     _preparar(app)
 
-    assert _celulas(api_obj, "presenteismo")["2026-08-10"] == ""
+    assert _celulas(api_obj, "presenteismo", mes="2026-08")["2026-08-10"] == ""
 
 
 def test_semana_fora_do_summary_nao_vira_coluna(app):
@@ -336,7 +336,7 @@ def test_semana_fora_do_summary_nao_vira_coluna(app):
     _extrair_semanas(app, "2026-09-14")
     _preparar(app)
 
-    semanas = [c["chave"] for c in api_obj.get_indicator_table("hugo_boss")["colunas"]
+    semanas = [c["chave"] for c in api_obj.get_indicator_table("hugo_boss", mes="2026-09")["colunas"]
                if c["periodo"] == "week"]
     assert semanas == ["2026-09-14"]
 
@@ -349,7 +349,7 @@ def test_falta_de_semana_fora_do_summary_conta_na_folha_ponto(app):
     _extrair_mes(app, "2026-08")
     _preparar(app)
 
-    presenteismo = _celulas(api_obj, "presenteismo")
+    presenteismo = _celulas(api_obj, "presenteismo", mes="2026-08")
 
     assert "2026-09-07" not in presenteismo
     assert presenteismo["2026-08"] == limits_formatar(1 - 2 / (25 * 22))
@@ -370,7 +370,7 @@ def test_operacao_sem_gestor_nao_ganha_presenteismo(app):
     _preparar(app)
     indicators_store.salvar_extracao("hughes", "week", {"2026-09-07": {"efetividade": 1.0}})
 
-    tabela = api_obj.get_indicator_table("hughes")
+    tabela = api_obj.get_indicator_table("hughes", mes="2026-09")
     linha = next(l for l in tabela["linhas"] if l["chave"] == "presenteismo")
     assert all(c["texto"] == "" for c in linha["celulas"])
 
@@ -415,7 +415,7 @@ def test_mes_fora_do_summary_nao_vira_coluna(app):
     _extrair_mes(app, "2026-09")
     _preparar(app)
 
-    meses = [c["chave"] for c in api_obj.get_indicator_table("hugo_boss")["colunas"]
+    meses = [c["chave"] for c in api_obj.get_indicator_table("hugo_boss", mes="2026-09")["colunas"]
              if c["periodo"] == "month"]
     assert meses == ["2026-09"]
 

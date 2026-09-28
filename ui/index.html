@@ -110,14 +110,17 @@
               <label for="home-operation">Operacao</label>
               <select id="home-operation"></select>
             </div>
+            <div class="filter-field">
+              <label for="home-mes">Mes</label>
+              <select id="home-mes" class="filtro-mes"></select>
+            </div>
             <p class="filter-note" id="home-last-run">Nenhuma extracao ainda</p>
           </div>
 
           <div class="card indicators-card">
             <p class="indicators-empty" id="indicators-empty" hidden>
-              Os indicadores aparecem aqui depois da primeira extracao desta
-              operacao. Cada semana extraida vira uma coluna, e o mes entra
-              no final.
+              Nenhum indicador desta operacao neste mes. Cada semana extraida do
+              mes vira uma coluna, e o mes e o pico entram no final.
             </p>
 
             <div class="table-wrap" id="indicators-wrap">

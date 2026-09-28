@@ -1503,3 +1503,14 @@ button.excluir-definitivo:hover { background: #b42318; }
 .hc-faltas-input { border-color: rgba(249, 112, 102, 0.45); color: #fda29b; font-weight: 700; }
 .hc-faltas-input:focus { border-color: #f97066; }
 .hc-faltas-input:disabled { opacity: 0.7; cursor: not-allowed; }
+
+
+/* ---------- Quadro por semana ---------- */
+
+/* Valor herdado (semana anterior, cadastro ou calendario): esmaecido e
+   em italico, ate ser digitado para o periodo. */
+.hc-tabela input.valor-herdado { color: var(--text-muted); font-style: italic; }
+.hc-tabela input.valor-herdado:focus { color: var(--text); font-style: normal; }
+.hc-faltas-input.valor-herdado { color: #fda29b; }
+
+.filter-field select.filtro-mes { width: 220px; }

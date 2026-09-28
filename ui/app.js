@@ -19,6 +19,7 @@ const logoutBtn = document.getElementById('logout-btn');
 const folderPathEl = document.getElementById('folder-path');
 const chooseFolderBtn = document.getElementById('choose-folder-btn');
 const homeOperationSelect = document.getElementById('home-operation');
+const homeMes = document.getElementById('home-mes');
 const homeLastRunEl = document.getElementById('home-last-run');
 const indicatorsHead = document.getElementById('indicators-head');
 const indicatorsBody = document.getElementById('indicators-body');
@@ -306,9 +307,10 @@ async function loadIndicators() {
 
   const tabela = await comEsqueleto(
     indicatorsBody, 6,
-    () => pywebview.api.get_indicator_table(operacao),
+    () => pywebview.api.get_indicator_table(operacao, homeMes.value || null),
     () => { indicatorsEmpty.hidden = true; indicatorsWrap.hidden = false; },
   );
+  preencherSelect(homeMes, tabela.meses || [], tabela.mes);
   const temDados = tabela.colunas.length > 0;
 
   indicatorsEmpty.hidden = temDados;
@@ -522,6 +524,7 @@ async function copiarTexto(texto, html) {
 }
 
 homeOperationSelect.addEventListener('change', loadIndicators);
+homeMes.addEventListener('change', loadIndicators);
 
 navItems.forEach((btn) => {
   btn.addEventListener('click', () => showPage(btn.dataset.page));
@@ -1202,6 +1205,57 @@ function desenharCardsHc(tela) {
     c.presenteismo === null ? 'Sem HC lancado' : (c.dentro_da_meta ? 'Dentro da meta' : 'Abaixo da meta');
 }
 
+// Um numero do quadro (HC, dias uteis, horas/dia ou faltas) de um gestor
+// na semana (ou no ciclo) escolhido. Cada periodo tem os seus: o que nao
+// foi digitado aparece esmaecido, herdado da semana anterior (HC e
+// horas/dia) ou do calendario (dias uteis), e passa a valer so para este
+// periodo quando digitado.
+const ORIGENS = {
+  herdado: (de) => `Veio de ${de}. Digite para mudar a partir desta semana.`,
+  cadastro: () => 'Valor do cadastro do gestor. Digite para mudar a partir desta semana.',
+  calendario: () => 'Dias uteis do calendario desta semana. Digite para ajustar (feriado, por exemplo).',
+};
+
+function campoQuadro(linha, campo, passo) {
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  input.step = passo;
+  input.inputMode = campo === 'horas_dia' ? 'decimal' : 'numeric';
+  input.value = linha[campo];
+  input.dataset.gestor = linha.id;
+  input.dataset.campo = campo;
+  if (campo === 'faltas') input.classList.add('hc-faltas-input');
+
+  const origem = { hc: linha.hc_origem, dias_uteis: linha.dias_origem, horas_dia: linha.horas_origem }[campo];
+  if (origem && origem !== 'digitado') {
+    input.classList.add('valor-herdado');
+    const de = campo === 'horas_dia' ? linha.horas_de : linha.hc_de;
+    input.title = ORIGENS[origem](de);
+  }
+  if (!linha.editavel) {
+    input.disabled = true;
+    return input;
+  }
+  const bloqueadas = campo === 'horas_dia' ? ['-', '+', 'e', 'E'] : ['-', '+', 'e', 'E', ',', '.'];
+  input.addEventListener('keydown', (evento) => {
+    if (bloqueadas.includes(evento.key)) evento.preventDefault();
+  });
+  input.addEventListener('change', async () => {
+    const resposta = await pywebview.api.set_quadro(linha.id, linha.periodo_id, campo, input.value);
+    if (!resposta.success) {
+      hcStatus.textContent = resposta.message;
+      input.value = linha[campo];
+      return;
+    }
+    await redesenharMantendoFoco();
+    hcStatus.textContent = input.value === ''
+      ? 'Valor apagado: volta a valer o herdado. A aba Inicio ja reflete a mudanca.'
+      : 'Salvo so para este periodo. A aba Inicio ja reflete a mudanca.';
+  });
+  return input;
+}
+
 // Faltas em dias, digitadas por gestor na semana (ou no ciclo) escolhido.
 // Com "Todas as semanas" o campo mostra a soma e fica travado: nao da pra
 // saber em qual semana lancar.
@@ -1431,14 +1485,16 @@ function desenharTabelaHc(tela) {
     for (const [campo, passo] of [['hc', '1'], ['dias_uteis', '1'], ['horas_dia', '0.5']]) {
       const td = document.createElement('td');
       td.className = 'num';
-      td.appendChild(campoNumero(linha[campo], linha.id, campo, passo));
+      td.appendChild(tela.faltas_manuais
+        ? campoQuadro(linha, campo, passo)
+        : campoNumero(linha[campo], linha.id, campo, passo));
       tr.appendChild(td);
     }
 
     const tdFaltas = document.createElement('td');
     tdFaltas.className = 'num';
     if (tela.faltas_manuais) {
-      tdFaltas.appendChild(campoFaltas(linha, tela.periodo_id));
+      tdFaltas.appendChild(campoQuadro(linha, 'faltas', '1'));
       tr.appendChild(tdFaltas);
     } else {
     const faltas = document.createElement('span');
@@ -1477,12 +1533,15 @@ function desenharTabelaHc(tela) {
   // Gestores de escalas diferentes (a espanhola trabalha os dois
   // ultimos sabados) tem dias uteis diferentes no mesmo periodo: um
   // numero so no total seria o de uma escala e nao o da linha de cima.
-  const diasDasLinhas = new Set(tela.linhas.map((l) => l.dias_uteis));
-  const diasTotal = diasDasLinhas.size > 1 ? 'varia' : t.dias_uteis;
+  // O mesmo vale para dias ou horas digitados so para um gestor na semana.
+  const unicoOuVaria = (campo) => {
+    const valores = new Set(tela.linhas.map((l) => l[campo]));
+    return valores.size > 1 ? 'varia' : [...valores][0];
+  };
   const celulas = [
     'TOTAL CONSOLIDADO',
     plural(t.gestores, 'gestor', 'gestores'),
-    t.hc, diasTotal, t.horas_dia, t.faltas,
+    t.hc, unicoOuVaria('dias_uteis'), unicoOuVaria('horas_dia'), t.faltas,
   ];
   celulas.forEach((texto, indice) => {
     const td = document.createElement('td');
@@ -1490,7 +1549,7 @@ function desenharTabelaHc(tela) {
     td.textContent = texto;
     if (texto === 'varia') {
       td.classList.add('hc-varia');
-      td.title = 'Cada gestor usa os dias uteis da escala da operacao dele.';
+      td.title = 'Os gestores tem numeros diferentes nesta semana (escala ou valor digitado).';
     }
     tr.appendChild(td);
   });

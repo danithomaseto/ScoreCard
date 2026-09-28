@@ -9,6 +9,7 @@ import datetime
 
 from config.operations import OPERATIONS, escala_espanhola
 import headcount_store
+from indicators import periodos as rotulos
 from indicators import presenteismo
 
 TODAS = "todas"
@@ -23,8 +24,78 @@ FALTAS_DA_PLANILHA = False
 def _faltas_lancadas(gestor, periodo_ids):
     """Soma das faltas digitadas para um gestor nos periodos pedidos.
     Periodo sem lancamento conta como zero falta, igual a tela mostra."""
-    lancadas = gestor.get("faltas_lancadas") or {}
-    return sum(int(lancadas.get(periodo_id, 0)) for periodo_id in periodo_ids)
+    quadro = gestor.get("quadro") or {}
+    return sum(int(quadro.get(p, {}).get("faltas", 0)) for p in periodo_ids)
+
+
+def _mesmo_tipo(a, b):
+    """Semana do mes ("2026-09-S2") ou ciclo da folha ("2026-09-13")."""
+    return ("-S" in a) == ("-S" in b)
+
+
+def _herdado(gestor, periodo_id, campo):
+    """(valor, de onde veio) do ultimo periodo anterior, do mesmo tipo,
+    com esse campo digitado."""
+    quadro = gestor.get("quadro") or {}
+    anteriores = sorted(p for p, v in quadro.items()
+                        if p < periodo_id and _mesmo_tipo(p, periodo_id) and campo in v)
+    if anteriores:
+        return quadro[anteriores[-1]][campo], anteriores[-1]
+    return None, None
+
+
+def quadro_do_periodo(gestor, periodo_id, dias_do_calendario, config):
+    """HC, dias uteis, horas/dia e faltas de um gestor numa semana ou num
+    ciclo, e a origem de cada um.
+
+    - HC e horas/dia: o digitado no periodo; senao o ultimo digitado numa
+      semana (ou ciclo) anterior; senao o do cadastro do gestor.
+    - Dias uteis: o digitado; senao o do calendario do periodo.
+    - Faltas: o digitado; senao zero.
+    """
+    proprio = (gestor.get("quadro") or {}).get(periodo_id, {})
+
+    def herdavel(campo, cadastro):
+        if campo in proprio:
+            return proprio[campo], "digitado", None
+        valor, origem = _herdado(gestor, periodo_id, campo)
+        if valor is not None:
+            return valor, "herdado", origem
+        return cadastro, "cadastro", None
+
+    hc, hc_origem, hc_de = herdavel("hc", int(gestor.get("hc") or 0))
+    horas, horas_origem, horas_de = herdavel(
+        "horas_dia", float(gestor.get("horas_dia") or config["horas_dia"]))
+    if "dias_uteis" in proprio:
+        dias, dias_origem = proprio["dias_uteis"], "digitado"
+    else:
+        dias, dias_origem = dias_do_calendario, "calendario"
+    return {
+        "hc": int(hc), "hc_origem": hc_origem, "hc_de": hc_de,
+        "dias_uteis": int(dias), "dias_origem": dias_origem,
+        "horas_dia": float(horas), "horas_origem": horas_origem, "horas_de": horas_de,
+        "faltas": int(proprio.get("faltas", 0)),
+    }
+
+
+def _rotulo_semana_do_mes(semana):
+    """"Week 37 · 07/09 a 13/09": o numero e o da semana do Summary (a da
+    aba Inicio) que contem essa semana do mes."""
+    inicio = datetime.date.fromisoformat(semana["inicio"])
+    segunda = inicio - datetime.timedelta(days=inicio.weekday())
+    fim = datetime.date.fromisoformat(semana["fim"])
+    return (f"Week {rotulos.numero_da_semana(segunda.isoformat())} · "
+            f"{inicio.strftime('%d/%m')} a {fim.strftime('%d/%m')}")
+
+
+def _semana_padrao(periodos, hoje):
+    """A ultima semana ja encerrada do mes; se nenhuma encerrou ainda, a
+    que esta correndo; senao a primeira."""
+    encerradas = [p for p in periodos if p["fim"] < hoje.isoformat()]
+    if encerradas:
+        return encerradas[-1]["id"]
+    correndo = [p for p in periodos if p["inicio"] <= hoje.isoformat() <= p["fim"]]
+    return (correndo or periodos)[0]["id"] if periodos else None
 
 
 def _iniciais(nome):
@@ -59,7 +130,10 @@ def _periodos(visualizacao, mes, hoje, escala=False):
     if visualizacao == "mes":
         return presenteismo.ciclos_folha(hoje=hoje, escala_espanhola=escala)
     ano, numero = int(mes[:4]), int(mes[5:7])
-    return presenteismo.semanas_do_mes(ano, numero, hoje=hoje, escala_espanhola=escala)
+    semanas = presenteismo.semanas_do_mes(ano, numero, hoje=hoje, escala_espanhola=escala)
+    for semana in semanas:
+        semana["rotulo"] = _rotulo_semana_do_mes(semana)
+    return semanas
 
 
 def _periodo_selecionado(periodos, periodo_id):
@@ -124,7 +198,7 @@ def _card_periodo(visualizacao, mes, periodos, periodo_id, dias):
         return "-", ""
     inicio = datetime.date.fromisoformat(periodo["inicio"]).strftime("%d/%m")
     fim = datetime.date.fromisoformat(periodo["fim"]).strftime("%d/%m")
-    return f"{inicio} a {fim}", f"S{periodo['numero']} · {uteis}"
+    return f"{inicio} a {fim}", f"{periodo['rotulo'].split(' · ')[0]} · {uteis}"
 
 
 def _por_gestor(lancamentos):
@@ -178,8 +252,11 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
         padrao = next((p["id"] for p in periodos if p["status"] == "Em aberto"),
                       periodos[0]["id"] if periodos else None)
     else:
-        padrao = TODAS
-    if not periodo_id or not (periodo_id == TODAS
+        padrao = _semana_padrao(periodos, hoje)
+    # "Todas as semanas" so existe no caminho da planilha: com o quadro
+    # digitado por semana, a tela sempre mostra uma semana.
+    aceita_todas = FALTAS_DA_PLANILHA and visualizacao == "semanal"
+    if not periodo_id or not ((periodo_id == TODAS and aceita_todas)
                               or _periodo_selecionado(periodos, periodo_id)):
         periodo_id = padrao
 
@@ -210,15 +287,17 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
                       else [periodo_id])
 
     for gestor in sorted(gestores, key=lambda g: g["nome"].casefold()):
-        hc = int(gestor.get("hc") or 0)
         dias_do_gestor = dias_da_escala(escala_espanhola(gestor["operacao"]))
-        dias = gestor.get("dias_uteis")
-        dias = int(dias) if dias is not None else dias_do_gestor
-        horas_dia = float(gestor.get("horas_dia") or config["horas_dia"])
+        # Os numeros sao os do periodo escolhido (com "todas as semanas",
+        # so no caminho da planilha, valem os da ultima semana).
+        quadro = quadro_do_periodo(gestor, ids_do_periodo[-1], dias_do_gestor, config)
+        if len(ids_do_periodo) > 1:
+            quadro.update(dias_uteis=dias_do_gestor, dias_origem="calendario")
+        hc, dias, horas_dia = quadro["hc"], quadro["dias_uteis"], quadro["horas_dia"]
         if FALTAS_DA_PLANILHA:
             faltas = _faltas_do_gestor(faltas_por_gestor, gestor["nome"], inicio, fim)
         else:
-            faltas = _faltas_lancadas(gestor, ids_do_periodo)
+            faltas = quadro["faltas"]
         valor = presenteismo.calcular(hc, dias, horas_dia, faltas)
 
         hc_total += hc
@@ -235,11 +314,18 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
                 "label", gestor["operacao"]),
             "operacao_key": gestor["operacao"],
             "periodo": rotulo,
+            "periodo_id": ids_do_periodo[-1],
             "hc": hc,
+            "hc_origem": quadro["hc_origem"],
+            "hc_de": _rotulo_de(quadro["hc_de"], periodos),
             "dias_uteis": dias,
+            "dias_origem": quadro["dias_origem"],
             "dias_do_periodo": dias_do_gestor,
             "horas_dia": horas_dia,
+            "horas_origem": quadro["horas_origem"],
+            "horas_de": _rotulo_de(quadro["horas_de"], periodos),
             "faltas": faltas,
+            "editavel": len(ids_do_periodo) == 1,
             "faltas_editavel": not FALTAS_DA_PLANILHA and len(ids_do_periodo) == 1,
             "presenteismo": valor,
             "abaixo_da_meta": valor is not None and valor < meta,
@@ -260,7 +346,7 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
         "meses": meses,
         "mes": mes,
         "periodos": ([{"id": TODAS, "rotulo": "Todas as semanas", "dias_uteis": dias_periodo}]
-                     + periodos) if visualizacao == "semanal" else periodos,
+                     + periodos) if aceita_todas else periodos,
         "periodo_id": periodo_id,
         "periodo_rotulo": rotulo,
         "cards": {
@@ -301,6 +387,21 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
         "meta": meta,
         "faltas_manuais": not FALTAS_DA_PLANILHA,
     }
+
+
+def _rotulo_de(periodo_id, periodos):
+    """Nome legivel do periodo de onde um valor foi herdado."""
+    if not periodo_id:
+        return None
+    for periodo in periodos:
+        if periodo["id"] == periodo_id:
+            return periodo["rotulo"].split(" · ")[0] if "-S" in periodo_id else periodo["rotulo_curto"]
+    if "-S" in periodo_id:
+        ano, mes, semana = periodo_id[:4], int(periodo_id[5:7]), int(periodo_id.split("-S")[1])
+        for p in presenteismo.semanas_do_mes(int(ano), mes):
+            if p["numero"] == semana:
+                return _rotulo_semana_do_mes(p).split(" · ")[0]
+    return "ciclo de " + datetime.date.fromisoformat(periodo_id).strftime("%d/%m")
 
 
 def _resumo_do_arquivo(arquivo, periodos, visualizacao, periodo_id):
@@ -512,14 +613,15 @@ def presenteismo_por_periodo(operacao, hoje=None, semanas=None, meses=None):
 # E a mesma conta da tela de Headcount: o numero que aparece la para uma
 # semana ou um ciclo e o que vai para o Inicio e para o cubo.
 
-def _agregar(gestores, periodo_ids, dias, config):
+def _agregar(gestores, pedacos, config):
+    """Presenteismo de um conjunto de periodos (uma semana do Summary pode
+    ter dois pedacos, um de cada mes), cada um com os numeros dele."""
     disponiveis = perdidas = 0.0
     for gestor in gestores:
-        horas_dia = float(gestor.get("horas_dia") or config["horas_dia"])
-        dias_do_gestor = gestor.get("dias_uteis")
-        dias_do_gestor = int(dias_do_gestor) if dias_do_gestor is not None else dias
-        disponiveis += int(gestor["hc"]) * dias_do_gestor * horas_dia
-        perdidas += _faltas_lancadas(gestor, periodo_ids) * horas_dia
+        for periodo in pedacos:
+            q = quadro_do_periodo(gestor, periodo["id"], periodo["dias_uteis"], config)
+            disponiveis += q["hc"] * q["dias_uteis"] * q["horas_dia"]
+            perdidas += q["faltas"] * q["horas_dia"]
     if disponiveis <= 0:
         return None
     return round(1 - perdidas / disponiveis, 6)
@@ -544,8 +646,7 @@ def _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses):
     config = dados["config"]
     escala = escala_espanhola(operacao)
     resultado = {"week": {}, "month": {}}
-    gestores = [g for g in dados["gestores"]
-                if g["operacao"] == operacao and (g.get("hc") or 0) > 0]
+    gestores = [g for g in dados["gestores"] if g["operacao"] == operacao]
     if not gestores:
         return resultado
 
@@ -556,9 +657,7 @@ def _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses):
         segunda = datetime.date.fromisoformat(chave)
         if segunda > hoje:
             continue  # semana que nem comecou
-        pedacos = _pedacos_da_semana(segunda, hoje, escala)
-        dias = sum(p["dias_uteis"] for p in pedacos)
-        valor = _agregar(gestores, [p["id"] for p in pedacos], dias, config)
+        valor = _agregar(gestores, _pedacos_da_semana(segunda, hoje, escala), config)
         if valor is not None:
             resultado["week"][chave] = {
                 "presenteismo": valor,
@@ -571,7 +670,7 @@ def _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses):
         ciclo = ciclos.get(chave)
         if not ciclo or ciclo["dias_uteis"] <= 0:
             continue  # ciclo que ainda nao abriu, ou antigo demais
-        valor = _agregar(gestores, [ciclo["id"]], ciclo["dias_uteis"], config)
+        valor = _agregar(gestores, [ciclo], config)
         if valor is not None:
             resultado["month"][chave] = {
                 "presenteismo": valor,

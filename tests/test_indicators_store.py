@@ -122,7 +122,7 @@ def api_com_dados(store, operations, monkeypatch):
 
 
 def test_tabela_tem_os_seis_indicadores_na_ordem(api_com_dados):
-    tabela = api_com_dados.get_indicator_table("mock")
+    tabela = api_com_dados.get_indicator_table("mock", mes="2026-09")
 
     assert [linha["chave"] for linha in tabela["linhas"]] == [
         "cubo", "efetividade", "hora_direta", "presenteismo", "dispersao", "coverage"
@@ -131,7 +131,7 @@ def test_tabela_tem_os_seis_indicadores_na_ordem(api_com_dados):
 
 
 def test_semanas_vem_antes_e_o_mes_no_fim(api_com_dados):
-    colunas = api_com_dados.get_indicator_table("mock")["colunas"]
+    colunas = api_com_dados.get_indicator_table("mock", mes="2026-09")["colunas"]
 
     assert [c["periodo"] for c in colunas] == ["week", "week", "month"]
     assert [c["titulo"] for c in colunas] == ["Week 36", "Week 37", "Setembro"]
@@ -140,7 +140,7 @@ def test_semanas_vem_antes_e_o_mes_no_fim(api_com_dados):
 
 
 def test_celulas_trazem_texto_e_cor(api_com_dados):
-    linhas = {l["chave"]: l for l in api_com_dados.get_indicator_table("mock")["linhas"]}
+    linhas = {l["chave"]: l for l in api_com_dados.get_indicator_table("mock", mes="2026-09")["linhas"]}
 
     efetividade = linhas["efetividade"]["celulas"]
     assert [c["texto"] for c in efetividade] == ["96,4%", "112,9%", "100,4%"]
@@ -151,7 +151,7 @@ def test_celulas_trazem_texto_e_cor(api_com_dados):
 
 
 def test_indicador_sem_numero_vira_vazio_sem_cor(api_com_dados):
-    linhas = {l["chave"]: l for l in api_com_dados.get_indicator_table("mock")["linhas"]}
+    linhas = {l["chave"]: l for l in api_com_dados.get_indicator_table("mock", mes="2026-09")["linhas"]}
 
     for chave in ("cubo", "presenteismo", "coverage"):
         for celula in linhas[chave]["celulas"]:
@@ -162,7 +162,7 @@ def test_indicador_sem_numero_vira_vazio_sem_cor(api_com_dados):
 def test_operacao_sem_nada_guardado_devolve_tabela_vazia(api_com_dados, operations):
     operations("nova", "Nova Op", "NovaOp")
 
-    tabela = api_com_dados.get_indicator_table("nova")
+    tabela = api_com_dados.get_indicator_table("nova", mes="2026-09")
     assert tabela["colunas"] == []
 
 

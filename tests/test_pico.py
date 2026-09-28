@@ -157,7 +157,7 @@ def test_coluna_pico_fica_depois_do_mes_e_usa_os_indicadores_dele(api, operation
         "efetividade": 1.004, "hora_direta": 0.93, "dispersao": 0.6}})
     assert api.run_extraction("mock", date_range=DATAS, period="peak")["success"]
 
-    tabela = api.get_indicator_table("mock")
+    tabela = api.get_indicator_table("mock", mes="2026-09")
     chaves = [c["chave"] for c in tabela["colunas"]]
     assert chaves == ["2026-09-14", "2026-09", "pico-2026-09"]
 
@@ -185,7 +185,7 @@ def test_cubo_do_pico_usa_a_hora_direta_do_pico(api, operations, monkeypatch):
     monkeypatch.setattr(headcount, "presenteismo_por_periodo", lambda op, **k: {
         "week": {}, "month": {"2026-09": {"presenteismo": 0.99, "de": "2026-09-13", "ate": "2026-10-12"}}})
 
-    tabela = api.get_indicator_table("mock")
+    tabela = api.get_indicator_table("mock", mes="2026-09")
     cubo = next(l for l in tabela["linhas"] if l["chave"] == "cubo")["celulas"]
 
     assert cubo[0]["texto"] == limits.formatar(1.004 * 0.93 * 0.99), "o do mes"
