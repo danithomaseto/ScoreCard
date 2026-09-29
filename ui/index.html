@@ -207,7 +207,7 @@
                 </div>
               </div>
 
-              <label for="group-by">Group By 1</label>
+              <label for="group-by">Group By 2 (Group By 1 fixo em Week)</label>
               <select id="group-by"></select>
 
               <button id="run-btn"><svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg><span class="btn-texto">Iniciar extração</span></button>
@@ -310,7 +310,7 @@
                     <th>Operação</th>
                     <th>Tipo</th>
                     <th>Período</th>
-                    <th>Group By 1</th>
+                    <th>Agrupamento</th>
                     <th>Duração</th>
                     <th>Status</th>
                   </tr>
@@ -394,7 +394,7 @@
                 </div>
               </div>
 
-              <label for="multi-group-by">Group By 1</label>
+              <label for="multi-group-by">Group By 2 (Group By 1 fixo em Week)</label>
               <select id="multi-group-by"></select>
 
               <div class="multi-run-row">
@@ -431,7 +431,7 @@
                     <th>Operação</th>
                     <th>Tipo</th>
                     <th>Período</th>
-                    <th>Group By 1</th>
+                    <th>Agrupamento</th>
                     <th>Duração</th>
                     <th>Status</th>
                   </tr>
@@ -735,12 +735,10 @@
 
             <p class="hc-vazio" id="cv-vazio" hidden></p>
 
+            <p class="cv-formula"><code>Coverage = (Horas LMS &minus; Diretas sem meta) &divide; (Horas Metrics + Sinergia recebida &minus; Sinergia cedida)</code></p>
             <div class="hc-status" id="cv-status">Dias e horas vêm do calendário (8,75 h por dia); digite para ajustar um usuário. A sinergia cedida e recebida da operação vai na linha TOTAL, em horas.</div>
           </div>
 
-          <div class="card cv-formula-card">
-            <pre class="hc-formula"><code>Coverage = (Horas LMS &minus; Diretas sem meta) &divide; (Horas Metrics + Sinergia recebida &minus; Sinergia cedida)</code></pre>
-          </div>
         </div>
       </section>
 

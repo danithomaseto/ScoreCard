@@ -214,6 +214,44 @@ function preCarregar() {
 }
 
 // ---------------------------------------------------------------
+// Erros da tela
+// ---------------------------------------------------------------
+// Um erro de JavaScript ou uma chamada ao Python que falhou nao pode
+// sumir em silencio: aparece um aviso no canto e vai para o log (e dali
+// para o "Gerar diagnostico").
+
+function avisarErro(texto) {
+  let caixa = document.getElementById('aviso-erro');
+  if (!caixa) {
+    caixa = document.createElement('div');
+    caixa.id = 'aviso-erro';
+    caixa.setAttribute('role', 'alert');
+    document.body.appendChild(caixa);
+  }
+  caixa.textContent = texto;
+  caixa.classList.add('visivel');
+  clearTimeout(avisarErro.timer);
+  avisarErro.timer = setTimeout(() => caixa.classList.remove('visivel'), 6000);
+}
+
+function registrarErro(origem, erro) {
+  const mensagem = (erro && (erro.stack || erro.message)) || String(erro);
+  // Avisos do proprio navegador, sem efeito na tela.
+  if (/ResizeObserver loop/.test(mensagem)) return;
+  avisarErro('Algo deu errado nesta tela. O detalhe foi para o log (Configurações > Gerar diagnóstico).');
+  try {
+    if (window.pywebview && pywebview.api && pywebview.api.log_erro_tela) {
+      pywebview.api.log_erro_tela(origem, String(mensagem).slice(0, 4000));
+    }
+  } catch (e) {
+    // sem ponte com o Python, fica so o aviso
+  }
+}
+
+window.addEventListener('error', (evento) => registrarErro('erro', evento.error || evento.message));
+window.addEventListener('unhandledrejection', (evento) => registrarErro('promessa', evento.reason));
+
+// ---------------------------------------------------------------
 // Transicoes e fluidez
 // ---------------------------------------------------------------
 // So apresentacao: nada aqui muda o que e calculado ou mostrado.
@@ -290,11 +328,16 @@ async function loadHome() {
 
 async function loadLastRun() {
   const history = await pywebview.api.get_report_history();
-  if (!history.length) {
-    homeLastRunEl.textContent = 'Nenhuma extração ainda';
+  // A ultima extracao da operacao escolhida no filtro (a de outra
+  // operacao nao diz nada sobre estes numeros).
+  const operacao = homeOperationSelect.selectedOptions[0]?.text;
+  const last = history.find((h) => h.operation === operacao);
+  if (!last) {
+    homeLastRunEl.textContent = history.length
+      ? `Nenhuma extração de ${operacao} ainda`
+      : 'Nenhuma extração ainda';
     return;
   }
-  const last = history[0];
   const desfecho = desfechoDe(last);
   const quando = new Date(last.timestamp).toLocaleString('pt-BR');
   const sufixo = desfecho.classe === 'success' ? '' : ` (${desfecho.rotulo.toLowerCase()})`;
@@ -526,7 +569,7 @@ async function copiarTexto(texto, html) {
   }
 }
 
-homeOperationSelect.addEventListener('change', loadIndicators);
+homeOperationSelect.addEventListener('change', () => { loadLastRun(); loadIndicators(); });
 homeMes.addEventListener('change', loadIndicators);
 
 navItems.forEach((btn) => {
@@ -672,8 +715,18 @@ async function loadGroupByOptions() {
 // volta ao que estava ao trocar de novo.
 const GROUP_BY_DO_PICO = 'Report Date';
 
+// No Week o campo escolhido vai para o Group By 2 (o 1 e fixo em Week);
+// no Month e o Group By 1; no pico, Group By 1 fixo em Report Date.
+const ROTULO_DO_GROUP_BY = {
+  week: 'Group By 2 (Group By 1 fixo em Week)',
+  month: 'Group By 1',
+  peak: 'Group By 1 (fixo em Report Date)',
+};
+
 function escolherPeriodo(botoes, select, periodo) {
   botoes.forEach((el) => el.classList.toggle('active', el.dataset.period === periodo));
+  const rotulo = document.querySelector(`label[for="${select.id}"]`);
+  if (rotulo) rotulo.textContent = ROTULO_DO_GROUP_BY[periodo] || 'Group By 1';
   const pico = periodo === 'peak';
   if (pico && !select.disabled) {
     select.dataset.anterior = select.value;
@@ -1266,41 +1319,6 @@ function campoQuadro(linha, campo, passo) {
     hcStatus.textContent = input.value === ''
       ? 'Valor apagado: volta a valer o herdado. A aba Início já reflete a mudança.'
       : 'Salvo só para este período. A aba Início já reflete a mudança.';
-  });
-  return input;
-}
-
-// Faltas em dias, digitadas por gestor na semana (ou no ciclo) escolhido.
-// Com "Todas as semanas" o campo mostra a soma e fica travado: nao da pra
-// saber em qual semana lancar.
-function campoFaltas(linha, periodoId) {
-  const input = document.createElement('input');
-  input.type = 'number';
-  input.min = '0';
-  input.step = '1';
-  input.inputMode = 'numeric';
-  input.className = 'hc-faltas-input';
-  input.value = linha.faltas;
-  input.dataset.gestor = linha.id;
-  input.dataset.campo = 'faltas';
-  if (!linha.faltas_editavel) {
-    input.disabled = true;
-    input.title = 'Soma das semanas. Escolha uma semana do mês para lançar as faltas.';
-    return input;
-  }
-  // So digito: sinal, virgula, ponto e "e" (notacao cientifica) ficam de fora.
-  input.addEventListener('keydown', (evento) => {
-    if (['-', '+', 'e', 'E', ',', '.'].includes(evento.key)) evento.preventDefault();
-  });
-  input.addEventListener('change', async () => {
-    const resposta = await pywebview.api.set_faltas(linha.id, periodoId, input.value);
-    if (!resposta.success) {
-      hcStatus.textContent = resposta.message;
-      input.value = linha.faltas;
-      return;
-    }
-    await redesenharMantendoFoco();
-    hcStatus.textContent = 'Faltas lançadas. A aba Início já reflete a mudança.';
   });
   return input;
 }
@@ -1955,7 +1973,30 @@ async function carregarCoverage() {
   desenharFiltrosCv(cvTela);
   desenharCardsCv(cvTela);
   desenharTabelaCv(cvTela);
+  ajustarAlturaCv();
 }
+
+// A lista de usuarios ganha a altura que sobra na janela, e rola sozinha
+// quando nao cabe: o resto da tela fica parado. Com poucos usuarios a
+// tabela fica do tamanho dela, sem barra.
+const cvWrap = document.getElementById('cv-tabela-wrap');
+const ESPACO_ABAIXO_DA_LISTA = 104; // formula, linha de status e fim do cartao
+
+function ajustarAlturaCv() {
+  if (!cvWrap || cvWrap.hidden || !cvWrap.offsetParent) return;
+  const topoNaArea = cvWrap.getBoundingClientRect().top
+    - contentArea.getBoundingClientRect().top + contentArea.scrollTop;
+  const disponivel = contentArea.clientHeight - topoNaArea - ESPACO_ABAIXO_DA_LISTA;
+  cvWrap.style.maxHeight = `${Math.max(180, disponivel)}px`;
+  // Se ainda sobrou rolagem na pagina (margens, linha de status que
+  // quebrou), a lista encolhe esse tanto: quem rola e so ela.
+  const sobra = contentArea.scrollHeight - contentArea.clientHeight;
+  if (sobra > 0 && cvWrap.scrollHeight > cvWrap.clientHeight) {
+    cvWrap.style.maxHeight = `${Math.max(180, cvWrap.clientHeight - sobra)}px`;
+  }
+  cvWrap.classList.toggle('com-rolagem', cvWrap.scrollHeight > cvWrap.clientHeight);
+}
+window.addEventListener('resize', ajustarAlturaCv);
 
 function desenharFiltrosCv(tela) {
   preencherSelect(cvOperacao, tela.operacoes, tela.operacao, 'key', 'label');

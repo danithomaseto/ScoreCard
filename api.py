@@ -26,7 +26,7 @@ import headcount
 import headcount_store
 import history_store
 from indicators import faltas as faltas_reader
-from indicators import coverage, limits, periodos, pico, presenteismo, reader, weekly
+from indicators import coverage, limits, periodos, pico, reader, weekly
 import indicators_store
 import registro
 import settings_store
@@ -444,6 +444,12 @@ class Api:
         }
 
     # ---------------- Versao e diagnostico ----------------
+
+    def log_erro_tela(self, origem, mensagem):
+        """Erro de JavaScript da interface, para o log (o filtro do log
+        tira usuario e senha, se aparecerem)."""
+        log.error("erro na tela (%s): %s", origem, str(mensagem)[:4000])
+        return {"success": True}
 
     def get_app_info(self):
         return versao.info()

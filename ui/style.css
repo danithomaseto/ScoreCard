@@ -1512,8 +1512,10 @@ button.excluir-definitivo:hover { background: #b42318; }
 .cv-coverage.sem-numero { color: var(--text-muted); }
 .cv-coverage-total { outline: 1px solid currentColor; }
 
-.cv-formula-card { width: 100%; max-width: none; margin-top: 20px; }
-.cv-formula-card .hc-formula { margin: 0; }
+/* A formula fica dentro do quadro da tabela, numa linha: um cartao so pra
+   ela fazia a tela inteira rolar. */
+.cv-formula { margin: 12px 0 0; font-size: 12px; color: var(--text-muted); }
+.cv-formula code { font-family: ui-monospace, Consolas, monospace; color: var(--yellow); }
 
 /* Sinergia da operacao na linha TOTAL: campo em destaque (e onde ela e
    lancada) e a nota do que foi lancado por usuario, se houver. */
@@ -1521,3 +1523,52 @@ button.excluir-definitivo:hover { background: #b42318; }
 .cv-tabela tfoot input[type="number"] { border-color: rgba(255, 204, 0, 0.45); font-weight: 700; }
 .cv-tabela tfoot input[type="number"]:disabled { border-color: var(--input-border); opacity: 0.75; }
 .cv-sinergia-nota { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+
+
+/* Coverage com muitos usuarios: so a lista rola, dentro do quadro. Os
+   filtros, os cards, o "Para todos", os titulos das colunas e a linha
+   TOTAL ficam no lugar. A altura maxima e calculada no JS para caber na
+   janela (ajustarAlturaCv). */
+#cv-tabela-wrap { overflow: auto; overscroll-behavior: contain; }
+#cv-tabela-wrap.com-rolagem { border-bottom: 1px solid var(--card-border); }
+.cv-tabela thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--card-bg);
+  padding-top: 4px;
+}
+.cv-tabela tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--card-bg);
+}
+/* A linha branca do TOTAL vira sombra interna: borda de celula fixa nao
+   acompanha a rolagem. */
+.cv-tabela tfoot td {
+  border-top: none;
+  box-shadow: inset 0 2px 0 var(--text), 0 -10px 12px -10px rgba(0, 0, 0, 0.6);
+}
+
+
+/* Aviso de erro da tela (canto inferior direito, some sozinho). */
+#aviso-erro {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 50;
+  max-width: 420px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(249, 112, 102, 0.5);
+  background: #2a1618;
+  color: #fecdca;
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+#aviso-erro.visivel { opacity: 1; transform: none; pointer-events: auto; }

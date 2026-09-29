@@ -230,3 +230,14 @@ def test_diagnostico_leva_log_e_ambiente_sem_dados_pessoais(log_em_arquivo, tmp_
     assert "Gestores cadastrados: 1" in tudo
     assert "Marina Duarte" not in tudo, "nome de gestor nao sai da maquina"
     assert "S3nh@Secreta!" not in tudo and "daniel.usuario" not in tudo
+
+
+def test_erro_da_tela_vai_para_o_log_sem_credencial(log_em_arquivo):
+    from api import Api
+
+    api = Api()
+    api.login("daniel.usuario", "S3nh@Secreta!")
+    assert api.log_erro_tela("promessa", "TypeError: x is undefined (S3nh@Secreta!)")["success"]
+
+    texto = log_em_arquivo.read_text(encoding="utf-8")
+    assert "erro na tela (promessa): TypeError: x is undefined (***)" in texto

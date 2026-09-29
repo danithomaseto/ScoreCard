@@ -1108,3 +1108,19 @@ total 107,0% (com MDOMINGOS, sinergia de outra operacao, em 0 dias).
 - Sinergia na linha TOTAL: entra so no coverage total (as linhas dos
   usuarios nao mudam) e no da aba Inicio. Em "Todas as Operacoes" o
   campo mostra a soma e fica travado: a sinergia e de uma operacao.
+
+## 23. Pente fino (29/09/2026)
+
+Sem mudar calculo nenhum:
+
+- Coverage com muitos usuarios: so a lista rola, dentro do quadro;
+  filtros, cards, "Para todos", titulos das colunas e a linha TOTAL
+  ficam no lugar. A formula foi para dentro do quadro da tabela.
+- Inicio: "Ultima extracao" e a da operacao escolhida no filtro.
+- Extracao: o rotulo do campo de agrupamento diz para onde ele vai
+  (Group By 2 no Week, Group By 1 no Month, fixo em Report Date no
+  Pico); no historico a coluna virou "Agrupamento".
+- Erro de JavaScript ou chamada ao Python que falhou: aviso no canto da
+  tela e registro no log (entra no "Gerar diagnostico"), sem usuario e
+  senha.
+- Limpeza: imports e funcao sem uso removidos.

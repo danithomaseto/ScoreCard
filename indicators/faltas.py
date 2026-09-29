@@ -13,7 +13,6 @@ chegam sem cor nenhuma.
 import datetime
 import os
 import re
-import unicodedata
 
 from .reader import _linhas_cruas, normalizar
 
