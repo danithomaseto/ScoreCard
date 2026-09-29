@@ -10,7 +10,6 @@ Se voce tiver um Chromium em outro lugar, aponte a variavel de ambiente
 PLAYWRIGHT_CHROMIUM_EXECUTABLE para ele.
 """
 
-import os
 import sys
 import types
 from pathlib import Path

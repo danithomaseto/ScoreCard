@@ -142,6 +142,9 @@ function showStatus(el, message, kind) {
   el.textContent = message;
   el.className = 'status' + (kind ? ' ' + kind : '');
   el.hidden = false;
+  // Em tela baixa o aviso pode nascer abaixo da dobra (embaixo do botao
+  // Iniciar extracao, por exemplo) e ninguem ve.
+  requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest', behavior: SEM_ANIMACAO ? 'auto' : 'smooth' }));
 }
 
 // Botoes que aparecem depois de uma extracao: abrir a pasta onde o
@@ -186,7 +189,18 @@ function showRunActions(container, { houveSucesso, houveFalha }) {
 function showLogin() {
   loginView.hidden = false;
   appView.hidden = true;
+  (loginUsername.value ? loginPassword : loginUsername).focus();
 }
+
+// Caps Lock ligado na senha: avisa antes de errar (senha errada repetida
+// pode bloquear o usuario no Summary).
+function avisarCapsLock(evento) {
+  if (typeof evento.getModifierState !== 'function') return;
+  document.getElementById('login-caps').hidden = !evento.getModifierState('CapsLock');
+}
+loginPassword.addEventListener('keydown', avisarCapsLock);
+loginPassword.addEventListener('keyup', avisarCapsLock);
+loginPassword.addEventListener('blur', () => { document.getElementById('login-caps').hidden = true; });
 
 async function showApp() {
   loginView.hidden = true;
@@ -2052,18 +2066,22 @@ async function carregarCoverage() {
 // tabela fica do tamanho dela, sem barra.
 const cvWrap = document.getElementById('cv-tabela-wrap');
 const ESPACO_ABAIXO_DA_LISTA = 104; // formula, linha de status e fim do cartao
+// Cabecalho, TOTAL e umas quatro linhas de usuario. Numa tela baixa
+// (notebook com zoom de 150%) a lista ficava com linha e meia: abaixo
+// disso, quem rola e a pagina.
+const ALTURA_MINIMA_DA_LISTA = 320;
 
 function ajustarAlturaCv() {
   if (!cvWrap || cvWrap.hidden || !cvWrap.offsetParent) return;
   const topoNaArea = cvWrap.getBoundingClientRect().top
     - contentArea.getBoundingClientRect().top + contentArea.scrollTop;
   const disponivel = contentArea.clientHeight - topoNaArea - ESPACO_ABAIXO_DA_LISTA;
-  cvWrap.style.maxHeight = `${Math.max(180, disponivel)}px`;
+  cvWrap.style.maxHeight = `${Math.max(ALTURA_MINIMA_DA_LISTA, disponivel)}px`;
   // Se ainda sobrou rolagem na pagina (margens, linha de status que
   // quebrou), a lista encolhe esse tanto: quem rola e so ela.
   const sobra = contentArea.scrollHeight - contentArea.clientHeight;
   if (sobra > 0 && cvWrap.scrollHeight > cvWrap.clientHeight) {
-    cvWrap.style.maxHeight = `${Math.max(180, cvWrap.clientHeight - sobra)}px`;
+    cvWrap.style.maxHeight = `${Math.max(ALTURA_MINIMA_DA_LISTA, cvWrap.clientHeight - sobra)}px`;
   }
   cvWrap.classList.toggle('com-rolagem', cvWrap.scrollHeight > cvWrap.clientHeight);
 }

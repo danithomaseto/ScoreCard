@@ -949,7 +949,9 @@ th.peak-col .col-title { color: var(--yellow); }
 .hc-inline input { margin: 0; width: 280px; }
 .hc-inline select { margin: 0; width: 220px; }
 .hc-inline button { width: auto; height: 38px; padding: 0 14px; margin: 0; font-size: 13px; }
-.hc-inline-nota { font-size: 11px; color: var(--text-muted); flex: 1; }
+/* A nota vai numa linha propria, embaixo: dividindo a linha com os
+   campos, ela empurrava o Cancelar para uma segunda linha sozinho. */
+.hc-inline-nota { font-size: 11px; color: var(--text-muted); flex: 1 1 100%; order: 10; }
 
 .hc-funcoes { gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
 .hc-funcoes:not([hidden]) { display: flex; }
@@ -1103,6 +1105,9 @@ th.peak-col .col-title { color: var(--yellow); }
   padding: 16px;
   overflow-x: auto;
 }
+
+.hc-formula,
+.hc-formula code { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .hc-formula code { color: var(--yellow); font-size: 12px; font-family: Consolas, "Courier New", monospace; }
 
@@ -1611,7 +1616,14 @@ button.excluir-definitivo:hover { background: #b42318; }
 
 /* ---------- Modo apresentacao (aba Inicio) ---------- */
 
-#home-apresentar { margin-left: auto; flex-shrink: 0; }
+/* Titulo da pagina com um botao a direita (Modo apresentacao). */
+.cabecalho-com-acao {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.cabecalho-com-acao > button { flex-shrink: 0; margin-top: 2px; }
 
 body.apresentacao .sidebar,
 body.apresentacao #page-home .page-heading,
@@ -1677,4 +1689,27 @@ body.apresentacao .legend-item { font-size: 14px; }
 
 @media (prefers-reduced-motion: reduce) {
   .apresentacao-barra { transition: none; }
+}
+
+/* ---------- Pente fino: telas de notebook (1280 px ou menos) ---------- */
+
+/* Colunas da Inicio um pouco mais justas abaixo de 1400 px: num
+   notebook com zoom de 150% (1280 px uteis), um mes de quatro semanas
+   com o mes e o pico cabe sem rolar para o lado. */
+@media (max-width: 1400px) {
+  .indicator-corner,
+  .indicator-name { width: 196px; min-width: 196px; }
+  .indicators-table th,
+  .indicators-table td { padding-left: 8px; padding-right: 8px; }
+  .indicator-col { min-width: 108px; }
+  .indicator-value { min-width: 80px; padding: 6px 10px; font-size: 15px; }
+}
+
+/* Aviso de Caps Lock no login: senha errada repetida pode bloquear o
+   usuario no Summary. */
+.aviso-caps {
+  margin: -8px 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fbbf24;
 }

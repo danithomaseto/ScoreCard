@@ -16,6 +16,7 @@
       <input id="login-username" type="text" autocomplete="username">
       <label for="login-password">Senha</label>
       <input id="login-password" type="password" autocomplete="current-password">
+      <p class="aviso-caps" id="login-caps" hidden>Caps Lock está ligado.</p>
       <button id="login-btn" type="submit">Entrar</button>
     </form>
     <div id="login-status" class="status error" hidden></div>
@@ -106,8 +107,17 @@
     <div class="content-area">
       <section id="page-home" class="page" hidden>
         <div class="page-wide-wrap">
-          <h2 class="page-heading">Início</h2>
-          <p class="subtitle">Indicadores por semana, com o mês no final. Atualiza a cada extração.</p>
+          <div class="cabecalho-com-acao">
+            <div>
+              <h2 class="page-heading">Início</h2>
+              <p class="subtitle">Indicadores por semana, com o mês no final. Atualiza a cada extração.</p>
+            </div>
+            <button type="button" class="secondary acao" id="home-apresentar"
+                    title="Tela cheia, só com a tabela. Setas trocam a operação; Esc sai.">
+              <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              Modo apresentação
+            </button>
+          </div>
 
           <div class="card filter-card">
             <div class="filter-field">
@@ -119,11 +129,6 @@
               <select id="home-mes" class="filtro-mes"></select>
             </div>
             <p class="filter-note" id="home-last-run">Nenhuma extração ainda</p>
-            <button type="button" class="secondary" id="home-apresentar"
-                    title="Tela cheia, só com a tabela. Setas trocam a operação; Esc sai.">
-              <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-              Modo apresentação
-            </button>
           </div>
 
           <div class="card indicators-card">

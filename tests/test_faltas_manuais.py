@@ -241,7 +241,7 @@ def test_semana_da_virada_usa_os_numeros_de_cada_pedaco(api_obj):
 
 def test_dados_antigos_sao_migrados():
     """Versao anterior: faltas em "faltas_lancadas" e HC unico no gestor."""
-    gestor = _gestor(hc=6)
+    _gestor(hc=6)
     dados = headcount_store.ler()
     dados["gestores"][0]["faltas_lancadas"] = {"2026-09-S2": 2}
     headcount_store._gravar(dados)
