@@ -143,7 +143,7 @@ def test_celulas_trazem_texto_e_cor(api_com_dados):
     linhas = {l["chave"]: l for l in api_com_dados.get_indicator_table("mock", mes="2026-09")["linhas"]}
 
     efetividade = linhas["efetividade"]["celulas"]
-    assert [c["texto"] for c in efetividade] == ["96,4%", "112,9%", "100,4%"]
+    assert [c["texto"] for c in efetividade] == ["96,38%", "112,90%", "100,37%"]
     assert [c["cor"] for c in efetividade] == ["verde", "azul", "verde"]
 
     dispersao = linhas["dispersao"]["celulas"]

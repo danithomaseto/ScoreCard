@@ -1962,7 +1962,7 @@ let cvTela = null;
 
 function pct(valor) {
   if (valor === null || valor === undefined) return '—';
-  return `${(valor * 100).toFixed(1).replace('.', ',')}%`;
+  return `${(valor * 100).toFixed(2).replace('.', ',')}%`;
 }
 
 async function carregarCoverage() {

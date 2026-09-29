@@ -104,7 +104,7 @@ def test_semana_sem_falta_lancada_conta_como_zero(api_obj):
     _gestor()
     indicators_store.salvar_extracao("hugo_boss", "week", {"2026-09-07": {"efetividade": 1.0}})
 
-    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "100,0%"
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "100,00%"
 
 
 def test_semana_da_virada_do_mes_soma_os_dois_pedacos(api_obj):
@@ -225,7 +225,7 @@ def test_inicio_usa_os_numeros_de_cada_semana(api_obj):
     presenteismo = _celulas(api_obj, "presenteismo")
 
     assert presenteismo["2026-09-14"] == limits.formatar(1 - 1 / (3 * 4))
-    assert presenteismo["2026-09-21"] == "100,0%", "Week 39 herda o HC 3, sem faltas"
+    assert presenteismo["2026-09-21"] == "100,00%", "Week 39 herda o HC 3, sem faltas"
 
 
 def test_semana_da_virada_usa_os_numeros_de_cada_pedaco(api_obj):
@@ -283,7 +283,7 @@ def test_semana_do_summary_de_domingo_a_sabado(api_obj):
     presenteismo = _celulas(api_obj, "presenteismo", operacao="abb")
     cubo = _celulas(api_obj, "cubo", operacao="abb")
 
-    assert presenteismo["2026-09-20"] == "96,0%", "o mesmo 96,00% da tela de Headcount"
+    assert presenteismo["2026-09-20"] == "96,00%", "o mesmo 96,00% da tela de Headcount"
     assert cubo["2026-09-20"] == limits.formatar(0.927 * 0.884 * 0.96)
     # 30/08 a 05/09: seg 31/08 (agosto) + ter a sex 01 a 04/09 (setembro),
     # ambos com o HC do cadastro (0) -> sem numero, e nao um 100% falso.

@@ -269,9 +269,9 @@ def test_importar_ja_leva_cada_semana_ao_inicio(app):
     presenteismo = _celulas(api_obj, "presenteismo")
 
     # 08 e 10/09 caem na semana de 07/09; 14/09 na de 14/09.
-    assert presenteismo["2026-09-07"] == "98,4%"
-    assert presenteismo["2026-09-14"] == "99,2%"
-    assert presenteismo["2026-08-31"] == "100,0%", "semana coberta e sem falta"
+    assert presenteismo["2026-09-07"] == "98,40%"
+    assert presenteismo["2026-09-14"] == "99,20%"
+    assert presenteismo["2026-08-31"] == "100,00%", "semana coberta e sem falta"
 
 
 def test_mes_do_inicio_e_o_ciclo_da_folha(app):
@@ -302,18 +302,18 @@ def test_mudar_o_hc_reflete_no_inicio_sem_clicar_em_nada(app):
     api_obj, headcount_store, _ = app
     _extrair_semanas(app, "2026-09-07")
     gestor = _preparar(app)
-    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,4%"
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,40%"
 
     headcount_store.atualizar_gestor(gestor["id"], {"hc": 50})
 
-    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "99,2%"
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "99,20%"
 
 
 def test_limpar_faltas_tira_o_presenteismo_do_inicio(app):
     api_obj = app[0]
     _extrair_semanas(app, "2026-09-07")
     _preparar(app)
-    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,4%"
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,40%"
 
     api_obj.clear_faltas()
 
@@ -362,7 +362,7 @@ def test_valor_gravado_por_versao_antiga_nao_prevalece(app):
     indicators_store.salvar_manual("hugo_boss", "week", "2026-09-07", {"presenteismo": 0.5})
     _preparar(app)
 
-    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,4%"
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,40%"
 
 
 def test_operacao_sem_gestor_nao_ganha_presenteismo(app):
@@ -508,7 +508,7 @@ def test_inicio_filtra_a_planilha_uma_vez_so(app, monkeypatch):
     presenteismo = _celulas(api_obj, "presenteismo")
 
     assert len(chamadas) == 1
-    assert presenteismo["2026-09-07"] == "98,4%", "mesmo resultado de antes"
+    assert presenteismo["2026-09-07"] == "98,40%", "mesmo resultado de antes"
 
 
 # ---------------- Editar e excluir gestor ----------------
@@ -571,7 +571,7 @@ def test_excluir_gestor_tira_do_headcount_e_do_inicio(app):
     api_obj, headcount_store, _ = app
     _extrair_semanas(app, "2026-09-07")
     gestor = _preparar(app)
-    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,4%"
+    assert _celulas(api_obj, "presenteismo")["2026-09-07"] == "98,40%"
 
     assert api_obj.remove_gestor(gestor["id"])["success"]
 

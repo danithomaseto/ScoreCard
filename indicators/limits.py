@@ -27,12 +27,12 @@ ROTULOS = {
 
 # O texto que aparece embaixo do nome do indicador na tela.
 METAS = {
-    "cubo": "meta 85%",
-    "efetividade": "meta 90% a 110%",
-    "hora_direta": "meta 85%",
-    "presenteismo": "meta 98%",
-    "dispersao": "meta 70%",
-    "coverage": "meta 92%",
+    "cubo": "meta 85,00%",
+    "efetividade": "meta 90,00% a 110,00%",
+    "hora_direta": "meta 85,00%",
+    "presenteismo": "meta 98,00%",
+    "dispersao": "meta 70,00%",
+    "coverage": "meta 92,00%",
 }
 
 # minimo = abaixo disso fica vermelho; teto = acima disso fica azul.
@@ -72,9 +72,9 @@ def cor(indicador, valor):
 
 
 def formatar(valor):
-    """Percentual como a tela mostra e como a copia entrega: uma casa
-    decimal e virgula, no padrao brasileiro. Sem numero vira string
-    vazia, nunca zero."""
+    """Percentual como a tela mostra e como a copia entrega: sempre duas
+    casas decimais e virgula, no padrao brasileiro (96,40%). Sem numero
+    vira string vazia, nunca zero."""
     if valor is None:
         return ""
-    return f"{valor * 100:.1f}".replace(".", ",") + "%"
+    return f"{valor * 100:.2f}".replace(".", ",") + "%"

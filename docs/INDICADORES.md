@@ -152,7 +152,7 @@ construcao: um produto de tres percentuais fica abaixo de cada um
 deles. Com os numeros da propria amostra, a semana 36 da EFETIVIDADE
 96,38% x HORA DIRETA 85,37% = 82,28%, e multiplicando pelo presenteismo
 so cai — com 98%, fecha em 80,63%, vermelho, mesmo com os outros dois
-dentro da faixa. Ja a semana 37, puxada pela efetividade de 112,9%,
+dentro da faixa. Ja a semana 37, puxada pela efetividade de 112,90%,
 fecha em 106,26% e sai azul.
 
 ## 5. O que fica guardado
@@ -254,10 +254,10 @@ linhas, semana nas colunas, mes no final**.
                   Week 36   Week 37   Week 38   |   Setembro
                   (30/08)   (06/09)   (13/09)   |  (01 a 19/09)
 CUBO                 —         —         —      |      —
-EFETIVIDADE       96,4%    112,9%     ...       |     ...
-HORA DIRETA       85,4%     96,1%     ...       |     ...
+EFETIVIDADE       96,38%    112,90%     ...       |     ...
+HORA DIRETA       85,40%     96,10%     ...       |     ...
 PRESENTEISMO         —         —         —      |      —
-DISPERSAO         81,8%     66,7%     ...       |     ...
+DISPERSAO         81,80%     66,70%     ...       |     ...
 COVERAGE             —         —         —      |      —
 ```
 
@@ -314,10 +314,10 @@ O texto puro segue sendo um valor por linha, na ordem dos indicadores:
 
 ```
 (cubo, vazio)
-96,4%
-85,4%
+96,38%
+85,40%
 (presenteismo, vazio)
-81,8%
+81,80%
 (coverage, vazio)
 ```
 
@@ -325,7 +325,8 @@ O texto puro segue sendo um valor por linha, na ordem dos indicadores:
 seis posicoes ficam preservadas e nada sobe de lugar; um traco viraria
 texto no meio dos numeros.
 
-**Valor igual ao da tela** (`96,4%`, com virgula e sinal de porcento):
+**Valor igual ao da tela** (`96,38%`, com virgula, sempre duas casas
+decimais e sinal de porcento — `100,00%`, nunca `100%` ou `100,0%`):
 o que e apresentado e o que foi conferido. Se um dia precisar do numero
 puro pra fazer conta, e mudar uma linha.
 
@@ -1088,8 +1089,8 @@ Score, aba COVERAGE W; as macros dela foram ignoradas):
 
 As colunas sao achadas pelo titulo, nao pela letra. A linha de total
 soma as colunas de horas e aplica a mesma formula sobre as somas (nunca
-a media dos percentuais). Conferido: ESANTOS 99,2%, MNSILVA 82,0% e
-total 107,0% (com MDOMINGOS, sinergia de outra operacao, em 0 dias).
+a media dos percentuais). Conferido: ESANTOS 99,20%, MNSILVA 82,00% e
+total 107,00% (com MDOMINGOS, sinergia de outra operacao, em 0 dias).
 
 - Cabecalho igual ao do presenteismo: operacao, mes, semana e Semanal /
   Resultado do Mes. As semanas sao as que vieram da extracao Week (a

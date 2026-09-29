@@ -228,6 +228,6 @@ def test_faixas_de_cor():
 
 
 def test_formatacao_do_percentual():
-    assert limits.formatar(0.9638) == "96,4%"
-    assert limits.formatar(1.129) == "112,9%"
+    assert limits.formatar(0.9638) == "96,38%"
+    assert limits.formatar(1.129) == "112,90%"
     assert limits.formatar(None) == "", "sem numero vira vazio, nunca zero"
