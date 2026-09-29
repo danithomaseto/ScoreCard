@@ -76,3 +76,70 @@ def gerar(destino, agora=None, commit="", versao=None):
     with open(destino, "w", encoding="utf-8") as fh:
         json.dump(dados, fh, ensure_ascii=False)
     return dados
+
+
+# ---------------- Detalhes do .exe (Propriedades > Detalhes) ----------------
+
+AUTOR = "Daniel Thomaseto"
+EMPRESA = "DHL"
+PRODUTO = "Score Card"
+DESCRICAO = "Score Card - indicadores das operações"
+
+
+def numeros_windows(texto):
+    """"V.01.3" -> (1, 3, 0, 0): o Windows guarda a versao do arquivo
+    como quatro numeros."""
+    casou = FORMATO.match(texto or "")
+    if not casou:
+        return (0, 0, 0, 0)
+    return (int(casou.group(1)), int(casou.group(2)), 0, 0)
+
+
+def gerar_info_windows(destino, nome_do_arquivo, versao=None, ano=None):
+    """Grava o arquivo de versao que o PyInstaller embute no .exe (o
+    parametro version= do EXE): nome, versao, autor e empresa aparecem
+    ao clicar com o botao direito no arquivo > Propriedades > Detalhes.
+    Nao muda nada no funcionamento do app."""
+    from datetime import date
+
+    versao = versao or numero()
+    ano = ano or date.today().year
+    numeros = numeros_windows(versao)
+    textos = {
+        "CompanyName": EMPRESA,
+        "FileDescription": DESCRICAO,
+        "FileVersion": versao,
+        "InternalName": os.path.splitext(nome_do_arquivo)[0],
+        "LegalCopyright": f"© {ano} {AUTOR}",
+        "OriginalFilename": nome_do_arquivo,
+        "ProductName": PRODUTO,
+        "ProductVersion": versao,
+        "Comments": f"Criado por {AUTOR}",
+    }
+    campos = ",\n          ".join(f"StringStruct({k!r}, {v!r})" for k, v in textos.items())
+    # 0416 = portugues do Brasil; 04B0 (1200) = texto em Unicode.
+    conteudo = f"""# Gerado por versao.gerar_info_windows no build. Nao editar.
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers={numeros},
+    prodvers={numeros},
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable('041604B0', [
+          {campos}
+      ])
+    ]),
+    VarFileInfo([VarStruct('Translation', [0x0416, 1200])])
+  ]
+)
+"""
+    with open(destino, "w", encoding="utf-8") as fh:
+        fh.write(conteudo)
+    return destino

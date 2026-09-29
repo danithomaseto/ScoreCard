@@ -213,3 +213,45 @@ def test_sessao_de_uma_operacao_nao_vaza_para_a_proxima(api, operations):
         assert segunda.context.cookies() == []
     finally:
         navegador.fechar()
+
+
+class JanelaFalsa:
+    """Guarda cada valor dado ao confirm_close, como o pywebview le."""
+
+    def __init__(self):
+        self.valores = []
+
+    def __setattr__(self, nome, valor):
+        if nome == "confirm_close":
+            self.valores.append(valor)
+        object.__setattr__(self, nome, valor)
+
+
+def test_fechar_durante_a_extracao_pede_confirmacao(api, monkeypatch):
+    janela = JanelaFalsa()
+    api.set_window(janela)
+    durante = []
+
+    def extracao(*_):
+        durante.append(janela.confirm_close)
+        return {"success": True}
+
+    monkeypatch.setattr(api, "_executar_extracao", extracao)
+    monkeypatch.setattr(api, "_executar_fila", extracao)
+    api.run_extraction("mock")
+    api.run_multi_extraction(["mock"])
+    assert durante == [True, True]
+    assert janela.valores == [True, False, True, False], "fora da extracao fecha direto"
+
+
+def test_confirmacao_desliga_mesmo_se_a_extracao_quebrar(api, monkeypatch):
+    janela = JanelaFalsa()
+    api.set_window(janela)
+
+    def quebra(*_):
+        raise RuntimeError("falhou")
+
+    monkeypatch.setattr(api, "_executar_extracao", quebra)
+    with pytest.raises(RuntimeError):
+        api.run_extraction("mock")
+    assert janela.confirm_close is False

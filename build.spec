@@ -132,6 +132,15 @@ def gravar_versao():
 
 datas += [(gravar_versao(), ".")]
 
+
+def info_windows(nome_do_arquivo):
+    """Arquivo com nome, versao e autor que aparecem em Propriedades >
+    Detalhes do .exe (ver versao.gerar_info_windows)."""
+    import versao
+
+    destino = os.path.join(workpath, f"versao-{os.path.splitext(nome_do_arquivo)[0]}.txt")
+    return versao.gerar_info_windows(destino, nome_do_arquivo)
+
 # ---------------- 1. O app, em pasta ----------------
 
 a = Analysis(
@@ -167,6 +176,7 @@ app_exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=ICONE,
+    version=info_windows("ScoreCardApp.exe"),
 )
 app_pasta = COLLECT(
     app_exe,
@@ -232,6 +242,7 @@ lanc_exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=ICONE,
+    version=info_windows("ScoreCard.exe"),
 )
 
 # ---------------- 3. O app dentro do lancador ----------------

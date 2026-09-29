@@ -34,6 +34,8 @@ import tempfile
 import time
 import zipfile
 
+import instancia_unica
+
 MARCA = b"SCAPP001"
 # marca, tamanho do zip, versao (12 caracteres + preenchimento)
 RODAPE = struct.Struct("<8sQ16s")
@@ -268,6 +270,12 @@ def main():
     import registro
 
     registro.configurar()
+    if instancia_unica.ja_aberto():
+        # Segundo clique no atalho: so mostra a janela que ja esta aberta.
+        log.info("app ja aberto; trazendo a janela para a frente")
+        _splash(fechar=True)
+        instancia_unica.trazer_para_frente()
+        return 0
     caminho_exe = sys.executable if getattr(sys, "frozen", False) else os.path.abspath(sys.argv[0])
     try:
         pasta = preparar(

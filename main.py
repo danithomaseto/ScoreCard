@@ -17,6 +17,7 @@ if sys.stdin is None:
 
 import logging
 
+import instancia_unica
 import registro
 
 registro.configurar()
@@ -126,8 +127,21 @@ def fechar_splash():
         pass
 
 
+AVISO_AO_FECHAR = (
+    "Há uma extração em andamento.\n\n"
+    "Se fechar agora, o download fica pela metade e a extração não é concluída.\n\n"
+    "Clique em OK para fechar mesmo assim ou em Cancelar para continuar."
+)
+
+
 def main():
     log.info("Score Card aberto (%s)", sys.executable if getattr(sys, "frozen", False) else "codigo-fonte")
+    # O lancador ja confere isso antes; aqui cobre duas aberturas quase
+    # juntas e o app aberto direto (codigo-fonte ou ScoreCardApp.exe).
+    if not instancia_unica.segurar():
+        log.info("ja existe uma janela aberta; trazendo para a frente")
+        instancia_unica.trazer_para_frente()
+        return
     ensure_browser_installed()
 
     api = Api()
@@ -149,6 +163,9 @@ def main():
         # pagina terminar de carregar, pra combinar com o tema escuro
         # em vez do branco padrao do pywebview.
         background_color="#0b0e1a",
+        # So aparece enquanto uma extracao roda: a api liga e desliga o
+        # confirm_close da janela (Api._extraindo).
+        localization={"global.quitConfirmation": AVISO_AO_FECHAR},
     )
     api.set_window(window)
     # Fecha a tela de abertura quando a pagina terminar de carregar, e

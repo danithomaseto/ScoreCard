@@ -27,6 +27,17 @@ body {
   color: var(--text);
 }
 
+/* Numeros com todos os digitos da mesma largura: nas colunas de
+   percentual e de horas, "100,40%" e "96,57%" ficam alinhados, e o valor
+   nao "danca" quando muda enquanto se digita. */
+table,
+input,
+.hc-card-valor,
+#progress-percent,
+#multi-progress-percent {
+  font-variant-numeric: tabular-nums;
+}
+
 /* IMPORTANTE: nao colocar "display" aqui. Este bloco e usado em
    elementos escondidos via atributo [hidden]; um "display" fixo aqui
    sobrescreveria o [hidden] do navegador e o elemento nunca sumiria
@@ -1572,3 +1583,98 @@ button.excluir-definitivo:hover { background: #b42318; }
   transition: opacity 200ms ease, transform 200ms ease;
 }
 #aviso-erro.visivel { opacity: 1; transform: none; pointer-events: auto; }
+
+/* ---------- Telas vazias com atalho para extrair ---------- */
+
+.estado-vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 44px 20px;
+  text-align: center;
+}
+.estado-vazio[hidden] { display: none; }
+.estado-vazio-icone {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 4px;
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.7;
+}
+.estado-vazio strong { font-size: 15px; color: var(--text); }
+.estado-vazio p { margin: 0 0 10px; max-width: 460px; font-size: 13px; line-height: 1.6; color: var(--text-muted); }
+
+/* ---------- Modo apresentacao (aba Inicio) ---------- */
+
+#home-apresentar { margin-left: auto; flex-shrink: 0; }
+
+body.apresentacao .sidebar,
+body.apresentacao #page-home .page-heading,
+body.apresentacao #page-home .subtitle,
+body.apresentacao #home-last-run,
+body.apresentacao #home-apresentar,
+body.apresentacao #indicators-extrair,
+body.apresentacao .indicators-table .copy-btn,
+body.apresentacao .legend-note { display: none; }
+
+body.apresentacao .content-area { padding: 20px 32px 72px; }
+body.apresentacao .filter-card { padding-top: 16px; padding-bottom: 16px; margin-bottom: 16px; }
+body.apresentacao .indicators-table th,
+body.apresentacao .indicators-table td { padding-top: 16px; padding-bottom: 16px; }
+body.apresentacao .corner-operation { font-size: 26px; }
+body.apresentacao .col-title { font-size: 18px; }
+body.apresentacao .col-subtitle,
+body.apresentacao .col-warning { font-size: 13px; }
+body.apresentacao .indicator-label { font-size: 19px; }
+body.apresentacao .indicator-meta { font-size: 13px; }
+body.apresentacao .indicator-value { font-size: 22px; min-width: 124px; padding: 9px 16px; }
+body.apresentacao .indicator-cell.sem-numero { font-size: 22px; }
+body.apresentacao .legend-item { font-size: 14px; }
+
+/* Discreta ate o mouse chegar perto: nao pode competir com a tabela. */
+.apresentacao-barra {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 8px 8px 18px;
+  transform: translateX(-50%);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: rgba(18, 23, 43, 0.92);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  opacity: 0.35;
+  transition: opacity 200ms ease;
+}
+.apresentacao-barra[hidden] { display: none; }
+.apresentacao-barra:hover,
+.apresentacao-barra:focus-within { opacity: 1; }
+.apresentacao-dica { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted); }
+.apresentacao-barra kbd,
+.apresentacao-dica kbd {
+  display: inline-block;
+  min-width: 22px;
+  padding: 1px 6px;
+  border: 1px solid var(--input-border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+}
+.apresentacao-dica kbd + kbd { margin-right: 4px; }
+#apresentacao-sair kbd { margin-left: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .apresentacao-barra { transition: none; }
+}

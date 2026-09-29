@@ -22,6 +22,18 @@ nativa, sem barra de navegador), usando
    credenciais informadas, e salva o relatorio na subpasta daquela
    operacao dentro da pasta configurada.
 
+Detalhes de uso:
+
+- **Uma janela so.** Abrir o `ScoreCard.exe` de novo com o app ja aberto
+  nao abre outra janela: traz a que esta aberta para a frente. Duas
+  janelas gravando nos mesmos dados sobrescreveriam uma a outra.
+- **Fechar durante uma extracao pede confirmacao**, porque fechar no
+  meio deixa o download pela metade. Fora de extracao, fecha direto.
+- **Modo apresentacao** (aba Inicio): tela cheia so com a tabela, em
+  letra maior. As setas trocam a operacao e Esc sai.
+- **Tela sem extracao** (Inicio e Coverage) mostra o botao "Extrair
+  agora", que abre Extrair Dados com a operacao ja escolhida.
+
 Toda a logica de automacao (login no Summary, navegacao pelo iframe de
 relatorios, filtros, exportacao) e a mesma ja validada — o empacotamento
 em `.exe` nao mudou nada dessa parte, so a forma como e distribuida.
@@ -114,7 +126,9 @@ pyinstaller build.spec --noconfirm
 ```
 
 Ao final, o executavel fica em **`dist\ScoreCard.exe`** — um arquivo
-so, sem mais nada junto. E esse arquivo que voce distribui.
+so, sem mais nada junto. E esse arquivo que voce distribui. Em
+Propriedades > Detalhes dele aparecem o nome, a versao (a do arquivo
+`VERSAO`) e o autor.
 
 > **Como o arquivo unico abre rapido:** o `ScoreCard.exe` e um lancador
 > pequeno com o app inteiro (Python, interface, Chromium) guardado
@@ -216,6 +230,7 @@ aparece sozinha no dropdown, sem precisar mexer em mais nada.
 ```
 main.py              # cria a janela, garante que o Chromium existe
 lancador.py          # o ScoreCard.exe: descompacta o app uma vez e abre
+instancia_unica.py   # uma janela so: a segunda abertura traz a primeira
 api.py                # metodos chamados pelo JS (login, executar, config)
 registro.py           # log local, sem credenciais
 versao.py             # versao/data do build, gravada pelo build.spec
@@ -259,6 +274,7 @@ tests/
   test_api.py            # extracao unica, fila multipla e validacoes
   test_lancador.py       # app dentro do .exe, descompactado uma vez
   test_infra.py          # gravacao segura e log sem credenciais
+  test_instancia_unica.py  # segunda abertura so traz a janela
 requirements.txt
 requirements-dev.txt      # o de cima + pytest
 build.spec               # config do PyInstaller (app + lancador)

@@ -4,6 +4,7 @@ chamavel do JavaScript.
 """
 
 import base64
+import contextlib
 import datetime
 import json
 import logging
@@ -48,9 +49,72 @@ class Api:
         # A fila roda na thread do js_api e o pedido de parada chega por
         # outra, entao um Event faz a ponte entre as duas.
         self._cancel_multi = threading.Event()
+        # Extracoes em andamento: enquanto houver uma, fechar a janela
+        # pede confirmacao (ver _extraindo).
+        self._extracoes_em_andamento = 0
+        self._trava_extracoes = threading.Lock()
+        # Modo apresentacao (tela cheia). A janela abre maximizada
+        # (main.py); os eventos abaixo acompanham se o usuario mudou isso,
+        # para a saida da tela cheia voltar do jeito que estava.
+        self._tela_cheia = False
+        self._maximizada = True
 
     def set_window(self, window):
         self._window = window
+        try:
+            window.events.maximized += self._ficou_maximizada
+            window.events.restored += self._ficou_restaurada
+        except Exception:  # noqa: BLE001 - so perde o "voltar maximizada"
+            log.debug("sem eventos de maximizar/restaurar nesta janela")
+
+    def _ficou_maximizada(self):
+        if not self._tela_cheia:
+            self._maximizada = True
+
+    def _ficou_restaurada(self):
+        if not self._tela_cheia:
+            self._maximizada = False
+
+    def tela_cheia(self, ligar):
+        """Modo apresentacao da aba Inicio: a janela ocupa a tela toda,
+        sem barra de titulo nem barra de tarefas. Ao sair, volta
+        maximizada se estava maximizada."""
+        ligar = bool(ligar)
+        if self._window is None or ligar == self._tela_cheia:
+            return {"success": True}
+        estava_maximizada = self._maximizada
+        try:
+            self._tela_cheia = ligar
+            self._window.toggle_fullscreen()
+            if not ligar and estava_maximizada:
+                self._window.maximize()
+        except Exception:  # noqa: BLE001 - a apresentacao segue sem tela cheia
+            log.exception("não consegui alternar a tela cheia")
+            return {"success": False}
+        return {"success": True}
+
+    @contextlib.contextmanager
+    def _extraindo(self):
+        """Liga o "tem certeza?" ao fechar a janela enquanto uma extracao
+        roda: fechar no meio deixa o download pela metade. O pywebview le
+        o confirm_close na hora do clique no X, entao basta ligar aqui e
+        desligar no fim (a mensagem fica em main.py)."""
+        with self._trava_extracoes:
+            self._extracoes_em_andamento += 1
+            self._confirmar_ao_fechar(True)
+        try:
+            yield
+        finally:
+            with self._trava_extracoes:
+                self._extracoes_em_andamento -= 1
+                self._confirmar_ao_fechar(self._extracoes_em_andamento > 0)
+
+    def _confirmar_ao_fechar(self, ligado):
+        if self._window is not None:
+            try:
+                self._window.confirm_close = ligado
+            except Exception:  # noqa: BLE001 - so perde o aviso ao fechar
+                log.exception("não consegui ajustar a confirmação ao fechar")
 
     # ---------------- Login ----------------
 
@@ -256,6 +320,10 @@ class Api:
         return None
 
     def run_extraction(self, operation_key, date_range=None, group_by=None, period=None):
+        with self._extraindo():
+            return self._executar_extracao(operation_key, date_range, group_by, period)
+
+    def _executar_extracao(self, operation_key, date_range, group_by, period):
         if operation_key not in OPERATIONS:
             return {"success": False, "message": "Operação inválida."}
 
@@ -329,6 +397,10 @@ class Api:
         return {"success": True}
 
     def run_multi_extraction(self, operation_keys, date_range=None, group_by=None, period=None):
+        with self._extraindo():
+            return self._executar_fila(operation_keys, date_range, group_by, period)
+
+    def _executar_fila(self, operation_keys, date_range, group_by, period):
         """Roda a mesma extracao para varias operacoes, uma depois da
         outra. Uma falha nao interrompe a fila: as demais continuam e o
         resumo no final diz quantas deram certo."""

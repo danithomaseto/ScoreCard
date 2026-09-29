@@ -118,6 +118,22 @@ def test_versao_do_projeto_esta_no_formato():
 
 # ---------------- Checagem de conexao ----------------
 
+def test_detalhes_do_exe_saem_do_numero_da_versao(tmp_path):
+    import versao
+
+    destino = versao.gerar_info_windows(str(tmp_path / "v.txt"), "ScoreCard.exe",
+                                        versao="V.01.3", ano=2026)
+    versioninfo = pytest.importorskip("PyInstaller.utils.win32.versioninfo")
+    info = versioninfo.load_version_info_from_text_file(destino)
+    assert info.ffi.fileVersionMS == (1 << 16) | 3
+    textos = {s.name: s.val for s in info.kids[0].kids[0].kids}
+    assert textos["ProductVersion"] == "V.01.3"
+    assert textos["OriginalFilename"] == "ScoreCard.exe"
+    assert textos["LegalCopyright"] == "© 2026 Daniel Thomaseto"
+    assert textos["FileDescription"] == "Score Card - indicadores das operações"
+    assert versao.numeros_windows("qualquer") == (0, 0, 0, 0)
+
+
 def test_conexao_com_servidor_no_ar_e_fora_do_ar():
     import socket
 

@@ -362,7 +362,12 @@ async function loadIndicators() {
   indicatorsEmpty.hidden = temDados;
   indicatorsWrap.hidden = !temDados;
   indicatorsLegend.hidden = !temDados;
-  if (!temDados) return;
+  if (!temDados) {
+    const nomeDoMes = homeMes.selectedOptions[0]?.text || 'neste mês';
+    document.getElementById('indicators-empty-titulo').textContent =
+      `Nenhuma extração de ${homeOperationSelect.selectedOptions[0]?.text || 'esta operação'} em ${nomeDoMes} ainda`;
+    return;
+  }
 
   const primeiraVez = !indicatorsBody.querySelector('tr:not(.linha-esqueleto)');
   desenharCabecalho(tabela);
@@ -571,6 +576,72 @@ async function copiarTexto(texto, html) {
 
 homeOperationSelect.addEventListener('change', () => { loadLastRun(); loadIndicators(); });
 homeMes.addEventListener('change', loadIndicators);
+
+// Atalho das telas vazias: abre Extrair Dados com a operacao e o tipo de
+// extracao ja escolhidos. So preenche a tela; quem extrai e o botao de la.
+function irParaExtracao(operacao, periodo, groupBy) {
+  if (operacao && [...operationSelect.options].some((o) => o.value === operacao)) {
+    operationSelect.value = operacao;
+  }
+  if (periodo) escolherPeriodo(periodOptionEls, groupBySelect, periodo);
+  if (groupBy && !groupBySelect.disabled
+      && [...groupBySelect.options].some((o) => o.value === groupBy)) {
+    groupBySelect.value = groupBy;
+  }
+  showPage('extract');
+}
+
+document.getElementById('indicators-extrair').addEventListener('click', () => {
+  irParaExtracao(homeOperationSelect.value, 'week');
+});
+
+// ---------------------------------------------------------------
+// Modo apresentacao (aba Inicio)
+// ---------------------------------------------------------------
+// Tela cheia, sem o menu e sem os botoes de apoio, com a tabela maior
+// para projetar. As setas trocam a operacao; Esc sai. So muda a
+// apresentacao: os numeros sao os mesmos da tela normal.
+
+const apresentacaoBarra = document.getElementById('apresentacao-barra');
+let emApresentacao = false;
+
+async function modoApresentacao(ligar) {
+  if (ligar === emApresentacao) return;
+  emApresentacao = ligar;
+  document.body.classList.toggle('apresentacao', ligar);
+  apresentacaoBarra.hidden = !ligar;
+  try {
+    await pywebview.api.tela_cheia(ligar);
+  } catch (erro) {
+    registrarErro('tela cheia', erro);
+  }
+  indicatorsWrap.scrollLeft = indicatorsWrap.scrollWidth;
+  if (!ligar) document.getElementById('home-apresentar').focus();
+}
+
+function trocarOperacaoNaApresentacao(passo) {
+  const total = homeOperationSelect.options.length;
+  if (!total) return;
+  homeOperationSelect.selectedIndex = (homeOperationSelect.selectedIndex + passo + total) % total;
+  homeOperationSelect.dispatchEvent(new Event('change'));
+}
+
+document.getElementById('home-apresentar').addEventListener('click', () => modoApresentacao(true));
+document.getElementById('apresentacao-sair').addEventListener('click', () => modoApresentacao(false));
+document.addEventListener('keydown', (evento) => {
+  if (!emApresentacao) return;
+  if (evento.key === 'Escape') {
+    evento.preventDefault();
+    modoApresentacao(false);
+    return;
+  }
+  // Num select aberto as setas ja trocam a opcao sozinhas.
+  if (evento.target.closest('select, input, textarea')) return;
+  if (evento.key === 'ArrowRight' || evento.key === 'ArrowLeft') {
+    evento.preventDefault();
+    trocarOperacaoNaApresentacao(evento.key === 'ArrowRight' ? 1 : -1);
+  }
+});
 
 navItems.forEach((btn) => {
   btn.addEventListener('click', () => showPage(btn.dataset.page));
@@ -2141,9 +2212,12 @@ function desenharTabelaCv(tela) {
   document.getElementById('cv-tabela-wrap').hidden = vazio;
   document.getElementById('cv-todos').hidden = vazio;
   if (vazio) {
-    cvVazio.textContent = tela.visualizacao === 'mes'
-      ? 'Nenhuma extração Month deste mês para esta operação. Extraia o mês (Month) para ver o coverage.'
-      : 'Nenhuma extração Week deste mês para esta operação. Extraia a semana (Week, com User ID) para ver o coverage.';
+    const noMes = tela.visualizacao === 'mes';
+    document.getElementById('cv-vazio-titulo').textContent =
+      `Nenhuma extração ${noMes ? 'Month' : 'Week'} de ${tela.cards.operacao} em ${cvMes.selectedOptions[0]?.text || 'neste mês'} ainda`;
+    document.getElementById('cv-vazio-texto').textContent = noMes
+      ? 'Extraia o mês (Month) para ver o coverage de cada usuário.'
+      : 'Extraia a semana (Week, com User ID no Group By 2) para ver o coverage de cada usuário.';
   }
 
   cvCorpo.innerHTML = '';
@@ -2198,6 +2272,11 @@ cvPeriodo.addEventListener('change', async () => {
   cvEstado.periodo_id = cvPeriodo.value;
   await carregarCoverage();
 });
+document.getElementById('cv-extrair').addEventListener('click', () => {
+  irParaExtracao(cvEstado.operacao === 'todas' ? null : cvEstado.operacao,
+    cvEstado.visualizacao === 'mes' ? 'month' : 'week', 'User ID');
+});
+
 cvVisualizacao.addEventListener('click', async (evento) => {
   const botao = evento.target.closest('.seg-opcao');
   if (!botao) return;

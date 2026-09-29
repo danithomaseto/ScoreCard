@@ -23,6 +23,10 @@
 </div>
 
 <div id="app-view" hidden>
+  <div class="apresentacao-barra" id="apresentacao-barra" hidden>
+    <span class="apresentacao-dica"><kbd>&larr;</kbd><kbd>&rarr;</kbd> troca a operação</span>
+    <button type="button" class="secondary acao" id="apresentacao-sair">Sair da apresentação <kbd>Esc</kbd></button>
+  </div>
   <div class="topbar-dhl">
     <span class="dhl-logo">DHL</span>
     <span class="topbar-title">Score Card</span>
@@ -115,13 +119,23 @@
               <select id="home-mes" class="filtro-mes"></select>
             </div>
             <p class="filter-note" id="home-last-run">Nenhuma extração ainda</p>
+            <button type="button" class="secondary" id="home-apresentar"
+                    title="Tela cheia, só com a tabela. Setas trocam a operação; Esc sai.">
+              <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              Modo apresentação
+            </button>
           </div>
 
           <div class="card indicators-card">
-            <p class="indicators-empty" id="indicators-empty" hidden>
-              Nenhum indicador desta operação neste mês. Cada semana extraída do
-              mês vira uma coluna, e o mês e o pico entram no final.
-            </p>
+            <div class="estado-vazio" id="indicators-empty" hidden>
+              <svg class="estado-vazio-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg>
+              <strong id="indicators-empty-titulo">Nenhuma extração neste mês ainda</strong>
+              <p>Cada semana extraída do mês vira uma coluna, e o mês e o pico entram no final.</p>
+              <button type="button" class="acao" id="indicators-extrair">
+                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Extrair agora
+              </button>
+            </div>
 
             <div class="table-wrap" id="indicators-wrap">
               <table class="indicators-table">
@@ -733,7 +747,15 @@
               </table>
             </div>
 
-            <p class="hc-vazio" id="cv-vazio" hidden></p>
+            <div class="estado-vazio" id="cv-vazio" hidden>
+              <svg class="estado-vazio-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+              <strong id="cv-vazio-titulo"></strong>
+              <p id="cv-vazio-texto"></p>
+              <button type="button" class="acao" id="cv-extrair">
+                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Extrair agora
+              </button>
+            </div>
 
             <p class="cv-formula"><code>Coverage = (Horas LMS &minus; Diretas sem meta) &divide; (Horas Metrics + Sinergia recebida &minus; Sinergia cedida)</code></p>
             <div class="hc-status" id="cv-status">Dias e horas vêm do calendário (8,75 h por dia); digite para ajustar um usuário. A sinergia cedida e recebida da operação vai na linha TOTAL, em horas.</div>
