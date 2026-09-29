@@ -81,10 +81,21 @@ def linha(usuario, horas_lms, manuais, dias_padrao, horas_padrao=HORAS_PADRAO):
     }
 
 
-def total(linhas):
-    """A linha de total: soma das colunas de horas e o coverage delas."""
+def total(linhas, sinergia_operacao=None):
+    """A linha de total: soma das colunas de horas e o coverage delas.
+
+    A sinergia e, em geral, conhecida so por operacao (horas cedidas a
+    outra operacao ou recebidas dela), nao por pessoa: sinergia_operacao
+    ({"cedida", "recebida"}) entra aqui, somada ao que tiver sido
+    digitado por usuario."""
     soma = {campo: round(sum(l[campo] for l in linhas), 4)
             for campo in ("lms", "diretas_sem_meta", "metrics", "cedida", "recebida")}
+    sinergia_operacao = sinergia_operacao or {}
+    soma["cedida_usuarios"], soma["recebida_usuarios"] = soma["cedida"], soma["recebida"]
+    soma["cedida_operacao"] = round(sinergia_operacao.get("cedida", 0.0), 4)
+    soma["recebida_operacao"] = round(sinergia_operacao.get("recebida", 0.0), 4)
+    soma["cedida"] = round(soma["cedida"] + soma["cedida_operacao"], 4)
+    soma["recebida"] = round(soma["recebida"] + soma["recebida_operacao"], 4)
     soma["usuarios"] = len(linhas)
     soma["coverage"] = calcular(soma["lms"], soma["diretas_sem_meta"], soma["metrics"],
                                 soma["cedida"], soma["recebida"])

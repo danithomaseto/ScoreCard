@@ -53,7 +53,9 @@ def total_do_periodo(operacao, periodo, chave_periodo):
         coverage_store.chave(periodo, chave_periodo))
     if not extracao:
         return None
-    return coverage.total(_linhas(operacao, periodo, chave_periodo, extracao))["coverage"]
+    chave_guardada = coverage_store.chave(periodo, chave_periodo)
+    return coverage.total(_linhas(operacao, periodo, chave_periodo, extracao),
+                          coverage_store.sinergia(operacao, chave_guardada))["coverage"]
 
 
 def _grupos_de_semanas(extracoes, mes):
@@ -121,7 +123,17 @@ def montar(operacao=TODAS, visualizacao="semanal", mes=None, periodo_id=None, ho
         nota_periodo = f"{grupo['rotulo'].split(' · ')[0]} · extração Week" if grupo else ""
 
     linhas.sort(key=lambda l: (l["operacao"].casefold(), l["usuario"].casefold()))
-    soma = coverage.total(linhas)
+    # Sinergia da operacao: soma das operacoes na tela. So da pra digitar
+    # com uma operacao so escolhida (a sinergia e de uma operacao).
+    periodos_na_tela = sorted({(l["operacao_key"], l["chave_periodo"]) for l in linhas})
+    sinergia_operacao = {"cedida": 0.0, "recebida": 0.0}
+    for op, chave_guardada in periodos_na_tela:
+        for campo, valor in coverage_store.sinergia(op, chave_guardada).items():
+            sinergia_operacao[campo] += valor
+    soma = coverage.total(linhas, sinergia_operacao)
+    uma_operacao = operacao != TODAS and len(periodos_na_tela) == 1
+    soma["sinergia_editavel"] = uma_operacao
+    soma["chave_periodo"] = periodos_na_tela[0][1] if uma_operacao else None
     soma["cor"] = limits.cor("coverage", soma["coverage"])
     rotulo_operacao = "Todas as Operações" if operacao == TODAS else _rotulo_operacao(operacao)
     return {

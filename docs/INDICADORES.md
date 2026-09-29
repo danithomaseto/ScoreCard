@@ -1084,7 +1084,7 @@ Score, aba COVERAGE W; as macros dela foram ignoradas):
 | Dias | dias uteis do periodo extraido (com os sabados da escala espanhola); digitavel |
 | Horas | 8,75 por dia; digitavel |
 | Horas Metrics | Dias x Horas |
-| Sinergia cedida / recebida | digitadas, em horas |
+| Sinergia cedida / recebida | da **operacao**, digitadas em horas na linha TOTAL (a visibilidade e por operacao, nao por pessoa); os campos por usuario continuam e, se usados, somam junto |
 
 As colunas sao achadas pelo titulo, nao pela letra. A linha de total
 soma as colunas de horas e aplica a mesma formula sobre as somas (nunca
@@ -1104,3 +1104,7 @@ total 107,0% (com MDOMINGOS, sinergia de outra operacao, em 0 dias).
   os usuarios da tela (semana com feriado, por exemplo).
 - A linha COVERAGE da aba Inicio recebe o total da operacao em cada
   semana e no mes (meta 92% a 110%).
+
+- Sinergia na linha TOTAL: entra so no coverage total (as linhas dos
+  usuarios nao mudam) e no da aba Inicio. Em "Todas as Operacoes" o
+  campo mostra a soma e fica travado: a sinergia e de uma operacao.

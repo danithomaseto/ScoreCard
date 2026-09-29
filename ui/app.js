@@ -2027,7 +2027,8 @@ async function redesenharCoverageMantendoFoco() {
     ? { usuario: foco.dataset.usuario, operacao: foco.dataset.operacao, campo: foco.dataset.campo } : null;
   await carregarCoverage();
   if (destino) {
-    const alvo = Array.from(cvCorpo.querySelectorAll('input')).find((i) =>
+    // Linhas de usuario e a linha TOTAL (sinergia da operacao).
+    const alvo = Array.from(document.querySelectorAll('#cv-tabela-wrap input')).find((i) =>
       i.dataset.usuario === destino.usuario && i.dataset.operacao === destino.operacao
       && i.dataset.campo === destino.campo);
     if (alvo) { alvo.focus(); alvo.select(); }
@@ -2039,6 +2040,48 @@ function celulaCv(conteudo, classe) {
   if (classe) td.className = classe;
   if (conteudo instanceof Node) td.appendChild(conteudo); else td.textContent = conteudo;
   return td;
+}
+
+// Sinergia da operacao, na linha TOTAL: a visibilidade e da operacao
+// (horas cedidas a outra ou recebidas dela), nao de cada pessoa.
+function campoSinergiaOperacao(t, campo) {
+  const caixa = document.createElement('div');
+  caixa.className = 'cv-sinergia-total';
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  input.step = '0.25';
+  input.value = t[`${campo}_operacao`];
+  input.dataset.usuario = '__total__';
+  input.dataset.operacao = cvEstado.operacao;
+  input.dataset.campo = campo;
+  if (!t.sinergia_editavel) {
+    input.disabled = true;
+    input.value = t[campo];
+    input.title = 'A sinergia é de uma operação: escolha uma operação para lançar.';
+  } else {
+    input.title = `Sinergia ${campo} da operação nesta semana (horas).`;
+    input.addEventListener('change', async () => {
+      const resposta = await pywebview.api.set_coverage_sinergia(
+        cvEstado.operacao, t.chave_periodo, campo, input.value);
+      if (!resposta.success) {
+        cvStatus.textContent = resposta.message;
+        input.value = t[`${campo}_operacao`];
+        return;
+      }
+      await redesenharCoverageMantendoFoco();
+      cvStatus.textContent = 'Sinergia da operação salva. O coverage total e a aba Início já refletem.';
+    });
+  }
+  caixa.appendChild(input);
+  const porUsuario = t[`${campo}_usuarios`];
+  if (porUsuario) {
+    const nota = document.createElement('span');
+    nota.className = 'cv-sinergia-nota';
+    nota.textContent = `+ ${num(porUsuario)} h dos usuários`;
+    caixa.appendChild(nota);
+  }
+  return caixa;
 }
 
 function seloCoverage(valor, cor) {
@@ -2089,8 +2132,11 @@ function desenharTabelaCv(tela) {
   [
     ['TOTAL', ''], [plural(t.usuarios, 'usuário', 'usuários'), ''],
     [num(t.lms), 'num'], [num(t.diretas_sem_meta), 'num'], ['', 'num'], ['', 'num'],
-    [num(t.metrics), 'num'], [num(t.cedida), 'num'], [num(t.recebida), 'num'],
+    [num(t.metrics), 'num'],
   ].forEach(([texto, classe]) => tr.appendChild(celulaCv(texto, classe)));
+  for (const campo of ['cedida', 'recebida']) {
+    tr.appendChild(celulaCv(campoSinergiaOperacao(t, campo), 'num'));
+  }
   const tdTotal = celulaCv(seloCoverage(t.coverage, t.cor), 'num');
   tdTotal.firstChild.classList.add('cv-coverage-total');
   tr.appendChild(tdTotal);

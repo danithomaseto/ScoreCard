@@ -47,6 +47,7 @@ def ler():
             dados = {}
     dados.setdefault("extracoes", {})
     dados.setdefault("manuais", {})
+    dados.setdefault("sinergia", {})
     return dados
 
 
@@ -85,6 +86,26 @@ def extracoes(operacao=None):
 
 def manuais(operacao, chave_periodo):
     return ler()["manuais"].get(operacao, {}).get(chave_periodo, {})
+
+
+def sinergia(operacao, chave_periodo):
+    """{"cedida", "recebida"} da operacao no periodo (horas)."""
+    return ler()["sinergia"].get(operacao, {}).get(chave_periodo, {})
+
+
+def definir_sinergia(operacao, chave_periodo, campo, valor):
+    """Sinergia cedida ou recebida da operacao inteira num periodo. Vazio
+    apaga."""
+    if campo not in ("cedida", "recebida"):
+        raise ValueError("Campo inválido.")
+    numero = _numero(campo, valor)
+    dados = ler()
+    do_periodo = dados["sinergia"].setdefault(operacao, {}).setdefault(chave_periodo, {})
+    if numero is None:
+        do_periodo.pop(campo, None)
+    else:
+        do_periodo[campo] = numero
+    _gravar(dados)
 
 
 def _numero(campo, valor):

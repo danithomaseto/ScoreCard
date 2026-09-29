@@ -687,6 +687,16 @@ class Api:
             return {"success": False, "message": str(exc)}
         return {"success": True}
 
+    def set_coverage_sinergia(self, operacao, chave_periodo, campo, valor):
+        """Sinergia cedida ou recebida da operacao no periodo (linha TOTAL)."""
+        if operacao not in OPERATIONS:
+            return {"success": False, "message": "Escolha uma operação para lançar a sinergia."}
+        try:
+            coverage_store.definir_sinergia(operacao, chave_periodo, campo, valor)
+        except ValueError as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True}
+
     def set_coverage_todos(self, operacao, visualizacao, mes, periodo_id, campo, valor):
         """O mesmo valor de dias ou horas para todos os usuarios da tela
         (semana de feriado, por exemplo)."""

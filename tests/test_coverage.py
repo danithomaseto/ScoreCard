@@ -208,3 +208,55 @@ def test_extracao_week_e_month_guardam_as_horas_por_usuario(api_logada, operatio
     assert guardado["month:2026-09"]["usuarios"]
     usuario, horas = next(iter(guardado["month:2026-09"]["usuarios"].items()))
     assert set(horas) == {"lms", "diretas_sem_meta"} and horas["lms"] > 0
+
+
+# ---------------- Sinergia da operacao ----------------
+
+def test_sinergia_da_operacao_entra_so_no_total(api_obj):
+    _extrair()
+    chave = coverage_store.chave("week", SEMANA)
+    assert api_obj.set_coverage_sinergia("abb", chave, "recebida", "20")["success"]
+    assert api_obj.set_coverage_sinergia("abb", chave, "cedida", "5,5")["success"]
+
+    tela = coverage_tela.montar("abb", "semanal", "2026-09", "2026-W39", hoje=HOJE)
+    total = tela["total"]
+
+    esantos = next(l for l in tela["linhas"] if l["usuario"] == "ESANTOS")
+    assert esantos["coverage"] == pytest.approx(0.992), "a linha do usuario nao muda"
+    assert (total["recebida_operacao"], total["cedida_operacao"]) == (20, 5.5)
+    assert total["coverage"] == pytest.approx((281 - 0.14) / (7 * 43.75 + 20 - 5.5))
+    assert total["sinergia_editavel"] and total["chave_periodo"] == chave
+
+
+def test_sinergia_por_usuario_soma_com_a_da_operacao(api_obj):
+    _extrair()
+    chave = coverage_store.chave("week", SEMANA)
+    api_obj.set_coverage_sinergia("abb", chave, "recebida", "20")
+    api_obj.set_coverage("abb", chave, "ESANTOS", "recebida", "3")
+
+    total = coverage_tela.montar("abb", "semanal", "2026-09", "2026-W39", hoje=HOJE)["total"]
+    assert (total["recebida"], total["recebida_usuarios"], total["recebida_operacao"]) == (23, 3, 20)
+
+
+def test_sinergia_da_operacao_chega_ao_inicio(api_obj):
+    import indicators_store
+
+    indicators_store.salvar_extracao("abb", "week", {SEMANA: {"efetividade": 1.0}})
+    _extrair()
+    api_obj.set_coverage_sinergia("abb", coverage_store.chave("week", SEMANA), "cedida", "10")
+
+    tabela = api_obj.get_indicator_table("abb", mes="2026-09")
+    celula = next(l for l in tabela["linhas"] if l["chave"] == "coverage")["celulas"][0]
+    assert celula["texto"] == limits.formatar((281 - 0.14) / (7 * 43.75 - 10))
+
+
+def test_todas_as_operacoes_soma_a_sinergia_e_nao_deixa_digitar(api_obj):
+    _extrair(operacao="abb", semana="2026-09-20", usuarios={"A1": {"lms": 40, "diretas_sem_meta": 0}})
+    _extrair(operacao="lego", semana="2026-09-21", usuarios={"L1": {"lms": 30, "diretas_sem_meta": 0}})
+    api_obj.set_coverage_sinergia("abb", "week:2026-09-20", "recebida", "4")
+    api_obj.set_coverage_sinergia("lego", "week:2026-09-21", "recebida", "6")
+
+    total = coverage_tela.montar("todas", "semanal", "2026-09", None, hoje=HOJE)["total"]
+    assert total["recebida"] == 10
+    assert not total["sinergia_editavel"]
+    assert not api_obj.set_coverage_sinergia("todas", "week:2026-09-20", "recebida", "1")["success"]
