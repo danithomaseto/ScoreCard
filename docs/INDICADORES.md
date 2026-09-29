@@ -1065,3 +1065,42 @@ olhar o anterior — no comeco do mes e ali que esta o fechamento.
   Operacao, Periodo, Presenteismo...) e numeros no padrao brasileiro
   (8,75; 1.273,75 h). Mensagens comparadas pelo codigo (as etapas da
   automacao) continuam como estavam.
+
+## 22. Coverage (29/09/2026)
+
+A aba **Coverage** calcula, por usuario, quanto das horas que a pessoa
+deveria trabalhar aparece no LMS (referencia: planilha Indicadores
+Score, aba COVERAGE W; as macros dela foram ignoradas):
+
+    Coverage = (Horas LMS - Diretas sem meta)
+               / (Horas Metrics + Sinergia recebida - Sinergia cedida)
+
+| Coluna | De onde vem |
+|---|---|
+| User ID | segundo nivel da extracao Week; primeiro nivel da Month |
+| Operacao | a operacao escolhida na hora da extracao |
+| Horas LMS | coluna Total (L no Week, K no Month) |
+| Diretas sem meta | Unmeasured Signon Direct (G no Week, F no Month) |
+| Dias | dias uteis do periodo extraido (com os sabados da escala espanhola); digitavel |
+| Horas | 8,75 por dia; digitavel |
+| Horas Metrics | Dias x Horas |
+| Sinergia cedida / recebida | digitadas, em horas |
+
+As colunas sao achadas pelo titulo, nao pela letra. A linha de total
+soma as colunas de horas e aplica a mesma formula sobre as somas (nunca
+a media dos percentuais). Conferido: ESANTOS 99,2%, MNSILVA 82,0% e
+total 107,0% (com MDOMINGOS, sinergia de outra operacao, em 0 dias).
+
+- Cabecalho igual ao do presenteismo: operacao, mes, semana e Semanal /
+  Resultado do Mes. As semanas sao as que vieram da extracao Week (a
+  mais recente abre selecionada); o Resultado do Mes e a extracao Month.
+  Em "Todas as Operacoes", a mesma Week de operacoes que fecham no
+  domingo e na segunda aparece junta.
+- A extracao passou a guardar as horas de cada usuario
+  (coverage.json). Extracoes feitas antes desta versao nao tem esse
+  dado: e preciso extrair de novo.
+- O que e digitado fica guardado a parte e sobrevive a uma nova
+  extracao do mesmo periodo. "Para todos" aplica dias ou horas em todos
+  os usuarios da tela (semana com feriado, por exemplo).
+- A linha COVERAGE da aba Inicio recebe o total da operacao em cada
+  semana e no mes (meta 92% a 110%).

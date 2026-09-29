@@ -19,12 +19,14 @@ from config.operations import (
     DEFAULT_DATE_RANGE, GROUP_BY_OPTIONS, OPERATIONS, PASTAS_DO_PERIODO, escala_espanhola,
 )
 import conexao
+import coverage_store
+import coverage_tela
 import diagnostico
 import headcount
 import headcount_store
 import history_store
 from indicators import faltas as faltas_reader
-from indicators import limits, periodos, pico, presenteismo, reader, weekly
+from indicators import coverage, limits, periodos, pico, presenteismo, reader, weekly
 import indicators_store
 import registro
 import settings_store
@@ -214,6 +216,9 @@ class Api:
                 return
             resultados = {chave: weekly.totais(lido["linhas"], nivel_detalhe=nivel_detalhe)}
             periodo = "month"
+            # Coverage: as horas de cada usuario (primeiro nivel do mensal).
+            coverage_store.salvar_extracao(
+                operation_key, "month", {chave: coverage.por_usuario(lido["linhas"])}, de, ate)
         else:
             if not lido["tem_semana"]:
                 result["indicators_message"] = (
@@ -225,6 +230,9 @@ class Api:
             for chave, totais in resultados.items():
                 totais["parcial"] = periodos.semana_parcial(chave, de, ate)
             periodo = "week"
+            # Coverage: as horas de cada usuario (segundo nivel do semanal).
+            coverage_store.salvar_extracao(
+                operation_key, "week", coverage.por_semana_e_usuario(lido["linhas"]), de, ate)
 
         indicators_store.salvar_extracao(operation_key, periodo, resultados, meta=meta)
         result["indicators"] = len(resultados)
@@ -529,7 +537,9 @@ class Api:
                 "titulo": titulo,
                 "subtitulo": subtitulo,
                 "parcial": bool(entrada.get("parcial")),
-                "_entrada": self._com_presenteismo(entrada, ao_vivo["week"].get(chave)),
+                "_entrada": self._com_coverage(
+                    self._com_presenteismo(entrada, ao_vivo["week"].get(chave)),
+                    operation_key, "week", chave),
             })
 
         # Mes: mesma regra, so o que veio do Summary. O presenteismo que
@@ -550,7 +560,9 @@ class Api:
                     "titulo": titulo,
                     "subtitulo": subtitulo,
                     "parcial": False,
-                    "_entrada": self._com_presenteismo(dict(entrada_mes), vivo),
+                    "_entrada": self._com_coverage(
+                        self._com_presenteismo(dict(entrada_mes), vivo),
+                        operation_key, "month", chave),
                 })
             if chave in picos:
                 colunas.append(self._coluna_pico(chave, picos[chave], entrada_mes, vivo))
@@ -610,6 +622,15 @@ class Api:
         }
 
     @staticmethod
+    def _com_coverage(entrada, operation_key, periodo, chave):
+        """Poe o coverage total da aba Coverage, calculado agora (com os
+        dias, horas e sinergias digitados la)."""
+        valor = coverage_tela.total_do_periodo(operation_key, periodo, chave)
+        if valor is not None:
+            entrada["coverage"] = valor
+        return entrada
+
+    @staticmethod
     def _com_presenteismo(entrada, vivo):
         """Poe o presenteismo calculado na hora e refaz o CUBO com ele."""
         entrada["presenteismo"] = vivo["presenteismo"] if vivo else None
@@ -650,6 +671,37 @@ class Api:
         except (ValueError, TypeError) as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True}
+
+    # ---------------- Coverage ----------------
+
+    def get_coverage(self, operacao=None, visualizacao="semanal", mes=None, periodo_id=None):
+        return coverage_tela.montar(operacao or "todas", visualizacao, mes, periodo_id)
+
+    def set_coverage(self, operacao, chave_periodo, usuario, campo, valor):
+        """Dias, horas ou sinergia (cedida/recebida) de um usuario."""
+        if operacao not in OPERATIONS:
+            return {"success": False, "message": "Operação inválida."}
+        try:
+            coverage_store.definir(operacao, chave_periodo, [usuario], campo, valor)
+        except ValueError as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True}
+
+    def set_coverage_todos(self, operacao, visualizacao, mes, periodo_id, campo, valor):
+        """O mesmo valor de dias ou horas para todos os usuarios da tela
+        (semana de feriado, por exemplo)."""
+        if campo not in ("dias", "horas"):
+            return {"success": False, "message": "Só dias e horas valem para todos."}
+        tela = coverage_tela.montar(operacao or "todas", visualizacao, mes, periodo_id)
+        grupos = {}
+        for linha in tela["linhas"]:
+            grupos.setdefault((linha["operacao_key"], linha["chave_periodo"]), []).append(linha["usuario"])
+        try:
+            for (op, chave_periodo), usuarios in grupos.items():
+                coverage_store.definir(op, chave_periodo, usuarios, campo, valor)
+        except ValueError as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True, "usuarios": len(tela["linhas"])}
 
     def set_quadro(self, gestor_id, periodo_id, campo, valor):
         """HC, dias uteis, horas/dia ou faltas de um gestor numa semana (ou

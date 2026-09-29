@@ -642,24 +642,104 @@
       <section id="page-coverage" class="page" hidden>
         <div class="page-wide-wrap">
           <h2 class="page-heading">Coverage</h2>
-          <p class="subtitle">Cobertura da operação. A regra do cálculo ainda vai ser definida.</p>
+          <p class="subtitle">Horas no LMS sobre as horas que cada usuário deveria trabalhar. As semanas vêm da extração Week e o resultado do mês, da extração Month.</p>
 
-          <div class="card coverage-card">
-            <div class="coverage-icone" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
-            </div>
-            <div class="coverage-texto">
-              <h3 class="card-title">Em construção</h3>
-              <p>
-                Esta aba vai receber o cálculo do Coverage. Enquanto a regra não
-                estiver definida, o indicador aparece como <strong>&mdash;</strong>
-                na aba Início.
-              </p>
-              <div class="coverage-meta">
-                <span class="coverage-meta-rotulo">Meta</span>
-                <span class="coverage-meta-valor">92% a 110%</span>
+          <!-- Filtros: o mesmo cabecalho da aba de presenteismo -->
+          <div class="card filtros-card">
+            <div class="filtros-linha">
+              <div class="filtro-campo">
+                <label for="cv-operacao">Operação</label>
+                <select id="cv-operacao"></select>
+              </div>
+              <div class="filtro-campo largo">
+                <label for="cv-mes">Mês vigente</label>
+                <select id="cv-mes"></select>
+              </div>
+              <div class="filtro-campo">
+                <label for="cv-periodo">Semana do mês vigente</label>
+                <select id="cv-periodo"></select>
+              </div>
+              <div class="filtro-campo">
+                <label>Visualização</label>
+                <div class="segmentado" id="cv-visualizacao">
+                  <button type="button" class="seg-opcao active" data-visualizacao="semanal">Semanal</button>
+                  <button type="button" class="seg-opcao" data-visualizacao="mes">Resultado do Mês</button>
+                </div>
               </div>
             </div>
+          </div>
+
+          <div class="hc-cards">
+            <div class="hc-card">
+              <div class="hc-card-label">Operação</div>
+              <div class="hc-card-valor texto" id="cv-card-operacao">-</div>
+            </div>
+            <div class="hc-card">
+              <div class="hc-card-label">Período</div>
+              <div class="hc-card-valor texto" id="cv-card-periodo">-</div>
+              <div class="hc-card-nota" id="cv-card-periodo-nota"></div>
+            </div>
+            <div class="hc-card">
+              <div class="hc-card-label">Horas LMS</div>
+              <div class="hc-card-valor" id="cv-card-lms">0</div>
+              <div class="hc-card-nota" id="cv-card-usuarios"></div>
+            </div>
+            <div class="hc-card">
+              <div class="hc-card-label">Horas Metrics</div>
+              <div class="hc-card-valor" id="cv-card-metrics">0</div>
+              <div class="hc-card-nota">dias × horas de cada usuário</div>
+            </div>
+            <div class="hc-card destaque">
+              <div class="hc-card-label">Coverage</div>
+              <div class="hc-card-valor" id="cv-card-coverage">-</div>
+              <div class="hc-card-nota" id="cv-card-meta">meta 92% a 110%</div>
+            </div>
+          </div>
+
+          <div class="card hc-tabela-card">
+            <div class="hc-tabela-topo">
+              <div class="hc-tabela-titulo">
+                <strong id="cv-titulo">Coverage por usuário</strong>
+                <span class="hc-contador" id="cv-contador">0 usuários</span>
+              </div>
+              <div class="cv-todos" id="cv-todos">
+                <span class="cv-todos-rotulo">Para todos:</span>
+                <label for="cv-todos-dias">Dias</label>
+                <input type="number" id="cv-todos-dias" min="0" step="1" inputmode="numeric">
+                <label for="cv-todos-horas">Horas</label>
+                <input type="number" id="cv-todos-horas" min="0" step="0.25" inputmode="decimal">
+                <button type="button" class="secondary" id="cv-aplicar-todos">Aplicar</button>
+              </div>
+            </div>
+
+            <div class="table-wrap" id="cv-tabela-wrap">
+              <table class="hc-tabela cv-tabela">
+                <thead>
+                  <tr>
+                    <th scope="col">User ID</th>
+                    <th scope="col">Operação</th>
+                    <th scope="col" class="num">Horas LMS</th>
+                    <th scope="col" class="num">Diretas sem meta</th>
+                    <th scope="col" class="num">Dias</th>
+                    <th scope="col" class="num">Horas</th>
+                    <th scope="col" class="num">Horas Metrics</th>
+                    <th scope="col" class="num">Sinergia cedida</th>
+                    <th scope="col" class="num">Sinergia recebida</th>
+                    <th scope="col" class="num">Coverage</th>
+                  </tr>
+                </thead>
+                <tbody id="cv-corpo"></tbody>
+                <tfoot id="cv-total"></tfoot>
+              </table>
+            </div>
+
+            <p class="hc-vazio" id="cv-vazio" hidden></p>
+
+            <div class="hc-status" id="cv-status">Dias e horas vêm do calendário (8,75 h por dia); digite para ajustar um usuário. Sinergias são digitadas em horas.</div>
+          </div>
+
+          <div class="card cv-formula-card">
+            <pre class="hc-formula"><code>Coverage = (Horas LMS &minus; Diretas sem meta) &divide; (Horas Metrics + Sinergia recebida &minus; Sinergia cedida)</code></pre>
           </div>
         </div>
       </section>

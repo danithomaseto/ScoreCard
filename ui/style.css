@@ -1263,52 +1263,6 @@ button.acao {
 .settings-status { font-size: 12px; color: var(--text-muted); word-break: break-all; }
 .settings-status.erro { color: #f97066; }
 
-/* ---------- Aba Coverage (em construcao) ---------- */
-
-.coverage-card {
-  width: 100%;
-  max-width: none;
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-}
-
-.coverage-icone {
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  background: rgba(255, 204, 0, 0.08);
-  color: var(--yellow);
-}
-
-.coverage-icone svg {
-  width: 24px;
-  height: 24px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.coverage-texto p { margin: 0 0 16px; max-width: 640px; font-size: 13px; line-height: 1.6; color: var(--text-muted); }
-
-.coverage-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 12px;
-  border: 1px solid var(--input-border);
-  border-radius: 999px;
-  font-size: 12px;
-}
-
-.coverage-meta-rotulo { color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px; font-weight: 700; }
-.coverage-meta-valor { color: var(--text); font-weight: 700; }
 
 
 /* Janela estreita (a padrao e 980 px): os tres periodos continuam numa
@@ -1524,3 +1478,39 @@ button.excluir-definitivo:hover { background: #b42318; }
 @media (max-width: 1100px) {
   .filter-card .filter-note { flex-basis: 100%; margin: 0; }
 }
+
+
+/* ---------- Aba Coverage ---------- */
+
+.cv-todos { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cv-todos:is([hidden]) { display: none; }
+.cv-todos-rotulo { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.cv-todos label { margin: 0; font-size: 12px; color: var(--text); }
+.cv-todos input { width: 80px; height: 38px; margin: 0; padding: 0 10px; }
+.cv-todos button { height: 38px; padding: 0 14px; margin: 0; font-size: 13px; }
+
+.cv-usuario { font-weight: 700; color: var(--text); letter-spacing: 0.01em; }
+.cv-tabela td.cv-metrics { font-weight: 700; color: var(--text); }
+/* Dez colunas: campos e espacos mais enxutos que os do Headcount, e os
+   titulos longos quebram em duas linhas, para tudo caber sem rolar. */
+.cv-tabela th { padding: 0 8px 10px; white-space: normal; line-height: 1.25; vertical-align: bottom; }
+.cv-tabela td { padding: 7px 8px; }
+.cv-tabela input[type="number"] { width: 64px; height: 34px; padding: 0 8px; }
+.cv-tabela td:first-child, .cv-tabela th:first-child { padding-left: 12px; }
+
+.cv-coverage {
+  display: inline-block;
+  min-width: 68px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  text-align: center;
+}
+.cv-coverage.verde { background: rgba(34, 197, 94, 0.14); color: #4ade80; }
+.cv-coverage.vermelho { background: rgba(249, 112, 102, 0.14); color: #fda29b; }
+.cv-coverage.azul { background: rgba(56, 189, 248, 0.14); color: #7dd3fc; }
+.cv-coverage.sem-numero { color: var(--text-muted); }
+.cv-coverage-total { outline: 1px solid currentColor; }
+
+.cv-formula-card { width: 100%; max-width: none; margin-top: 20px; }
+.cv-formula-card .hc-formula { margin: 0; }

@@ -206,6 +206,7 @@ function preCarregar() {
       await loadHistoryTable(historyTableBody);
       await loadHistoryTable(multiHistoryTableBody);
       await carregarHeadcount();
+      await carregarCoverage();
     } catch (err) {
       // pre-carregar e so um adiantamento; a aba carrega de novo ao abrir
     }
@@ -274,6 +275,8 @@ async function showPage(pageName) {
     await loadHistoryTable(multiHistoryTableBody);
   } else if (pageName === 'headcount') {
     await carregarHeadcount();
+  } else if (pageName === 'coverage') {
+    await carregarCoverage();
   } else if (pageName === 'settings') {
     const check = await pywebview.api.validate_sharepoint_folder();
     folderPathEl.textContent = check.valid ? check.folder : 'Nenhuma pasta configurada ainda.';
@@ -1123,6 +1126,7 @@ function plural(numero, singular, plural_) {
 // Numero no padrao brasileiro: 8,75 e 1.234 (no lugar de 8.75 e 1234).
 function num(valor) {
   if (typeof valor !== 'number') return valor;
+  if (valor === 0) valor = 0; // -0 vira 0 (senao a tela mostra "-0")
   return valor.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 }
 
@@ -1917,3 +1921,224 @@ for (const evento of ['dragleave', 'drop']) {
   });
 }
 hcDropzone.addEventListener('drop', (e) => enviarArquivoFaltas(e.dataTransfer.files[0]));
+
+
+// ---------------------------------------------------------------
+// Aba Coverage
+// ---------------------------------------------------------------
+// Uma linha por usuario, com as horas que vieram do Summary (Horas LMS
+// e diretas sem meta) e o que se digita aqui: dias, horas, sinergia
+// cedida e recebida. O Python calcula; aqui so se desenha.
+
+const cvOperacao = document.getElementById('cv-operacao');
+const cvMes = document.getElementById('cv-mes');
+const cvPeriodo = document.getElementById('cv-periodo');
+const cvVisualizacao = document.getElementById('cv-visualizacao');
+const cvCorpo = document.getElementById('cv-corpo');
+const cvTotal = document.getElementById('cv-total');
+const cvStatus = document.getElementById('cv-status');
+const cvVazio = document.getElementById('cv-vazio');
+
+let cvEstado = { operacao: 'todas', visualizacao: 'semanal', mes: null, periodo_id: null };
+let cvTela = null;
+
+function pct(valor) {
+  if (valor === null || valor === undefined) return '—';
+  return `${(valor * 100).toFixed(1).replace('.', ',')}%`;
+}
+
+async function carregarCoverage() {
+  cvTela = await comEsqueleto(cvCorpo, 10, () => pywebview.api.get_coverage(
+    cvEstado.operacao, cvEstado.visualizacao, cvEstado.mes, cvEstado.periodo_id));
+  cvEstado.mes = cvTela.mes;
+  cvEstado.periodo_id = cvTela.periodo_id;
+  desenharFiltrosCv(cvTela);
+  desenharCardsCv(cvTela);
+  desenharTabelaCv(cvTela);
+}
+
+function desenharFiltrosCv(tela) {
+  preencherSelect(cvOperacao, tela.operacoes, tela.operacao, 'key', 'label');
+  preencherSelect(cvMes, tela.meses, tela.mes);
+  const noMes = tela.visualizacao === 'mes';
+  if (noMes) {
+    preencherSelect(cvPeriodo, [{ id: '', rotulo: 'Não se aplica ao resultado do mês' }], '');
+  } else if (!tela.periodos.length) {
+    preencherSelect(cvPeriodo, [{ id: '', rotulo: 'Nenhuma semana extraída neste mês' }], '');
+  } else {
+    preencherSelect(cvPeriodo, tela.periodos, tela.periodo_id);
+  }
+  cvPeriodo.disabled = noMes || !tela.periodos.length;
+  for (const botao of cvVisualizacao.querySelectorAll('.seg-opcao')) {
+    botao.classList.toggle('active', botao.dataset.visualizacao === tela.visualizacao);
+  }
+  moverDestaque(cvVisualizacao);
+}
+
+function desenharCardsCv(tela) {
+  const c = tela.cards;
+  document.getElementById('cv-card-operacao').textContent = c.operacao;
+  document.getElementById('cv-card-periodo').textContent = c.periodo;
+  document.getElementById('cv-card-periodo-nota').textContent = c.periodo_nota;
+  document.getElementById('cv-card-lms').textContent = `${num(c.lms)} h`;
+  document.getElementById('cv-card-usuarios').textContent = plural(tela.total.usuarios, 'usuário', 'usuários');
+  document.getElementById('cv-card-metrics').textContent = `${num(c.metrics)} h`;
+  document.getElementById('cv-card-coverage').textContent = pct(c.coverage);
+}
+
+function campoCoverage(linha, campo, passo) {
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  input.step = passo;
+  input.value = linha[campo];
+  input.dataset.usuario = linha.usuario;
+  input.dataset.operacao = linha.operacao_key;
+  input.dataset.campo = campo;
+  const origem = { dias: linha.dias_origem, horas: linha.horas_origem }[campo];
+  if (origem && origem !== 'digitado') {
+    input.classList.add('valor-herdado');
+    input.title = campo === 'dias'
+      ? 'Dias úteis do período. Digite para ajustar só este usuário.'
+      : `Padrão de ${num(cvTela.horas_padrao)} h por dia. Digite para ajustar só este usuário.`;
+  }
+  if (campo === 'dias') {
+    input.addEventListener('keydown', (evento) => {
+      if (['-', '+', 'e', 'E', ',', '.'].includes(evento.key)) evento.preventDefault();
+    });
+  }
+  input.addEventListener('change', async () => {
+    const resposta = await pywebview.api.set_coverage(
+      linha.operacao_key, linha.chave_periodo, linha.usuario, campo, input.value);
+    if (!resposta.success) {
+      cvStatus.textContent = resposta.message;
+      input.value = linha[campo];
+      return;
+    }
+    await redesenharCoverageMantendoFoco();
+    cvStatus.textContent = 'Salvo. A linha COVERAGE da aba Início já reflete a mudança.';
+  });
+  return input;
+}
+
+async function redesenharCoverageMantendoFoco() {
+  const foco = document.activeElement;
+  const destino = foco && foco.dataset && foco.dataset.usuario
+    ? { usuario: foco.dataset.usuario, operacao: foco.dataset.operacao, campo: foco.dataset.campo } : null;
+  await carregarCoverage();
+  if (destino) {
+    const alvo = Array.from(cvCorpo.querySelectorAll('input')).find((i) =>
+      i.dataset.usuario === destino.usuario && i.dataset.operacao === destino.operacao
+      && i.dataset.campo === destino.campo);
+    if (alvo) { alvo.focus(); alvo.select(); }
+  }
+}
+
+function celulaCv(conteudo, classe) {
+  const td = document.createElement('td');
+  if (classe) td.className = classe;
+  if (conteudo instanceof Node) td.appendChild(conteudo); else td.textContent = conteudo;
+  return td;
+}
+
+function seloCoverage(valor, cor) {
+  const selo = document.createElement('span');
+  selo.className = `cv-coverage ${cor || 'sem-numero'}`;
+  selo.textContent = pct(valor);
+  return selo;
+}
+
+function desenharTabelaCv(tela) {
+  document.getElementById('cv-titulo').textContent = tela.visualizacao === 'mes'
+    ? 'Coverage do mês por usuário' : 'Coverage da semana por usuário';
+  document.getElementById('cv-contador').textContent = plural(tela.linhas.length, 'usuário', 'usuários');
+  const vazio = !tela.linhas.length;
+  cvVazio.hidden = !vazio;
+  document.getElementById('cv-tabela-wrap').hidden = vazio;
+  document.getElementById('cv-todos').hidden = vazio;
+  if (vazio) {
+    cvVazio.textContent = tela.visualizacao === 'mes'
+      ? 'Nenhuma extração Month deste mês para esta operação. Extraia o mês (Month) para ver o coverage.'
+      : 'Nenhuma extração Week deste mês para esta operação. Extraia a semana (Week, com User ID) para ver o coverage.';
+  }
+
+  cvCorpo.innerHTML = '';
+  for (const linha of tela.linhas) {
+    const tr = document.createElement('tr');
+    if (linha.cor === 'vermelho') tr.classList.add('abaixo');
+    const usuario = document.createElement('strong');
+    usuario.className = 'cv-usuario';
+    usuario.textContent = linha.usuario;
+    tr.appendChild(celulaCv(usuario));
+    tr.appendChild(celulaCv(linha.operacao));
+    tr.appendChild(celulaCv(num(linha.lms), 'num'));
+    tr.appendChild(celulaCv(num(linha.diretas_sem_meta), 'num'));
+    tr.appendChild(celulaCv(campoCoverage(linha, 'dias', '1'), 'num'));
+    tr.appendChild(celulaCv(campoCoverage(linha, 'horas', '0.25'), 'num'));
+    tr.appendChild(celulaCv(num(linha.metrics), 'num cv-metrics'));
+    tr.appendChild(celulaCv(campoCoverage(linha, 'cedida', '0.25'), 'num'));
+    tr.appendChild(celulaCv(campoCoverage(linha, 'recebida', '0.25'), 'num'));
+    tr.appendChild(celulaCv(seloCoverage(linha.coverage, linha.cor), 'num'));
+    cvCorpo.appendChild(tr);
+  }
+
+  cvTotal.innerHTML = '';
+  if (vazio) return;
+  const t = tela.total;
+  const tr = document.createElement('tr');
+  [
+    ['TOTAL', ''], [plural(t.usuarios, 'usuário', 'usuários'), ''],
+    [num(t.lms), 'num'], [num(t.diretas_sem_meta), 'num'], ['', 'num'], ['', 'num'],
+    [num(t.metrics), 'num'], [num(t.cedida), 'num'], [num(t.recebida), 'num'],
+  ].forEach(([texto, classe]) => tr.appendChild(celulaCv(texto, classe)));
+  const tdTotal = celulaCv(seloCoverage(t.coverage, t.cor), 'num');
+  tdTotal.firstChild.classList.add('cv-coverage-total');
+  tr.appendChild(tdTotal);
+  cvTotal.appendChild(tr);
+}
+
+cvOperacao.addEventListener('change', async () => {
+  cvEstado.operacao = cvOperacao.value;
+  cvEstado.periodo_id = null;
+  await carregarCoverage();
+});
+cvMes.addEventListener('change', async () => {
+  cvEstado.mes = cvMes.value;
+  cvEstado.periodo_id = null;
+  await carregarCoverage();
+});
+cvPeriodo.addEventListener('change', async () => {
+  cvEstado.periodo_id = cvPeriodo.value;
+  await carregarCoverage();
+});
+cvVisualizacao.addEventListener('click', async (evento) => {
+  const botao = evento.target.closest('.seg-opcao');
+  if (!botao) return;
+  cvVisualizacao.querySelectorAll('.seg-opcao').forEach((b) => b.classList.toggle('active', b === botao));
+  moverDestaque(cvVisualizacao);
+  cvEstado.visualizacao = botao.dataset.visualizacao;
+  cvEstado.periodo_id = null;
+  await carregarCoverage();
+});
+window.addEventListener('resize', () => moverDestaque(cvVisualizacao));
+
+const cvAplicar = document.getElementById('cv-aplicar-todos');
+cvAplicar.addEventListener('click', () => comCarregando(cvAplicar, async () => {
+  const pedidos = [['dias', document.getElementById('cv-todos-dias')],
+    ['horas', document.getElementById('cv-todos-horas')]].filter(([, campo]) => campo.value !== '');
+  if (!pedidos.length) {
+    cvStatus.textContent = 'Digite os dias ou as horas que valem para todos os usuários desta tela.';
+    return;
+  }
+  for (const [campo, entrada] of pedidos) {
+    const resposta = await pywebview.api.set_coverage_todos(
+      cvEstado.operacao, cvEstado.visualizacao, cvEstado.mes, cvEstado.periodo_id, campo, entrada.value);
+    if (!resposta.success) {
+      cvStatus.textContent = resposta.message;
+      return;
+    }
+    entrada.value = '';
+  }
+  await carregarCoverage();
+  cvStatus.textContent = `Aplicado a ${plural(cvTela.linhas.length, 'usuário', 'usuários')} desta tela.`;
+}));
