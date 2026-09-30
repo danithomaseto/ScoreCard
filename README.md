@@ -1,5 +1,8 @@
 # Score Card - Aplicativo Desktop
 
+> **Documento completo da ferramenta** (uso, indicadores, regras, dados,
+> segurança, build e histórico): [`docs/SCORECARD.md`](docs/SCORECARD.md).
+
 Versao 100% local do Score Card: sem Vercel, sem Supabase, sem servidor
 nenhum. Distribuido como **um unico arquivo `ScoreCard.exe`** — quem
 recebe so precisa desse arquivo, nada de Python, pip, Node.js, nem
