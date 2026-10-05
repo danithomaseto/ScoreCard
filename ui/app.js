@@ -522,11 +522,21 @@ function textoDaColuna(indice) {
 // faz cada valor cair numa celula do PowerPoint: texto com quebras de
 // linha ele cola inteiro dentro de UMA celula, porque a quebra vira
 // linha dentro do paragrafo, nao mudanca de celula.
+//
+// A celula vai formatada: sem estilo, o PowerPoint aplica a fonte e as
+// margens padrao dele, maiores que as da tabela da apresentacao, e com
+// duas casas decimais o "%" descia para uma segunda linha ("78,48" / "%").
+// Centralizada, sem margem, sem quebra e com fonte compacta, fica numa
+// linha so, igual ao numero digitado na propria tabela.
+const ESTILO_DA_CELULA_COPIADA =
+  'text-align:center;white-space:nowrap;padding:0;margin:0;font-size:10pt;line-height:1';
+
 function tabelaDaColuna(indice) {
   const linhas = valoresDaColuna(indice)
-    .map((valor) => `<tr><td>${valor}</td></tr>`)
+    .map((valor) => `<tr><td nowrap style="${ESTILO_DA_CELULA_COPIADA}">`
+      + `<p style="margin:0;text-align:center">${valor}</p></td></tr>`)
     .join('');
-  return `<table>${linhas}</table>`;
+  return `<table style="border-collapse:collapse">${linhas}</table>`;
 }
 
 async function copiarColuna(indice, btn) {

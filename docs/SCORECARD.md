@@ -1,6 +1,6 @@
 # Score Card — documento completo da ferramenta
 
-**Versão:** V.01.0 · **Criado por:** Daniel Thomaseto · **Atualizado em:** 30/09/2026
+**Versão:** V.01.1 · **Criado por:** Daniel Thomaseto · **Atualizado em:** 05/10/2026
 
 Este documento explica o Score Card de ponta a ponta: para que serve,
 como se usa, como cada indicador é calculado, onde ficam os dados, como
@@ -155,7 +155,8 @@ caso, `"escala_espanhola": True`). Nenhuma outra parte do código muda.
 - **Copiar:** cada coluna tem um botão que copia os seis valores, na
   ordem da tela, para colar direto na apresentação (Excel ou
   PowerPoint). Indicador sem número vira célula vazia, para nenhum
-  valor mudar de lugar.
+  valor mudar de lugar. Cada valor vai centralizado, em fonte de 10 pt
+  e sem quebra de linha, para caber numa linha só da célula.
 - **Última extração:** mostra quando a operação escolhida foi extraída
   pela última vez.
 - **Sem extração no mês:** aparece "Nenhuma extração de <operação> em
@@ -627,7 +628,7 @@ python -m pytest -q tests
 | 28/09/2026 | Faltas digitadas por semana/ciclo; versão V.01.0; Início de um mês por vez |
 | 29/09/2026 | Aba Coverage; percentuais com duas casas; janela única, aviso ao fechar, modo apresentação, telas vazias com "Extrair agora"; pente fino de layout |
 | 30/09/2026 | **V.01.0 fechada para apresentação** e este documento |
-| 05/10/2026 | Correção do erro ao digitar dias úteis no Resultado do Mês; o ciclo da folha passa a ir para o mês em que fecha (e para o Pico); ciclo em aberto conta até ontem |
+| 05/10/2026 | **V.01.1:** correção do erro ao digitar dias úteis no Resultado do Mês; o ciclo da folha passa a ir para o mês em que fecha (e para o Pico); ciclo em aberto conta até ontem; cópia para o PowerPoint numa linha só por célula |
 
 ---
 
