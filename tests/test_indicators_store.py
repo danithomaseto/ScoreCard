@@ -323,7 +323,7 @@ def test_distribuicao_da_dispersao_vem_da_extracao_do_mes(store):
         meta={"group_by": "User ID"})
     dist = api_obj.get_indicator_table("hugo_boss", mes="2026-09")["distribuicao"]
     assert dist["estado"] == "ok" and dist["total"] == 9
-    assert [f["meta"] for f in dist["faixas"]] == [0, 1, 6, 1, 0]
+    assert [f["meta"] for f in dist["faixas"]] == [0, 1, 7, 1, 0]
 
     # Agrupado por outra coisa que nao User ID, a contagem nao e de pessoas.
     store.salvar_extracao("hugo_boss", "month", {"2026-09": {

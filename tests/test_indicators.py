@@ -263,17 +263,34 @@ def test_faixa_verde_e_o_dentro_da_dispersao(mensal):
     assert weekly.totais(mensal["linhas"], nivel_detalhe="Shift")["faixas_dispersao"] is None
 
 
-def test_meta_da_distribuicao_igual_a_planilha_e_arredondada():
-    """9 pessoas: verde 9 x 0,7 = 6,3 -> 6; amarelas 9 x 0,15 = 1,35 -> 1;
-    vermelhas 0. Com 10: 7 e 1,5 -> 2 (meio arredonda para cima)."""
+def test_meta_da_distribuicao_em_pessoas_inteiras():
+    """Verde: o minimo de pessoas para chegar a 70% (para cima). Amarelas:
+    o maximo aceito na faixa (para baixo). Vermelhas: zero.
+    9 pessoas: 6,3 -> 7 e 1,35 -> 1 (o 7 da curva e o 1 da planilha)."""
     faixas = {"abaixo_15": 1, "abaixo_10": 3, "dentro": 3, "acima_10": 1, "acima_15": 1}
     dist = weekly.distribuicao_da_dispersao(faixas)
     assert dist["total"] == 9
-    assert [f["meta"] for f in dist["faixas"]] == [0, 1, 6, 1, 0]
+    assert [f["meta"] for f in dist["faixas"]] == [0, 1, 7, 1, 0]
     assert [f["pessoas"] for f in dist["faixas"]] == [1, 3, 3, 1, 1]
     assert [f["cor"] for f in dist["faixas"]] == ["vermelho", "amarelo", "verde", "amarelo", "vermelho"]
     assert [f["rotulo"] for f in dist["faixas"]] == ["<-15", ">=-15 <-10", ">=-10 <=10", ">10 <=15", ">15"]
 
-    dez = weekly.distribuicao_da_dispersao({**faixas, "dentro": 4})
-    assert [f["meta"] for f in dez["faixas"]] == [0, 2, 7, 2, 0]
+    def metas(total):
+        so_verde = {"abaixo_15": 0, "abaixo_10": 0, "dentro": total, "acima_10": 0, "acima_15": 0}
+        return [f["meta"] for f in weekly.distribuicao_da_dispersao(so_verde)["faixas"]]
+
+    # 2 pessoas: 1,4 -> 2 (1 de 2 seria 50%, abaixo da meta).
+    assert metas(2) == [0, 0, 2, 0, 0]
+    # 3 pessoas: 2,1 -> 3 (2 de 3 seria 66,67%).
+    assert metas(3) == [0, 0, 3, 0, 0]
+    # Os exemplos combinados: 4 pessoas -> 3 (2,8) e 5 -> 4 (3,5).
+    assert metas(4)[2] == 3
+    assert metas(5)[2] == 4
+    # Em todo caso, a meta verde e o menor numero que bate 70%.
+    for total in range(1, 61):
+        verde = metas(total)[2]
+        assert verde / total >= 0.7 and (verde - 1) / total < 0.7, total
+    # 10 pessoas: 10 x 0,7 da 7,0000000001 na conta do computador; e 7.
+    assert metas(10) == [0, 1, 7, 1, 0]
+    assert metas(100) == [0, 15, 70, 15, 0]
     assert weekly.distribuicao_da_dispersao(None) is None

@@ -494,7 +494,11 @@ function desenharDistribuicao(dist) {
   const verde = dist.faixas.find((f) => f.chave === 'dentro');
   const pico = pontos[dist.faixas.indexOf(verde)];
   svg.appendChild(elementoSvg('circle', { cx: pico.x, cy: pico.y, r: 4, class: 'distribuicao-meta-ponto' }));
-  svg.appendChild(elementoSvg('text', { x: pico.x + 10, y: pico.y - 6, class: 'distribuicao-meta-valor' }, num(verde.meta)));
+  // O numero da meta vai a direita da barra verde, e nao no meio dela:
+  // com barra e meta iguais (1 e 1), os dois numeros ficavam encavalados.
+  svg.appendChild(elementoSvg('text', {
+    x: pico.x + larguraBarra / 2 + 8, y: pico.y + 5, class: 'distribuicao-meta-valor',
+  }, `meta ${num(verde.meta)}`));
 
   // Os numeros das barras por ultimo, por cima da curva, com um contorno
   // da cor do fundo: onde a curva passa perto, o numero continua legivel.

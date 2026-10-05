@@ -1156,7 +1156,10 @@ pessoas por faixa de Var na extracao Month, com a curva da meta.
   verde, `>10 <=15` amarela, `>15` vermelha.
 - **Meta:** total x 0,7 na verde, total x 0,15 em cada amarela, zero nas
   vermelhas (planilha: `=$R$17*0,7` e `=$R$17*0,15`, R17 = soma das
-  faixas). Arredondada para pessoas inteiras, meio para cima.
+  faixas). Em pessoas inteiras: a verde arredonda **para cima** (o
+  minimo para chegar a 70%: 2 pessoas -> 2, 9 -> 7; arredondar para baixo
+  daria 1 de 2 = 50%) e as amarelas **para baixo** (o maximo aceito:
+  9 -> 1).
 - **Dado:** a contagem por faixa (`faixas_dispersao`) e gravada na hora
   da extracao, junto dos outros totais. Mes extraido antes nao tem: o
   quadro pede para extrair de novo. Agrupamento sem User ID nao conta

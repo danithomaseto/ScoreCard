@@ -435,8 +435,10 @@ exatamente o DENTRO (verde ÷ total = a Dispersão do mês).
 | `>15` | vermelho | 0 |
 
 O **total** é a soma das pessoas das cinco faixas (como o `$R$17` da
-planilha). A meta é arredondada para pessoas inteiras (9 pessoas: 6,3 →
-6 e 1,35 → 1; meio para cima). A curva laranja é a meta, com o número
+planilha). A meta é em pessoas inteiras: na **verde**, o mínimo para
+chegar a 70%, arredondado **para cima** (2 pessoas: 1,4 → 2; 9 pessoas:
+6,3 → 7); nas **amarelas**, o máximo aceito, arredondado **para baixo**
+(9 pessoas: 1,35 → 1). A curva laranja é a meta, com o número
 da faixa verde no topo. Embaixo do gráfico, a tabela Pessoas × Meta.
 
 Mês extraído antes deste gráfico existir não tem a contagem por faixa:

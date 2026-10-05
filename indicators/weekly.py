@@ -10,6 +10,8 @@ vem consolidado e vira um grupo so. As formulas sao as mesmas (ver
 docs/INDICADORES.md, secao 10.2).
 """
 
+import math
+
 from .limits import META_DAS_FAIXAS_DA_DISPERSAO, TOLERANCIA_VAR
 
 
@@ -86,11 +88,23 @@ CORES_DAS_FAIXAS = {
 }
 
 
-def _arredondar(valor):
-    """Arredondamento comum (2,5 -> 3), e nao o "do banqueiro" do round()
-    do Python (2,5 -> 2), para bater com o Excel. O 1e-9 segura erros de
-    ponto flutuante (10 x 0,15 = 1,4999999...)."""
-    return int(valor + 0.5 + 1e-9)
+def _meta_em_pessoas(chave, total):
+    """A meta da faixa em pessoas inteiras.
+
+    - Verde: o **minimo** de pessoas para chegar a 70%, entao arredonda
+      para cima (2 pessoas: 1,4 -> 2; 9 pessoas: 6,3 -> 7). Arredondar
+      para baixo daria uma meta que nao bate os 70% (1 de 2 = 50%).
+    - Amarelas: o **maximo** aceito na faixa, entao arredonda para baixo
+      (9 pessoas: 1,35 -> 1; 2 pessoas: 0,3 -> 0).
+    - Vermelhas: zero.
+
+    O 1e-9 segura erros de ponto flutuante (10 x 0,7 = 7,000000000001,
+    que para cima viraria 8).
+    """
+    exato = total * META_DAS_FAIXAS_DA_DISPERSAO[chave]
+    if chave == "dentro":
+        return math.ceil(exato - 1e-9)
+    return math.floor(exato + 1e-9)
 
 
 def distribuicao_da_dispersao(faixas):
@@ -98,9 +112,8 @@ def distribuicao_da_dispersao(faixas):
 
     A meta de cada faixa e uma parte do total de pessoas (a soma das
     cinco faixas): 70% na verde e 15% em cada amarela, como na planilha
-    (=$R$17*0,7 e =$R$17*0,15), arredondada para pessoas inteiras como a
-    planilha mostra (9 pessoas: 6,3 -> 6 e 1,35 -> 1; meio para cima).
-    None se nao ha contagem guardada.
+    (=$R$17*0,7 e =$R$17*0,15), em pessoas inteiras (ver
+    _meta_em_pessoas). None se nao ha contagem guardada.
     """
     if not faixas:
         return None
@@ -112,7 +125,7 @@ def distribuicao_da_dispersao(faixas):
             "rotulo": ROTULOS_DAS_FAIXAS[chave],
             "cor": CORES_DAS_FAIXAS[chave],
             "pessoas": faixas.get(chave, 0),
-            "meta": _arredondar(total * META_DAS_FAIXAS_DA_DISPERSAO[chave]),
+            "meta": _meta_em_pessoas(chave, total),
         } for chave in FAIXAS_DA_DISPERSAO],
     }
 
