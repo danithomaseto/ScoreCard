@@ -584,7 +584,8 @@ def presenteismo_por_periodo(operacao, hoje=None, semanas=None, meses=None):
 
     - Semana: segunda a domingo, a mesma semana do Summary, chave na
       segunda-feira. Nao e a semana cortada no mes da tela de Headcount.
-    - Mes: o ciclo da folha ponto que comeca no dia 13 desse mes.
+    - Mes: o ciclo da folha ponto que fecha no dia 12 desse mes
+      (outubro = 13/09 a 12/10).
 
     semanas e meses sao as chaves que a aba Inicio vai mostrar (as que
     vieram do Summary); sem elas, calcula os periodos recentes.
@@ -646,9 +647,12 @@ def _agregar(gestores, pedacos, config):
             q = quadro_do_periodo(gestor, periodo["id"], periodo["dias_uteis"], config)
             dias = q["dias_uteis"]
             # Pedaco que entra so em parte na semana do Summary conta so
-            # os dias uteis que caem nela.
-            if periodo.get("dias_na_semana", dias) < periodo["dias_uteis"]:
-                dias = periodo["dias_na_semana"]
+            # os dias uteis que caem nela. Ciclo da folha nao tem
+            # "dias_na_semana": vale o numero do quadro (digitado ou o
+            # do calendario).
+            na_semana = periodo.get("dias_na_semana")
+            if na_semana is not None and na_semana < periodo["dias_uteis"]:
+                dias = na_semana
             disponiveis += q["hc"] * dias * q["horas_dia"]
             perdidas += q["faltas"] * q["horas_dia"]
     if disponiveis <= 0:

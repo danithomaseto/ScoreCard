@@ -358,8 +358,15 @@ abre — não há botão de "gravar"):
   semana tem dois pedaços e eles somam (ex.: 31/08 a 06/09 = última
   semana de agosto + S1 de setembro). Funciona tanto para operações
   cuja semana do Summary começa no domingo (ABB) quanto na segunda.
-- **Mês:** o ciclo da folha que começa no dia 13 do mês. Ciclo sem HC
-  próprio usa o último valor digitado nas semanas até o fim do ciclo.
+- **Mês:** o ciclo da folha que **fecha no dia 12 daquele mês**
+  (Outubro = 13/09 → 12/10; Setembro = 13/08 → 12/09). O mesmo valor vai
+  para a coluna **Pico** do mês e entra no Cubo das duas, mesmo que o
+  mês tenha só alguns dias extraídos. Ciclo sem HC próprio usa o último
+  valor digitado nas semanas até o fim do ciclo.
+- **Ciclo em aberto:** conta os dias úteis do dia 13 **até ontem** — o
+  dia de hoje ainda não fechou e não entra. Ex.: em 05/10 conta de 13/09
+  a 02/10 (15 dias úteis); na semana seguinte, até 09/10; e assim até
+  fechar no dia 12.
 - Semana ou ciclo **sem falta lançada conta como zero falta (100%)**.
   Semana que ainda não começou, ou operação sem gestor com HC, fica sem
   número.
@@ -415,7 +422,7 @@ Passando o mouse no título da coluna aparecem os 5 dias usados.
 |---|---|
 | **Semana do Summary** | a data que vem no export (algumas operações começam no domingo, outras na segunda). O número (Week 36, 37…) é só rótulo, igual ao `WEEKNUM` do Excel |
 | **Semana do Headcount** | segunda a domingo, cortada na virada do mês (S1, S2…) |
-| **Ciclo da folha** | do dia 13 de um mês ao dia 12 do seguinte |
+| **Ciclo da folha** | do dia 13 de um mês ao dia 12 do seguinte; pertence ao mês em que fecha (13/09 → 12/10 = Outubro). Em aberto, conta até ontem |
 | **Dia útil** | segunda a sexta |
 | **Escala espanhola** | Nike/Fisia, Rede, JCB e HPE: os **dois últimos sábados de cada mês** também são dia útil (no presenteísmo, no coverage e nos dias de pico). Cada ciclo 13→12 ganha 2 dias (ex.: 13/09 → 12/10/2026 tem 21 dias úteis na escala normal e 23 na espanhola) |
 | **Domingo** | nunca é dia útil |
@@ -620,6 +627,7 @@ python -m pytest -q tests
 | 28/09/2026 | Faltas digitadas por semana/ciclo; versão V.01.0; Início de um mês por vez |
 | 29/09/2026 | Aba Coverage; percentuais com duas casas; janela única, aviso ao fechar, modo apresentação, telas vazias com "Extrair agora"; pente fino de layout |
 | 30/09/2026 | **V.01.0 fechada para apresentação** e este documento |
+| 05/10/2026 | Correção do erro ao digitar dias úteis no Resultado do Mês; o ciclo da folha passa a ir para o mês em que fecha (e para o Pico); ciclo em aberto conta até ontem |
 
 ---
 

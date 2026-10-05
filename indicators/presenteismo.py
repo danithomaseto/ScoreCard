@@ -113,9 +113,11 @@ def ciclos_folha(hoje=None, anteriores=3, escala_espanhola=False):
     """Os ciclos 13->12, do mais recente pro mais antigo.
 
     O ciclo em andamento entra como "Em aberto" e conta **so os dias
-    uteis ja decorridos** — senao o presenteismo de um ciclo que mal
-    comecou apareceria despencando, porque as faltas ja aconteceram e os
-    dias ainda nao.
+    uteis ja trabalhados: do dia 13 ate ontem**. Hoje ainda nao fechou e
+    nao entra (em 05/10, conta de 13/09 a 02/10; na semana seguinte, ate
+    09/10, e assim ate o dia 12). Contar dias que ainda nao aconteceram
+    faria o presenteismo de um ciclo que mal comecou despencar, porque as
+    faltas ja aconteceram e os dias ainda nao.
 
     Passado o dia 12, o proximo ciclo ja aparece na lista, pronto pra
     receber lancamentos.
@@ -134,7 +136,8 @@ def ciclos_folha(hoje=None, anteriores=3, escala_espanhola=False):
         elif hoje > fim:
             status, uteis = "Fechado", dias_uteis(inicio, fim, escala_espanhola)
         else:
-            status, uteis = "Em aberto", dias_uteis(inicio, hoje, escala_espanhola)
+            ontem = hoje - datetime.timedelta(days=1)
+            status, uteis = "Em aberto", dias_uteis(inicio, ontem, escala_espanhola)
         ciclos.append({
             "id": inicio.isoformat(),
             "rotulo": f"{inicio.strftime('%d/%m/%Y')} → {fim.strftime('%d/%m/%Y')}",
@@ -145,7 +148,10 @@ def ciclos_folha(hoje=None, anteriores=3, escala_espanhola=False):
             "fim": fim.isoformat(),
             "status": status,
             "dias_uteis": uteis,
-            "mes_referencia": f"{inicio.year:04d}-{inicio.month:02d}",
+            # O mes do ciclo e o mes em que ele FECHA: 13/09 -> 12/10 e a
+            # folha de outubro, e e na coluna de outubro da aba Inicio
+            # que o presenteismo dele aparece.
+            "mes_referencia": f"{fim.year:04d}-{fim.month:02d}",
         })
     return ciclos
 

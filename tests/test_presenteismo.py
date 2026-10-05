@@ -104,11 +104,13 @@ def test_ciclo_vai_do_dia_13_ao_dia_12():
 
 def test_ciclo_em_aberto_conta_so_os_dias_ja_decorridos():
     """Senao o presenteismo de um ciclo que mal comecou apareceria
-    despencando: as faltas ja aconteceram e os dias ainda nao."""
+    despencando: as faltas ja aconteceram e os dias ainda nao. Conta ate
+    ontem: o dia de hoje ainda nao fechou."""
     ciclos = {c["id"]: c for c in presenteismo.ciclos_folha(hoje=HOJE)}
 
-    # De 13/09 a 25/09 ha 10 dias uteis; o ciclo fechado anterior tem 22.
-    assert ciclos["2026-09-13"]["dias_uteis"] == 10
+    # Em 25/09, de 13/09 a 24/09 ha 9 dias uteis; o ciclo fechado
+    # anterior tem 22.
+    assert ciclos["2026-09-13"]["dias_uteis"] == 9
     assert ciclos["2026-08-13"]["dias_uteis"] == 22
     assert ciclos["2026-08-13"]["status"] == "Fechado"
 
@@ -275,15 +277,15 @@ def test_importar_ja_leva_cada_semana_ao_inicio(app):
 
 
 def test_mes_do_inicio_e_o_ciclo_da_folha(app):
-    """Agosto e o ciclo 13/08 -> 12/09: as faltas de 08 e 10/09 entram
-    nele, a de 14/09 ja e do ciclo seguinte."""
+    """Setembro e o ciclo que fecha nele, 13/08 -> 12/09: as faltas de
+    08 e 10/09 entram nele, a de 14/09 ja e do ciclo seguinte (outubro)."""
     api_obj = app[0]
-    _extrair_mes(app, "2026-08")
+    _extrair_mes(app, "2026-09")
     _preparar(app)
 
-    presenteismo = _celulas(api_obj, "presenteismo", mes="2026-08")
+    presenteismo = _celulas(api_obj, "presenteismo", mes="2026-09")
 
-    assert presenteismo["2026-08"] == limits_formatar(1 - 2 / (25 * 22))
+    assert presenteismo["2026-09"] == limits_formatar(1 - 2 / (25 * 22))
 
 
 def test_o_cubo_sai_sozinho(app):
@@ -346,13 +348,13 @@ def test_falta_de_semana_fora_do_summary_conta_na_folha_ponto(app):
     faltas dela (08 e 10/09) continuam no ciclo 13/08 -> 12/09."""
     api_obj = app[0]
     _extrair_semanas(app, "2026-09-14")
-    _extrair_mes(app, "2026-08")
+    _extrair_mes(app, "2026-09")
     _preparar(app)
 
-    presenteismo = _celulas(api_obj, "presenteismo", mes="2026-08")
+    presenteismo = _celulas(api_obj, "presenteismo", mes="2026-09")
 
     assert "2026-09-07" not in presenteismo
-    assert presenteismo["2026-08"] == limits_formatar(1 - 2 / (25 * 22))
+    assert presenteismo["2026-09"] == limits_formatar(1 - 2 / (25 * 22))
 
 
 def test_valor_gravado_por_versao_antiga_nao_prevalece(app):

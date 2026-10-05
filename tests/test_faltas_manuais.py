@@ -119,16 +119,53 @@ def test_semana_da_virada_do_mes_soma_os_dois_pedacos(api_obj):
     assert _celulas(api_obj, "presenteismo")["2026-08-31"] == limits.formatar(1 - 2 / (5 * 5))
 
 
-def test_mes_do_inicio_e_o_ciclo_da_folha(api_obj):
+def test_mes_do_inicio_e_o_ciclo_da_folha_que_fecha_nele(api_obj):
+    """O ciclo 13/09 -> 12/10 e a folha de outubro: vai para a coluna de
+    outubro da aba Inicio, nao para a de setembro."""
     gestor = _gestor()
     api_obj.set_faltas(gestor["id"], "2026-09-13", "2")
 
     ciclo = headcount.montar("hugo_boss", "mes", None, "2026-09-13", hoje=HOJE)["linhas"][0]
-    vivo = headcount.presenteismo_por_periodo("hugo_boss", hoje=HOJE, semanas=[], meses=["2026-09"])
+    vivo = headcount.presenteismo_por_periodo("hugo_boss", hoje=HOJE, semanas=[],
+                                              meses=["2026-09", "2026-10"])
 
     assert ciclo["dias_uteis"] == 21
-    assert vivo["month"]["2026-09"]["presenteismo"] == pytest.approx(1 - 2 / (5 * 21), abs=1e-6)
-    assert vivo["month"]["2026-09"]["presenteismo"] == ciclo["presenteismo"]
+    assert vivo["month"]["2026-10"]["presenteismo"] == pytest.approx(1 - 2 / (5 * 21), abs=1e-6)
+    assert vivo["month"]["2026-10"]["presenteismo"] == ciclo["presenteismo"]
+    assert (vivo["month"]["2026-10"]["de"], vivo["month"]["2026-10"]["ate"]) == ("2026-09-13", "2026-10-12")
+    # Setembro e o ciclo 13/08 -> 12/09, sem falta lancada: 100%.
+    assert vivo["month"]["2026-09"]["presenteismo"] == 1.0
+
+
+def test_mes_com_poucos_dias_recebe_o_ciclo_em_aberto(api_obj, monkeypatch):
+    """Em 05/10, com o Month de outubro extraido so de 01 a 03/10, a
+    coluna de outubro e a do pico recebem o presenteismo do ciclo em
+    aberto (13/09 -> 12/10), e o cubo sai nas duas."""
+    hoje = datetime.date(2026, 10, 5)
+    original = headcount.presenteismo_por_periodo
+    monkeypatch.setattr(headcount, "presenteismo_por_periodo",
+                        lambda operacao, **kw: original(operacao, hoje=hoje, **kw))
+    gestor = _gestor()
+    api_obj.set_faltas(gestor["id"], "2026-09-13", "1")
+    indicators_store.salvar_extracao("hugo_boss", "month", {"2026-10": {
+        "efetividade": 1.0, "hora_direta": 0.9, "dispersao": 0.6}},
+        meta={"de": "2026-10-01", "ate": "2026-10-03"})
+    indicators_store.salvar_extracao("hugo_boss", "peak", {"2026-10": {
+        "hora_direta": 0.95, "parcial": True,
+        "dias": [{"data": "2026-10-01", "hora_direta": 0.95}, {"data": "2026-10-02", "hora_direta": 0.95}]}})
+
+    # Ciclo em aberto conta ate ontem: 13/09 a 02/10 (o sabado 03 e o
+    # domingo 04 nao sao uteis; hoje, 05, nao entra) = 15 dias uteis.
+    esperado = round(1 - 1 / (5 * 15), 6)
+    vivo = headcount.presenteismo_por_periodo("hugo_boss", semanas=[], meses=["2026-10"])
+    assert vivo["month"]["2026-10"]["em_aberto"] is True
+    assert vivo["month"]["2026-10"]["presenteismo"] == pytest.approx(esperado)
+
+    pres = _celulas(api_obj, "presenteismo", mes="2026-10")
+    cubo = _celulas(api_obj, "cubo", mes="2026-10")
+    assert len(pres) == 2, pres  # o mes e o pico
+    assert set(pres.values()) == {limits.formatar(esperado)}, pres
+    assert all(cubo.values()), cubo
 
 
 def test_escala_espanhola_conta_os_sabados(api_obj):
@@ -296,5 +333,28 @@ def test_mes_sem_hc_proprio_usa_o_das_semanas(api_obj):
 
     ciclo = _linha("2026-09-13", visualizacao="mes", mes=None, operacao="abb")
     assert (ciclo["hc"], ciclo["hc_origem"], ciclo["hc_de"]) == (10, "herdado", "Week 39")
-    vivo = headcount.presenteismo_por_periodo("abb", hoje=HOJE, semanas=[], meses=["2026-09"])
-    assert vivo["month"]["2026-09"]["presenteismo"] == 1.0
+    # O ciclo 13/09 -> 12/10 e o mes de outubro na aba Inicio.
+    vivo = headcount.presenteismo_por_periodo("abb", hoje=HOJE, semanas=[], meses=["2026-10"])
+    assert vivo["month"]["2026-10"]["presenteismo"] == 1.0
+
+
+def test_dias_uteis_digitados_no_ciclo_abaixo_do_calendario(api_obj):
+    """Dias uteis digitados no Resultado do Mes menores que o calendario
+    do ciclo derrubavam a aba Inicio (KeyError 'dias_na_semana': esse
+    campo so existe nas semanas). O ciclo usa o numero digitado, igual a
+    tela de Headcount."""
+    gestor = _gestor(hc=5)
+    assert api_obj.set_quadro(gestor["id"], "2026-09-13", "dias_uteis", "15")["success"]
+    assert api_obj.set_faltas(gestor["id"], "2026-09-13", "1")["success"]
+
+    resultado = headcount.presenteismo_por_periodo("hugo_boss", hoje=HOJE, semanas=[],
+                                                   meses=["2026-10"])
+    esperado = 1 - 8 / (5 * 15 * 8)
+    assert resultado["month"]["2026-10"]["presenteismo"] == pytest.approx(esperado)
+
+    tela = headcount.montar("hugo_boss", "mes", "2026-09", "2026-09-13", hoje=HOJE)
+    assert tela["linhas"][0]["presenteismo"] == pytest.approx(esperado)
+
+    indicators_store.salvar_extracao("hugo_boss", "month", {"2026-10": {"efetividade": 1.0}})
+    tabela = api_obj.get_indicator_table("hugo_boss", mes="2026-10")
+    assert tabela["colunas"], "a aba Inicio abre sem erro"

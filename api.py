@@ -621,7 +621,8 @@ class Api:
             })
 
         # Mes: mesma regra, so o que veio do Summary. O presenteismo que
-        # entra nele e o do ciclo da folha ponto que comeca no dia 13.
+        # entra nele e o do ciclo da folha ponto que fecha no dia 12 desse
+        # mes (outubro = 13/09 a 12/10).
         # Logo depois de cada mes vem o pico dele, se foi extraido.
         meses = guardado.get("month", {})
         picos = guardado.get("peak", {})

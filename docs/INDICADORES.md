@@ -1125,3 +1125,22 @@ Sem mudar calculo nenhum:
   tela e registro no log (entra no "Gerar diagnostico"), sem usuario e
   senha.
 - Limpeza: imports e funcao sem uso removidos.
+
+## 24. Ciclo da folha no mes em que fecha (05/10/2026)
+
+- **Erro corrigido:** dias uteis digitados no Resultado do Mes menores
+  que o calendario do ciclo derrubavam a aba Inicio
+  (`KeyError: 'dias_na_semana'` em `headcount._agregar`): esse campo so
+  existe nas semanas. O ciclo agora usa o numero do quadro (digitado ou
+  o do calendario), o mesmo que a tela de Headcount mostra.
+- **Mes do ciclo:** a coluna de um mes na aba Inicio recebe o ciclo da
+  folha que **fecha no dia 12 desse mes** (outubro = 13/09 a 12/10). Antes
+  era o que comecava no dia 13 (setembro = 13/09 a 12/10), e por isso o
+  mes corrente ficava sem presenteismo ate o dia 13. O mesmo valor vai
+  para a coluna Pico e para o cubo das duas, mesmo com o mes extraido so
+  em parte (01 a 03/10). A tela de Headcount nao muda.
+- **Ciclo em aberto conta ate ontem:** os dias uteis vao do dia 13 ao
+  ultimo dia antes de hoje — hoje ainda nao fechou. Em 05/10 (segunda):
+  13/09 a 02/10, 15 dias uteis (sabado 03 e domingo 04 nao contam fora
+  da escala espanhola). Na semana seguinte, ate 09/10, e assim ate o dia
+  12, quando o ciclo fecha com o calendario inteiro.
