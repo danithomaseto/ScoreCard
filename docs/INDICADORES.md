@@ -1164,3 +1164,24 @@ pessoas por faixa de Var na extracao Month, com a curva da meta.
   da extracao, junto dos outros totais. Mes extraido antes nao tem: o
   quadro pede para extrair de novo. Agrupamento sem User ID nao conta
   pessoas e o quadro avisa.
+
+## 26. Horas indiretas (05/10/2026)
+
+Aba **Horas Indiretas** com extracao propria: Group By 1 = Week e
+Group By 2 = **Job Code**, fixos (`GROUP_BY_DAS_INDIRETAS`), arquivo na
+pasta `Indiretas` da operacao. Calculo em `indicators/indiretas.py`,
+seguindo a planilha "Indicadores Score - SumUp" (aba HD), cujas colunas
+tem as mesmas letras do export:
+
+- indireta = `Unmeasured Signon Indirect` (H), `PD Brk` (K) ou
+  `UnPd Brk` (M) diferente de zero; horas = H + K + M;
+- horas totais da semana = soma de `Total` (L) + `UnPd Brk` (M) — a
+  refeicao nao esta no Total; o pedido falava so na coluna L, mas a
+  planilha soma L:M e so assim bate (06/09: 715,26 h, 135,88 h, 19,00%;
+  com L sozinha daria 20,96%);
+- % = horas / horas totais; acima de 15% e ruim (`LIMITE_INDIRETAS`);
+- sempre da maior para a menor.
+
+So a visao por semana (sem resultado do mes): o mes escolhe as semanas
+que tem algum dia nele. Guardado em `indiretas.json` por operacao e
+semana; uma extracao nova substitui as semanas que trouxe.

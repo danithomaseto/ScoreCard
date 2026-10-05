@@ -96,6 +96,11 @@ def resumo():
         contagem = ", ".join(f"{p}={len(v)}" for p, v in sorted(periodos.items()))
         linhas.append(f"  {operacao}: {contagem}")
 
+    horas_indiretas = _ler_json("indiretas.json") or {}
+    linhas.append("Horas indiretas guardadas (semanas por operacao):")
+    for operacao, semanas in sorted(horas_indiretas.items()):
+        linhas.append(f"  {operacao}: {len(semanas)}")
+
     linhas += ["", "Chromium:"] + [f"  {n}" for n in _navegadores()]
 
     historico = _ler_json("history.json") or []

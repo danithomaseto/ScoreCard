@@ -60,6 +60,10 @@ META_DAS_FAIXAS_DA_DISPERSAO = {
     "acima_15": 0.0,
 }
 
+# Horas indiretas (aba Horas Indiretas): acima deste percentual das
+# horas totais da semana ja e ruim e fica vermelho.
+LIMITE_INDIRETAS = 0.15
+
 # Indicadores que nao saem do export do Summary: sao digitados a mao
 # (ver docs/INDICADORES.md, secao 13). Uma regravacao vinda da extracao
 # nunca pode sobrescrever esses campos.

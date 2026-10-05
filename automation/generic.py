@@ -16,7 +16,9 @@ from automation.base import (
     Navegador,
     take_screenshot,
 )
-from config.operations import DEFAULT_DATE_RANGE, OPERATIONS, PASTAS_DO_PERIODO
+from config.operations import (
+    DEFAULT_DATE_RANGE, GROUP_BY_DAS_INDIRETAS, OPERATIONS, PASTAS_DO_PERIODO,
+)
 
 # Dias de pico: uma linha por dia do mes, sem quebra por pessoa — so a
 # hora direta sai daqui; efetividade e dispersao vem do mensal.
@@ -71,9 +73,10 @@ def run(
     um periodo especifico em vez do padrao (Ultima semana) da operacao.
     group_by, se informado, e o texto exato de uma das opcoes de "Group
     By 1" (config.operations.GROUP_BY_OPTIONS) escolhida na tela, usado
-    no lugar do padrao "User ID" da operacao. period ("week", "month" ou
-    "peak") define em qual subpasta da operacao o arquivo e salvo -
-    "Week", "Month" ou "Dias de Pico" (PASTAS_DO_PERIODO). No pico o
+    no lugar do padrao "User ID" da operacao. period ("week", "month",
+    "peak" ou "indiretas") define em qual subpasta da operacao o arquivo e salvo -
+    "Week", "Month", "Dias de Pico" ou "Indiretas" (PASTAS_DO_PERIODO).
+    Nas indiretas o Group By 2 e sempre Job Code. No pico o
     Group By 1 e sempre Report Date, e o escolhido na tela e ignorado.
     navegador, se informado, e um Navegador ja
     aberto (fila do Extrair Multiplos): a operacao usa uma sessao nova
@@ -105,8 +108,11 @@ def run(
 
     is_month = tipo == "month"
     is_peak = tipo == "peak"
+    # Horas indiretas: Week no Group By 1 (como o semanal) e Job Code
+    # fixo no Group By 2, venha o que vier da tela.
+    is_indiretas = tipo == "indiretas"
     # O pico e do mes do calendario: sem datas digitadas, "Last Month".
-    default_range = DEFAULT_DATE_RANGE["week" if tipo == "week" else "month"]
+    default_range = DEFAULT_DATE_RANGE["week" if tipo in ("week", "indiretas") else "month"]
 
     if date_range:
         period_label = (
@@ -117,7 +123,12 @@ def run(
     else:
         period_label = default_range
         origem = default_range.lower().replace(" ", "_")
-    group_by_option = GROUP_BY_DO_PICO if is_peak else (group_by or config["group_by_option"])
+    if is_peak:
+        group_by_option = GROUP_BY_DO_PICO
+    elif is_indiretas:
+        group_by_option = GROUP_BY_DAS_INDIRETAS
+    else:
+        group_by_option = group_by or config["group_by_option"]
 
     def log(step):
         print(f"[{operation_key}] {step}", flush=True)

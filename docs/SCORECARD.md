@@ -99,8 +99,8 @@ automação. O agrupamento padrão de todas é **User ID**.
 | Armani | `Armani` | — |
 | ABB | `ABB` | — |
 
-Dentro da subpasta de cada operação, o arquivo vai para `Week`, `Month`
-ou `Dias de Pico`, conforme o tipo de extração.
+Dentro da subpasta de cada operação, o arquivo vai para `Week`, `Month`,
+`Dias de Pico` ou `Indiretas`, conforme o tipo de extração.
 
 **Adicionar uma operação nova** é uma entrada a mais em
 `config/operations.py` (nome, endereço de login, subpasta e, se for o
@@ -175,7 +175,7 @@ faixa de Var no mês, da extração Month — ver [5.7](#57-distribuição-da-di
 
 ### 4.4 Extrair Dados (uma operação)
 
-1. **Período do indicador:** Week, Month ou Dias de Pico.
+1. **Período do indicador:** Week, Month, Dias de Pico ou Horas Indiretas.
 2. **Operação.**
 3. **Período (datas):** digite a data inicial e final, ou use os
    atalhos **Semana passada** / **Mês passado**. Sem datas, o app usa o
@@ -184,7 +184,10 @@ faixa de Var no mês, da extração Month — ver [5.7](#57-distribuição-da-di
    - **Week:** Group By 1 fica fixo em Week e o campo escolhido (User ID)
      vai no Group By 2;
    - **Month:** o campo escolhido vai no Group By 1;
-   - **Dias de Pico:** Group By 1 fixo em Report Date (campo travado).
+   - **Dias de Pico:** Group By 1 fixo em Report Date (campo travado);
+   - **Horas Indiretas:** agrupamento fixo Week + Job Code (campo
+     travado, com a nota em amarelo); o arquivo vai para a pasta
+     `Indiretas`.
 5. **Iniciar extração.** O painel "Andamento" mostra as 10 etapas
    (abrir o navegador, login, menu Reports, relatório, período, Group
    By 1 e 2, exportar, salvar) e o percentual.
@@ -261,13 +264,41 @@ Quanto das horas que cada pessoa deveria trabalhar aparece no LMS.
 - O que é digitado fica guardado à parte e **sobrevive a uma nova
   extração** do mesmo período.
 
-### 4.8 Configurações
+### 4.8 Horas Indiretas
+
+Quanto das horas de cada semana vai para atividades indiretas (não
+produtivas) e quais atividades pesam mais. Só existe a visão **por
+semana**: o mês escolhe quais semanas aparecem (as que têm algum dia
+nele, como na aba Início).
+
+- **Filtros:** operação (ou "Todas as Operações", que soma a mesma
+  semana de todas), mês e semana do mês (a dos cards e dos gráficos;
+  abre na mais recente).
+- **Extração na própria tela:** operação, De e Até, e o botão
+  **Extrair**. O agrupamento é fixo pelo sistema (Week + Job Code) e o
+  arquivo vai para a pasta `Indiretas`. As datas já vêm sugeridas para o
+  mês escolhido. Uma extração nova substitui as semanas que trouxe e
+  mantém as outras.
+- **Cards:** operação, período, horas totais, horas indiretas e **%
+  Indireta** — em vermelho acima de **15,00%**.
+- **Visualização** (canto superior direito):
+  - **Semanas** (padrão): um quadro por Week, com horas totais, totais
+    indiretas e as atividades **da maior para a menor**, cada uma com
+    horas, % e uma barrinha (amarela no maior ofensor);
+  - **Barras:** as atividades da semana escolhida com horas, % do total
+    e % das indiretas, ao lado da tabela atividade × semana;
+  - **Pareto:** barras da semana escolhida, da maior para a menor, com a
+    linha do % acumulado das indiretas, e a mesma tabela embaixo.
+- **Tabela atividade × semana:** cada célula com horas e %; no fim,
+  TOTAL INDIRETAS e % INDIRETA de cada semana. Só o corpo rola.
+
+### 4.9 Configurações
 
 - **Pasta do SharePoint:** mostra a pasta atual e permite trocar.
 - **Gerar diagnóstico:** cria um zip para mandar ao suporte (ver
   [Suporte](#10-suporte-e-diagnóstico)).
 
-### 4.9 Rodapé do menu
+### 4.10 Rodapé do menu
 
 Status do sistema, "DHL — Excellence. Simply delivered.", **Criado por
 Daniel Thomaseto** e a versão (passando o mouse, a data do build).
@@ -445,6 +476,33 @@ Mês extraído antes deste gráfico existir não tem a contagem por faixa:
 o quadro pede para extrair o mês de novo. Não aparece no modo
 apresentação.
 
+### 5.8 Horas indiretas
+
+Extração **Week + Job Code** (uma linha por atividade em cada semana).
+Mesma lógica da planilha de referência (aba HD), cujas colunas têm as
+mesmas letras do export:
+
+| Coluna | Campo do export | Na planilha |
+|---|---|---|
+| H | `Unmeasured Signon Indirect` | HORAS LOGADAS |
+| K | `PD Brk` | BRIEFING |
+| L | `Total` | TOTAL |
+| M | `UnPd Brk` | REFEIÇÃO |
+
+- **Atividade indireta:** H, K ou M diferente de zero (as outras são
+  diretas e não entram).
+- **Horas da atividade:** H + K + M.
+- **Horas totais da semana:** soma de **L + M** de todas as atividades.
+  A refeição (M) não vem no `Total` do relatório; sem somá-la, as horas
+  de LUNCH ficariam fora do total.
+- **% da atividade** = horas ÷ horas totais; **% Indireta** = soma das
+  indiretas ÷ horas totais. Acima de **15,00%** é ruim (vermelho).
+- Sempre da maior representatividade para a menor.
+
+Conferido com a planilha, semana de 06/09/2026: **715,26 h** totais,
+**135,88 h** indiretas, **19,00%** (LUNCH 9,37%, ISTART 3,66%, MEET
+3,14%).
+
 ---
 
 ## 6. Regras de calendário
@@ -471,6 +529,7 @@ Tudo fica **no próprio computador**, em `%APPDATA%\ScoreCard\`:
 | `indicators.json` | indicadores calculados, por operação e período |
 | `headcount.json` | gestores e o quadro de cada período (HC, dias, horas, faltas) |
 | `coverage.json` | horas por usuário das extrações e o que foi digitado no Coverage |
+| `indiretas.json` | horas indiretas por operação e semana (da extração Horas Indiretas) |
 | `logs\scorecard.log` | registro do que o app fez (até 1 MB, com 3 cópias antigas) |
 
 - Os arquivos são gravados de forma **segura**: primeiro num arquivo
@@ -590,6 +649,8 @@ ScoreCard.exe (lancador.py)
 | `indicators/periodos.py` | semanas, meses e rótulos |
 | `headcount.py` / `headcount_store.py` | tela e dados do Headcount |
 | `coverage_tela.py` / `coverage_store.py` | tela e dados do Coverage |
+| `indicators/indiretas.py` | horas indiretas por semana (regra da planilha) |
+| `indiretas_tela.py` / `indiretas_store.py` | tela e dados das Horas Indiretas |
 | `indicators_store.py` / `history_store.py` / `settings_store.py` | indicadores, histórico e configurações |
 | `arquivo_seguro.py` | gravação dos JSON sem corromper |
 | `registro.py` | log com filtro de credenciais |
@@ -658,7 +719,7 @@ python -m pytest -q tests
 | 28/09/2026 | Faltas digitadas por semana/ciclo; versão V.01.0; Início de um mês por vez |
 | 29/09/2026 | Aba Coverage; percentuais com duas casas; janela única, aviso ao fechar, modo apresentação, telas vazias com "Extrair agora"; pente fino de layout |
 | 30/09/2026 | **V.01.0 fechada para apresentação** e este documento |
-| 05/10/2026 | Gráfico de distribuição da dispersão do mês na aba Início |
+| 05/10/2026 | Gráfico de distribuição da dispersão do mês na aba Início; aba **Horas Indiretas** (extração Week + Job Code, pasta Indiretas, quadros por semana, Barras e Pareto) |
 | 05/10/2026 | **V.01.1:** correção do erro ao digitar dias úteis no Resultado do Mês; o ciclo da folha passa a ir para o mês em que fecha (e para o Pico); ciclo em aberto conta até ontem; cópia para o PowerPoint numa linha só por célula |
 
 ---

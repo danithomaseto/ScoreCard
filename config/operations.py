@@ -55,7 +55,13 @@ PASTAS_DO_PERIODO = {
     "week": "Week",
     "month": "Month",
     "peak": "Dias de Pico",
+    "indiretas": "Indiretas",
 }
+
+# Horas indiretas: o agrupamento e fixo pelo sistema (o usuario nao
+# escolhe). Group By 1 = Week e Group By 2 = Job Code: uma linha por
+# atividade em cada semana (ver indicators/indiretas.py).
+GROUP_BY_DAS_INDIRETAS = "Job Code"
 
 DEFAULT_DATE_RANGE = {
     "week": "Last Week",

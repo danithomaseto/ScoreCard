@@ -248,6 +248,8 @@ headcount_store.py    # gestores, quadro e faltas importadas
 headcount.py          # monta a tela de Headcount (filtros, cards, linhas)
 coverage_store.py     # horas por usuario das extracoes e o digitado no Coverage
 coverage_tela.py      # monta a aba Coverage (filtros, cards, linhas, total)
+indiretas_store.py    # horas indiretas por operacao e semana
+indiretas_tela.py     # monta a aba Horas Indiretas (semanas, cards, tabela)
 automation/
   base.py              # login, iframe, comboboxes, export (Playwright)
   generic.py            # orquestra o fluxo por operacao
@@ -275,6 +277,7 @@ tests/
   test_presenteismo.py   # faltas, periodos e o caminho ate o cubo
   test_pico.py           # dias de pico e sabados da escala espanhola
   test_coverage.py       # coverage conferido com a planilha
+  test_indiretas.py      # horas indiretas conferidas com a planilha
   test_api.py            # extracao unica, fila multipla e validacoes
   test_lancador.py       # app dentro do .exe, descompactado uma vez
   test_infra.py          # gravacao segura e log sem credenciais

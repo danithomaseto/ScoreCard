@@ -35,6 +35,9 @@ COLUNAS = {
     "unmeasured insert direct": "insert_direct",
     "pd brk": "pd_brk",
     "total": "total",
+    # Usadas so nas horas indiretas (indicators/indiretas.py).
+    "unmeasured signon indirect": "signon_indirect",
+    "unpd brk": "unpd_brk",
 }
 
 # Sem estas nao da pra calcular nada, entao a falta delas e erro de
@@ -42,7 +45,7 @@ COLUNAS = {
 OBRIGATORIAS = ("goal", "measured_direct", "total", "pd_brk")
 
 NUMERICAS = ("var", "goal", "measured_direct", "signon_direct", "insert_direct",
-             "pd_brk", "total")
+             "pd_brk", "total", "signon_indirect", "unpd_brk")
 
 # Linhas de fechamento que alguns exports colocam no fim. Entram na
 # soma se ninguem descartar, e o resultado dobra.

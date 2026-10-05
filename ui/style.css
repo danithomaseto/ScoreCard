@@ -1763,3 +1763,181 @@ body.apresentacao .legend-item { font-size: 14px; }
 
 /* Fica fora do modo apresentacao: la vai so a tabela dos indicadores. */
 body.apresentacao #distribuicao-card { display: none; }
+
+/* ---------- Aba Horas Indiretas ---------- */
+
+/* Visualizacao: destaque escuro com texto amarelo, para nao ser lido
+   como o seletor de periodo das outras abas. */
+.ind-visualizacao { width: auto; flex-shrink: 0; margin-top: 2px; }
+.ind-visualizacao .seg-opcao { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; }
+.ind-visualizacao .seg-opcao .btn-icone { width: 14px; height: 14px; }
+.ind-visualizacao::before { background: var(--input-border); }
+.ind-visualizacao .seg-opcao.active { background: var(--input-border); color: var(--yellow); font-weight: 700; }
+
+.ind-extracao { width: 100%; max-width: none; margin-bottom: 20px; padding-top: 18px; padding-bottom: 16px; }
+.ind-extracao-campos { display: flex; align-items: flex-end; gap: 18px; flex-wrap: wrap; }
+.ind-extracao-campos .filtro-campo { flex: 1 1 180px; }
+.ind-extracao-campos input[type="date"] { margin-bottom: 0; }
+.ind-extracao-campos > button { height: 46px; padding: 0 22px; flex-shrink: 0; }
+.ind-extracao-nota {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #667085;
+}
+.ind-extracao-nota strong { color: var(--text-muted); }
+.ind-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ind-chip[hidden] { display: none; }
+.ind-progresso { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.ind-progresso[hidden] { display: none; }
+.ind-progresso-barra { flex: 1; height: 6px; border-radius: 3px; background: var(--input-bg); overflow: hidden; }
+.ind-progresso-barra span { display: block; height: 100%; width: 0; background: var(--yellow); transition: width 300ms ease; }
+.ind-progresso-texto { font-size: 12px; color: var(--text-muted); min-width: 220px; }
+#ind-status { margin-top: 12px; }
+
+.hc-card-valor.verde { color: #6ee7a0; }
+.hc-card.destaque .hc-card-valor.verde,
+.hc-card.destaque .hc-card-valor.vermelho { color: #151515; }
+.hc-card.destaque.alerta { background: #ef4444; border-color: #ef4444; }
+.hc-card.destaque.alerta .hc-card-label,
+.hc-card.destaque.alerta .hc-card-nota,
+.hc-card.destaque.alerta .hc-card-valor { color: #fff; }
+
+.ind-conteudo { width: 100%; max-width: none; }
+.ind-vis[hidden] { display: none; }
+.ind-vazio-acoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.ind-vazio-acoes [hidden] { display: none; }
+.ind-rodape { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid #1e2438; font-size: 12px; color: #667085; }
+.ind-rodape[hidden] { display: none; }
+.ind-rodape strong { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+/* Semanas: um quadro por Week. */
+/* Os quadros dividem a largura: 5 semanas cabem lado a lado numa tela
+   grande; em notebook, quebram em linhas de 3 ou 2. */
+.ind-semanas { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; }
+.ind-quadro {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #121729;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.ind-quadro.selecionado { border-color: rgba(255, 204, 0, 0.55); }
+.ind-quadro-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #1b2135;
+  border-bottom: 1px solid var(--card-border);
+  cursor: pointer;
+}
+.ind-quadro-topo strong { border-left: 3px solid var(--yellow); padding-left: 8px; font-size: 14px; color: var(--text); }
+.ind-quadro-topo span { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.ind-quadro-topo .ind-incompleta { color: #fbbf24; font-weight: 600; }
+.ind-totais { padding: 8px 14px; border-bottom: 1px solid var(--card-border); }
+.ind-linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px 64px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.ind-linha > :not(:first-child) { text-align: right; }
+.ind-totais .ind-linha { padding: 4px 0; font-weight: 700; color: var(--text); }
+.ind-totais .ind-linha span:first-child { font-size: 10px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-muted); }
+.ind-pct.verde { color: #6ee7a0; }
+.ind-pct.vermelho { color: #fca5a5; }
+.ind-cabecalho { padding: 8px 14px 6px; font-size: 10px; letter-spacing: 0.8px; text-transform: uppercase; color: #667085; font-weight: 600; }
+.ind-lista { max-height: 300px; overflow-y: auto; padding: 0 14px 10px; }
+.ind-atividade { padding: 7px 0 6px; color: var(--text); }
+.ind-atividade:nth-child(even) { background: rgba(255, 255, 255, 0.012); }
+.ind-atividade .ind-linha span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ind-atividade .ind-linha span:last-child { color: var(--text-muted); }
+.ind-trilho { height: 4px; margin-top: 5px; border-radius: 2px; background: rgba(255, 255, 255, 0.04); }
+.ind-trilho span { display: block; height: 100%; border-radius: 2px; background: #3c4766; }
+.ind-atividade.maior .ind-trilho span { background: var(--yellow); }
+
+/* Barras: lista da semana escolhida + tabela por semana. */
+.ind-vis-barras:not([hidden]) { display: grid; grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr); gap: 24px; align-items: start; }
+@media (max-width: 1300px) { .ind-vis-barras:not([hidden]) { grid-template-columns: minmax(0, 1fr); } }
+.ind-barras-titulo { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--text); }
+.ind-barras-linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 70px 64px 70px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.ind-barras-linha > :not(:first-child) { text-align: right; }
+.ind-barras-linha.cabecalho { font-size: 10px; letter-spacing: 0.8px; text-transform: uppercase; color: #667085; font-weight: 600; padding-bottom: 6px; border-bottom: 1px solid var(--card-border); }
+.ind-barras-item { padding: 8px 0 6px; border-bottom: 1px solid #1e2438; }
+.ind-barras-item .ind-trilho { height: 9px; border-radius: 3px; }
+.ind-barras-item .ind-trilho span { background: #5a6688; border-radius: 3px; }
+.ind-barras-item.maior .ind-trilho span { background: var(--yellow); }
+.ind-barras-linha.total { padding-top: 10px; font-weight: 700; border-top: 1px solid var(--input-border); }
+
+/* Tabela por semana (Barras e Pareto). */
+.ind-tabela-wrap { overflow: auto; max-height: 460px; border: 1px solid var(--card-border); border-radius: 8px; }
+.ind-tabela { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
+.ind-tabela th,
+.ind-tabela td { padding: 9px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid #1e2438; background: var(--card-bg); }
+.ind-tabela thead th { position: sticky; top: 0; z-index: 2; background: #1b2135; color: var(--text-muted); font-size: 11px; font-weight: 600; }
+.ind-tabela th:first-child,
+.ind-tabela td:first-child { position: sticky; left: 0; z-index: 1; text-align: left; color: var(--text); font-weight: 600; }
+.ind-tabela thead th:first-child { z-index: 3; }
+.ind-tabela td .ind-pct-celula { color: var(--text-muted); margin-left: 4px; }
+.ind-tabela td.vazia { color: #667085; }
+.ind-tabela tfoot td { position: sticky; z-index: 1; font-weight: 700; color: var(--text); background: #1b2135; }
+.ind-tabela tfoot tr.total td { bottom: 37px; border-top: 1px solid var(--input-border); }
+.ind-tabela tfoot tr.percentual td { bottom: 0; }
+.ind-tabela tfoot tr td:first-child { z-index: 2; }
+.ind-tabela th.selecionada { color: var(--yellow); }
+
+/* Pareto */
+.ind-pareto-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.ind-pareto-topo strong { font-size: 13px; color: var(--text); }
+.ind-pareto-legenda { display: flex; gap: 16px; flex-wrap: wrap; }
+.ind-legenda-barra { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: #5a6688; }
+.ind-legenda-barra.maior { background: var(--yellow); }
+.ind-legenda-linha { display: inline-block; width: 18px; height: 2px; background: #38bdf8; border-radius: 1px; }
+.ind-pareto { display: block; width: 100%; max-height: 320px; margin: 4px 0 16px; overflow: visible; }
+.ind-pareto-barra { fill: #5a6688; }
+.ind-pareto-barra.maior { fill: var(--yellow); }
+.ind-pareto-eixo { stroke: #344054; stroke-width: 1; }
+.ind-pareto-grade { stroke: #1e2438; stroke-width: 1; }
+.ind-pareto-eixo-texto { fill: #667085; font-size: 11px; font-variant-numeric: tabular-nums; }
+.ind-pareto-nome { fill: var(--text); font-size: 11px; font-weight: 600; text-anchor: middle; }
+.ind-pareto-pct { fill: var(--text-muted); font-size: 10px; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.ind-pareto-acumulado { fill: none; stroke: #38bdf8; stroke-width: 2; stroke-linejoin: round; }
+.ind-pareto-ponto { fill: #38bdf8; stroke: var(--card-bg); stroke-width: 2; }
+.ind-pareto-rotulo-fundo { fill: rgba(11, 14, 26, 0.92); }
+.ind-pareto-rotulo { fill: var(--text); font-size: 11px; font-weight: 700; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.ind-pareto-faixa:hover .ind-pareto-barra { filter: brightness(1.15); }
+
+@keyframes ind-pulsar { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.9; } }
+.ind-esqueleto { height: 220px; border-radius: 10px; background: var(--input-bg); animation: ind-pulsar 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .ind-esqueleto { animation: none; } }
+
+/* Nota do agrupamento travado (Horas Indiretas) nas abas de extracao. */
+.nota-agrupamento-fixo { display: flex; align-items: center; gap: 6px; margin: -8px 0 16px; font-size: 12px; color: #facc15; }
+.nota-agrupamento-fixo[hidden] { display: none; }
+.nota-agrupamento-fixo .btn-icone { width: 14px; height: 14px; }

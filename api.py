@@ -17,7 +17,8 @@ import threading
 import webview
 
 from config.operations import (
-    DEFAULT_DATE_RANGE, GROUP_BY_OPTIONS, OPERATIONS, PASTAS_DO_PERIODO, escala_espanhola,
+    DEFAULT_DATE_RANGE, GROUP_BY_DAS_INDIRETAS, GROUP_BY_OPTIONS, OPERATIONS, PASTAS_DO_PERIODO,
+    escala_espanhola,
 )
 import conexao
 import coverage_store
@@ -26,8 +27,10 @@ import diagnostico
 import headcount
 import headcount_store
 import history_store
+import indiretas_store
+import indiretas_tela
 from indicators import faltas as faltas_reader
-from indicators import coverage, limits, periodos, pico, reader, weekly
+from indicators import coverage, indiretas, limits, periodos, pico, reader, weekly
 import indicators_store
 import registro
 import settings_store
@@ -251,6 +254,20 @@ class Api:
             "ate": ate,
         }
 
+        if result.get("period_type") == PASTAS_DO_PERIODO["indiretas"]:
+            if not lido["tem_semana"]:
+                result["indicators_message"] = (
+                    "Relatório salvo, mas veio sem a coluna de semana: "
+                    "não deu pra separar as horas indiretas por semana."
+                )
+                return
+            semanas = indiretas.por_semana(lido["linhas"])
+            for chave, semana in semanas.items():
+                semana["parcial"] = periodos.semana_parcial(chave, de, ate)
+            indiretas_store.salvar(operation_key, semanas, de, ate)
+            result["indicators"] = len(semanas)
+            return
+
         if result.get("period_type") == "Dias de Pico":
             chave = result.get("month_key")
             if not chave:
@@ -310,7 +327,7 @@ class Api:
         if group_by and group_by not in GROUP_BY_OPTIONS:
             return {"success": False, "message": "Opção de 'Group By 1' inválida."}
 
-        if period and period not in ("week", "month", "peak"):
+        if period and period not in PASTAS_DO_PERIODO:
             return {"success": False, "message": "Período do indicador inválido."}
 
         folder_check = self.validate_sharepoint_folder()
@@ -375,7 +392,7 @@ class Api:
                 datetime.date.fromisoformat(date_range[campo]).strftime("%d/%m/%Y")
                 for campo in ("from_date", "to_date"))
         else:
-            rotulo = DEFAULT_DATE_RANGE["week" if tipo == "week" else "month"]
+            rotulo = DEFAULT_DATE_RANGE["week" if tipo in ("week", "indiretas") else "month"]
         mensagem = conexao.mensagem(config["login_url"])
         log.warning("extração %s barrada: %s", operation_key, mensagem)
         return {
@@ -383,7 +400,9 @@ class Api:
             "operation_label": config["label"],
             "period_label": rotulo,
             "period_type": PASTAS_DO_PERIODO[tipo],
-            "group_by": "Report Date" if tipo == "peak" else (group_by or config["group_by_option"]),
+            "group_by": ("Report Date" if tipo == "peak"
+                         else GROUP_BY_DAS_INDIRETAS if tipo == "indiretas"
+                         else (group_by or config["group_by_option"])),
             "success": False,
             "message": mensagem,
             "duration_seconds": 0.0,
@@ -767,6 +786,10 @@ class Api:
         return {"success": True}
 
     # ---------------- Coverage ----------------
+
+    def get_indiretas(self, operacao=None, mes=None, semana_id=None):
+        """A aba Horas Indiretas montada (ver indiretas_tela.py)."""
+        return indiretas_tela.montar(operacao, mes, semana_id)
 
     def get_coverage(self, operacao=None, visualizacao="semanal", mes=None, periodo_id=None):
         return coverage_tela.montar(operacao or "todas", visualizacao, mes, periodo_id)

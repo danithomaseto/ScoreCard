@@ -75,6 +75,13 @@
         </svg>
         <span>Coverage</span>
       </button>
+      <button class="nav-item" data-page="indiretas">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <polyline points="12 7 12 12 15 14"/>
+        </svg>
+        <span>Horas Indiretas</span>
+      </button>
       <button class="nav-item" data-page="settings">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
@@ -222,6 +229,13 @@
                         <strong>Dias de Pico</strong>
                       </div>
                     </button>
+                    <button type="button" class="period-option" data-period="indiretas"
+                            title="Horas indiretas por semana. Agrupamento fixo: Week + Job Code.">
+                      <div class="source-icon"><svg class="source-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg></div>
+                      <div>
+                        <strong>Horas Indiretas</strong>
+                      </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -249,6 +263,10 @@
 
               <label for="group-by">Group By 2 (Group By 1 fixo em Week)</label>
               <select id="group-by"></select>
+              <p class="nota-agrupamento-fixo" hidden>
+                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                Agrupamento fixo para horas indiretas: Week + Job Code. O arquivo vai para a pasta Indiretas.
+              </p>
 
               <button id="run-btn"><svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg><span class="btn-texto">Iniciar extração</span></button>
 
@@ -403,6 +421,13 @@
                         <strong>Dias de Pico</strong>
                       </div>
                     </button>
+                    <button type="button" class="period-option" data-period="indiretas"
+                            title="Horas indiretas por semana. Agrupamento fixo: Week + Job Code.">
+                      <div class="source-icon"><svg class="source-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg></div>
+                      <div>
+                        <strong>Horas Indiretas</strong>
+                      </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -436,6 +461,10 @@
 
               <label for="multi-group-by">Group By 2 (Group By 1 fixo em Week)</label>
               <select id="multi-group-by"></select>
+              <p class="nota-agrupamento-fixo" hidden>
+                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                Agrupamento fixo para horas indiretas: Week + Job Code. O arquivo vai para a pasta Indiretas.
+              </p>
 
               <div class="multi-run-row">
                 <button id="multi-run-btn"><svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg><span class="btn-texto">Iniciar extração</span></button>
@@ -787,6 +816,133 @@
             <div class="hc-status" id="cv-status">Dias e horas vêm do calendário (8,75 h por dia); digite para ajustar um usuário. A sinergia cedida e recebida da operação vai na linha TOTAL, em horas.</div>
           </div>
 
+        </div>
+      </section>
+
+      <section id="page-indiretas" class="page" hidden>
+        <div class="page-wide-wrap">
+          <div class="cabecalho-com-acao">
+            <div>
+              <h2 class="page-heading">Horas Indiretas</h2>
+              <p class="subtitle">Quanto das horas de cada semana vai para atividades indiretas, e quais atividades pesam mais.</p>
+            </div>
+            <div class="segmentado ind-visualizacao" id="ind-visualizacao" role="group" aria-label="Visualização">
+              <button type="button" class="seg-opcao active" data-vis="semanas">
+                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>Semanas
+              </button>
+              <button type="button" class="seg-opcao" data-vis="barras">
+                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="15" y2="12"/><line x1="4" y1="18" x2="10" y2="18"/></svg>Barras
+              </button>
+              <button type="button" class="seg-opcao" data-vis="pareto">
+                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V8M10 20v-7M16 20v-4"/><polyline points="3 9 10 6 21 4"/></svg>Pareto
+              </button>
+            </div>
+          </div>
+
+          <div class="card filtros-card">
+            <div class="filtros-linha">
+              <div class="filtro-campo">
+                <label for="ind-operacao">Operação</label>
+                <select id="ind-operacao"></select>
+              </div>
+              <div class="filtro-campo largo">
+                <label for="ind-mes">Mês</label>
+                <select id="ind-mes"></select>
+              </div>
+              <div class="filtro-campo">
+                <label for="ind-semana">Semana do mês</label>
+                <select id="ind-semana"></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Extracao da propria tela: so operacao e datas; o agrupamento e fixo. -->
+          <div class="card ind-extracao" id="ind-extracao">
+            <div class="ind-extracao-campos">
+              <div class="filtro-campo">
+                <label for="ind-ext-operacao">Operação</label>
+                <select id="ind-ext-operacao"></select>
+              </div>
+              <div class="filtro-campo">
+                <label for="ind-ext-de">De</label>
+                <input type="date" id="ind-ext-de">
+              </div>
+              <div class="filtro-campo">
+                <label for="ind-ext-ate">Até</label>
+                <input type="date" id="ind-ext-ate">
+              </div>
+              <button type="button" class="acao" id="ind-extrair">
+                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Extrair
+              </button>
+            </div>
+            <div class="ind-extracao-nota">
+              <span>Agrupamento fixo pelo sistema (Week + Job Code). O arquivo vai para a pasta <strong>Indiretas</strong> da operação.</span>
+              <span class="ind-chip" id="ind-ultima" hidden></span>
+            </div>
+            <div class="ind-progresso" id="ind-progresso" hidden>
+              <div class="ind-progresso-barra"><span id="ind-progresso-preenchido"></span></div>
+              <span class="ind-progresso-texto" id="ind-progresso-texto"></span>
+            </div>
+            <div class="status" id="ind-status" hidden></div>
+          </div>
+
+          <div class="hc-cards">
+            <div class="hc-card">
+              <div class="hc-card-label">Operação</div>
+              <div class="hc-card-valor texto" id="ind-card-operacao">—</div>
+            </div>
+            <div class="hc-card">
+              <div class="hc-card-label">Período</div>
+              <div class="hc-card-valor texto" id="ind-card-periodo">—</div>
+              <div class="hc-card-nota" id="ind-card-periodo-nota"></div>
+            </div>
+            <div class="hc-card">
+              <div class="hc-card-label">Horas totais</div>
+              <div class="hc-card-valor" id="ind-card-totais">—</div>
+              <div class="hc-card-nota">Total + refeição</div>
+            </div>
+            <div class="hc-card">
+              <div class="hc-card-label">Horas indiretas</div>
+              <div class="hc-card-valor" id="ind-card-indiretas">—</div>
+              <div class="hc-card-nota" id="ind-card-atividades"></div>
+            </div>
+            <div class="hc-card destaque">
+              <div class="hc-card-label">% Indireta</div>
+              <div class="hc-card-valor" id="ind-card-percentual">—</div>
+              <div class="hc-card-nota" id="ind-card-percentual-nota"></div>
+            </div>
+          </div>
+
+          <div class="card ind-conteudo" id="ind-conteudo">
+            <div class="estado-vazio" id="ind-vazio" hidden>
+              <svg class="estado-vazio-icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+              <strong id="ind-vazio-titulo"></strong>
+              <p>Extraia as semanas do mês na faixa acima: cada semana vira um quadro, com as atividades indiretas da maior para a menor.</p>
+              <div class="ind-vazio-acoes">
+                <button type="button" class="acao" id="ind-vazio-extrair">Extrair agora</button>
+                <button type="button" class="secondary acao" id="ind-vazio-anterior" hidden></button>
+              </div>
+            </div>
+            <div class="ind-vis" id="ind-vis-semanas"></div>
+            <div class="ind-vis ind-vis-barras" id="ind-vis-barras" hidden>
+              <div class="ind-barras" id="ind-barras"></div>
+              <div class="ind-tabela-wrap"></div>
+            </div>
+            <div class="ind-vis" id="ind-vis-pareto" hidden>
+              <div class="ind-pareto-topo">
+                <strong id="ind-pareto-titulo"></strong>
+                <div class="ind-pareto-legenda" aria-hidden="true">
+                  <span class="legend-item"><span class="ind-legenda-barra maior"></span>Maior ofensor</span>
+                  <span class="legend-item"><span class="ind-legenda-barra"></span>Horas da atividade</span>
+                  <span class="legend-item"><span class="ind-legenda-linha"></span>% acumulado das indiretas</span>
+                </div>
+              </div>
+              <svg class="ind-pareto" id="ind-pareto" viewBox="0 0 900 300" role="img" aria-labelledby="ind-pareto-titulo"></svg>
+              <div class="ind-tabela-wrap"></div>
+            </div>
+            <p class="ind-rodape" id="ind-rodape" hidden></p>
+          </div>
         </div>
       </section>
 
