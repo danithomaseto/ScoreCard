@@ -528,13 +528,20 @@ function textoDaColuna(indice) {
 // duas casas decimais o "%" descia para uma segunda linha ("78,48" / "%").
 // Centralizada, sem margem, sem quebra e com fonte compacta, fica numa
 // linha so, igual ao numero digitado na propria tabela.
+//
+// O tamanho tem que ir no proprio texto (span e font), do jeito que o
+// Word e o Excel copiam: o PowerPoint ignora o font-size da celula <td>
+// e aplica o padrao de tabela dele, 18 pt.
+const TAMANHO_DA_FONTE_COPIADA = '10.0pt';
 const ESTILO_DA_CELULA_COPIADA =
-  'text-align:center;white-space:nowrap;padding:0;margin:0;font-size:10pt;line-height:1';
+  `text-align:center;white-space:nowrap;padding:0;margin:0;font-size:${TAMANHO_DA_FONTE_COPIADA}`;
 
 function tabelaDaColuna(indice) {
   const linhas = valoresDaColuna(indice)
     .map((valor) => `<tr><td nowrap style="${ESTILO_DA_CELULA_COPIADA}">`
-      + `<p style="margin:0;text-align:center">${valor}</p></td></tr>`)
+      + `<p class="MsoNormal" align="center" style="margin:0;text-align:center;font-size:${TAMANHO_DA_FONTE_COPIADA}">`
+      + `<span style="font-size:${TAMANHO_DA_FONTE_COPIADA};mso-bidi-font-size:${TAMANHO_DA_FONTE_COPIADA}">`
+      + `<font size="2">${valor}</font></span></p></td></tr>`)
     .join('');
   return `<table style="border-collapse:collapse">${linhas}</table>`;
 }
