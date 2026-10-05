@@ -163,6 +163,10 @@ caso, `"escala_espanhola": True`). Nenhuma outra parte do código muda.
   <mês> ainda" com o botão **Extrair agora**, que abre a tela de
   extração com a operação já escolhida.
 
+**Distribuição da dispersão** (quadro embaixo da tabela, só fora do modo
+apresentação): gráfico de barras com quantas pessoas caíram em cada
+faixa de Var no mês, da extração Month — ver [5.7](#57-distribuição-da-dispersão).
+
 **Modo apresentação** (botão ao lado do título "Início"):
 
 - tela cheia, sem menu, só a tabela, com letra maior;
@@ -415,6 +419,30 @@ Na aba Início, a coluna **Pico** fica à direita do mês:
 
 Passando o mouse no título da coluna aparecem os 5 dias usados.
 
+### 5.7 Distribuição da dispersão
+
+Gráfico do mês na aba Início, feito com a **extração Month** (com User
+ID) e com **a mesma regra do indicador Dispersão**: só entram as pessoas
+com `Goal` e `Measured Direct` diferentes de zero, e a faixa verde é
+exatamente o DENTRO (verde ÷ total = a Dispersão do mês).
+
+| Faixa de Var | Cor | Meta |
+|---|---|---|
+| `<-15` | vermelho | 0 |
+| `>=-15 <-10` | amarelo | total × 0,15 |
+| `>=-10 <=10` | verde | total × 0,7 |
+| `>10 <=15` | amarelo | total × 0,15 |
+| `>15` | vermelho | 0 |
+
+O **total** é a soma das pessoas das cinco faixas (como o `$R$17` da
+planilha). A meta é arredondada para pessoas inteiras (9 pessoas: 6,3 →
+6 e 1,35 → 1; meio para cima). A curva laranja é a meta, com o número
+da faixa verde no topo. Embaixo do gráfico, a tabela Pessoas × Meta.
+
+Mês extraído antes deste gráfico existir não tem a contagem por faixa:
+o quadro pede para extrair o mês de novo. Não aparece no modo
+apresentação.
+
 ---
 
 ## 6. Regras de calendário
@@ -628,6 +656,7 @@ python -m pytest -q tests
 | 28/09/2026 | Faltas digitadas por semana/ciclo; versão V.01.0; Início de um mês por vez |
 | 29/09/2026 | Aba Coverage; percentuais com duas casas; janela única, aviso ao fechar, modo apresentação, telas vazias com "Extrair agora"; pente fino de layout |
 | 30/09/2026 | **V.01.0 fechada para apresentação** e este documento |
+| 05/10/2026 | Gráfico de distribuição da dispersão do mês na aba Início |
 | 05/10/2026 | **V.01.1:** correção do erro ao digitar dias úteis no Resultado do Mês; o ciclo da folha passa a ir para o mês em que fecha (e para o Pico); ciclo em aberto conta até ontem; cópia para o PowerPoint numa linha só por célula |
 
 ---

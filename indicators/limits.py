@@ -47,6 +47,19 @@ FAIXAS = {
     "coverage": {"minimo": 0.92, "teto": 1.10},
 }
 
+# Grafico de distribuicao da dispersao (aba Inicio): a meta de pessoas
+# em cada faixa de Var, sobre o total de pessoas que contam na
+# dispersao. A faixa verde (-10 a +10) e a meta da propria dispersao
+# (70%); cada faixa amarela, 15%; as vermelhas, nenhuma pessoa. Mesmas
+# formulas da planilha de referencia (=$R$17*0,7 e =$R$17*0,15).
+META_DAS_FAIXAS_DA_DISPERSAO = {
+    "abaixo_15": 0.0,
+    "abaixo_10": 0.15,
+    "dentro": FAIXAS["dispersao"]["minimo"],
+    "acima_10": 0.15,
+    "acima_15": 0.0,
+}
+
 # Indicadores que nao saem do export do Summary: sao digitados a mao
 # (ver docs/INDICADORES.md, secao 13). Uma regravacao vinda da extracao
 # nunca pode sobrescrever esses campos.

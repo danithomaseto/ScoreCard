@@ -231,3 +231,49 @@ def test_formatacao_do_percentual():
     assert limits.formatar(0.9638) == "96,38%"
     assert limits.formatar(1.129) == "112,90%"
     assert limits.formatar(None) == "", "sem numero vira vazio, nunca zero"
+
+
+# ---------------- Distribuicao da dispersao (grafico da aba Inicio) ----------------
+
+def _pessoa(var, goal=8.0, medido=8.0):
+    return {"goal": goal, "measured_direct": medido, "var": var}
+
+
+def test_faixas_da_dispersao_e_as_fronteiras():
+    """Mesma regra do indicador: -10 e +10 sao DENTRO; -15 cai na amarela
+    da esquerda e +15 na amarela da direita. Goal ou Measured Direct zero
+    ficam fora, como na dispersao."""
+    linhas = [
+        _pessoa(-20), _pessoa(-15.01),        # vermelha esquerda
+        _pessoa(-15), _pessoa(-10.01),        # amarela esquerda
+        _pessoa(-10), _pessoa(0), _pessoa(10),  # verde
+        _pessoa(10.01), _pessoa(15),          # amarela direita
+        _pessoa(15.01),                       # vermelha direita
+        _pessoa(50, goal=0), _pessoa(50, medido=0),  # fora da conta
+    ]
+    assert weekly.faixas_da_dispersao(linhas) == {
+        "abaixo_15": 2, "abaixo_10": 2, "dentro": 3, "acima_10": 2, "acima_15": 1}
+
+
+def test_faixa_verde_e_o_dentro_da_dispersao(mensal):
+    totais = weekly.totais(mensal["linhas"], nivel_detalhe="User ID")
+    faixas = totais["faixas_dispersao"]
+    assert faixas["dentro"] == totais["dentro"]
+    assert sum(faixas.values()) == totais["dentro"] + totais["fora"]
+    assert weekly.totais(mensal["linhas"], nivel_detalhe="Shift")["faixas_dispersao"] is None
+
+
+def test_meta_da_distribuicao_igual_a_planilha_e_arredondada():
+    """9 pessoas: verde 9 x 0,7 = 6,3 -> 6; amarelas 9 x 0,15 = 1,35 -> 1;
+    vermelhas 0. Com 10: 7 e 1,5 -> 2 (meio arredonda para cima)."""
+    faixas = {"abaixo_15": 1, "abaixo_10": 3, "dentro": 3, "acima_10": 1, "acima_15": 1}
+    dist = weekly.distribuicao_da_dispersao(faixas)
+    assert dist["total"] == 9
+    assert [f["meta"] for f in dist["faixas"]] == [0, 1, 6, 1, 0]
+    assert [f["pessoas"] for f in dist["faixas"]] == [1, 3, 3, 1, 1]
+    assert [f["cor"] for f in dist["faixas"]] == ["vermelho", "amarelo", "verde", "amarelo", "vermelho"]
+    assert [f["rotulo"] for f in dist["faixas"]] == ["<-15", ">=-15 <-10", ">=-10 <=10", ">10 <=15", ">15"]
+
+    dez = weekly.distribuicao_da_dispersao({**faixas, "dentro": 4})
+    assert [f["meta"] for f in dez["faixas"]] == [0, 2, 7, 2, 0]
+    assert weekly.distribuicao_da_dispersao(None) is None

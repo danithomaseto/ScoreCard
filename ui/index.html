@@ -157,6 +157,27 @@
               <span class="legend-note">O mês vem de extração própria e não é a soma das semanas.</span>
             </div>
           </div>
+
+          <div class="card distribuicao-card" id="distribuicao-card" hidden>
+            <div class="distribuicao-topo">
+              <div>
+                <div class="section-title">Distribuição da dispersão</div>
+                <p class="distribuicao-sub" id="distribuicao-sub"></p>
+              </div>
+              <div class="distribuicao-legenda" aria-hidden="true">
+                <span class="legend-item"><span class="legend-dot verde"></span>−10 a +10</span>
+                <span class="legend-item"><span class="legend-dot amarelo"></span>10 a 15</span>
+                <span class="legend-item"><span class="legend-dot vermelho"></span>acima de 15</span>
+                <span class="legend-item"><span class="distribuicao-linha-meta"></span>meta</span>
+              </div>
+            </div>
+            <p class="distribuicao-aviso" id="distribuicao-aviso" hidden></p>
+            <div class="distribuicao-corpo" id="distribuicao-corpo">
+              <svg class="distribuicao-grafico" id="distribuicao-grafico" viewBox="0 0 640 250"
+                   role="img" aria-labelledby="distribuicao-sub"></svg>
+              <table class="distribuicao-tabela" id="distribuicao-tabela"></table>
+            </div>
+          </div>
         </div>
       </section>
 

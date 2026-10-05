@@ -377,12 +377,14 @@ async function loadIndicators() {
   indicatorsWrap.hidden = !temDados;
   indicatorsLegend.hidden = !temDados;
   if (!temDados) {
+    document.getElementById('distribuicao-card').hidden = true;
     const nomeDoMes = homeMes.selectedOptions[0]?.text || 'neste mês';
     document.getElementById('indicators-empty-titulo').textContent =
       `Nenhuma extração de ${homeOperationSelect.selectedOptions[0]?.text || 'esta operação'} em ${nomeDoMes} ainda`;
     return;
   }
 
+  desenharDistribuicao(tabela.distribuicao);
   const primeiraVez = !indicatorsBody.querySelector('tr:not(.linha-esqueleto)');
   desenharCabecalho(tabela);
   desenharLinhas(tabela);
@@ -390,6 +392,127 @@ async function loadIndicators() {
   // Abre mostrando o fim da tabela: o mes e o pico sao o que se olha
   // primeiro, e numa janela estreita eles ficariam escondidos a direita.
   indicatorsWrap.scrollLeft = indicatorsWrap.scrollWidth;
+}
+
+// ---------------------------------------------------------------
+// Grafico de distribuicao da dispersao do mes (aba Inicio)
+// ---------------------------------------------------------------
+// Pessoas por faixa de Var, da extracao Month, com a curva da meta (70%
+// na faixa verde, 15% em cada amarela, nenhuma nas vermelhas). As
+// contagens e as metas vem prontas do Python; aqui so se desenha.
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const GRAFICO = { largura: 640, altura: 250, topo: 34, base: 212, lado: 16 };
+
+function elementoSvg(nome, atributos, texto) {
+  const el = document.createElementNS(SVG_NS, nome);
+  for (const [chave, valor] of Object.entries(atributos)) el.setAttribute(chave, valor);
+  if (texto !== undefined) el.textContent = texto;
+  return el;
+}
+
+// Curva suave pelos pontos (Catmull-Rom em Bezier), como a linha de
+// tendencia do Excel.
+function caminhoSuave(pontos) {
+  let d = `M${pontos[0].x},${pontos[0].y}`;
+  for (let i = 0; i < pontos.length - 1; i += 1) {
+    const p0 = pontos[i - 1] || pontos[i];
+    const p1 = pontos[i];
+    const p2 = pontos[i + 1];
+    const p3 = pontos[i + 2] || p2;
+    const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
+    const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+    d += ` C${c1.x},${Math.min(c1.y, GRAFICO.base)} ${c2.x},${Math.min(c2.y, GRAFICO.base)} ${p2.x},${p2.y}`;
+  }
+  return d;
+}
+
+function percentualDe(parte, total) {
+  return total ? `${(parte / total * 100).toFixed(2).replace('.', ',')}%` : '—';
+}
+
+function desenharDistribuicao(dist) {
+  const card = document.getElementById('distribuicao-card');
+  const aviso = document.getElementById('distribuicao-aviso');
+  const corpo = document.getElementById('distribuicao-corpo');
+  if (!dist || dist.estado === 'sem_extracao') {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+  const nomeDoMes = homeMes.selectedOptions[0]?.text || '';
+  document.getElementById('distribuicao-sub').textContent =
+    `${nomeDoMes} · pessoas por faixa de Var, da extração Month · meta: 70% na faixa verde`;
+
+  const mensagens = {
+    extrair_de_novo: 'Este mês foi extraído antes do gráfico existir. Extraia o mês (Month, com User ID) de novo para montar a distribuição.',
+    sem_user_id: 'O mês foi extraído sem User ID no agrupamento: a distribuição conta pessoas e precisa dele.',
+  };
+  const vazio = dist.estado === 'ok' && !dist.total;
+  aviso.hidden = dist.estado === 'ok' && !vazio;
+  corpo.hidden = !aviso.hidden;
+  if (!aviso.hidden) {
+    aviso.textContent = mensagens[dist.estado] || 'Nenhuma pessoa entrou na conta da dispersão neste mês.';
+    return;
+  }
+
+  const svg = document.getElementById('distribuicao-grafico');
+  svg.innerHTML = '';
+  const { largura, topo, base, lado } = GRAFICO;
+  const maximo = Math.max(1, ...dist.faixas.map((f) => Math.max(f.pessoas, f.meta)));
+  const y = (valor) => base - (valor / maximo) * (base - topo);
+  const passo = (largura - lado * 2) / dist.faixas.length;
+  const larguraBarra = Math.min(64, passo * 0.5);
+  const centro = (i) => lado + passo * i + passo / 2;
+
+  svg.appendChild(elementoSvg('line', { x1: lado, x2: largura - lado, y1: base, y2: base, class: 'distribuicao-eixo' }));
+
+  dist.faixas.forEach((faixa, i) => {
+    const x = centro(i) - larguraBarra / 2;
+    const altura = Math.max(0, base - y(faixa.pessoas));
+    const raio = Math.min(4, altura);
+    const grupo = elementoSvg('g', { class: 'distribuicao-faixa' });
+    grupo.appendChild(elementoSvg('title', {},
+      `${faixa.rotulo}: ${plural(faixa.pessoas, 'pessoa', 'pessoas')} `
+      + `(${percentualDe(faixa.pessoas, dist.total)}) · meta ${num(faixa.meta)}`));
+    // Area de toque maior que a barra, para a dica aparecer facil.
+    grupo.appendChild(elementoSvg('rect', { x: centro(i) - passo / 2, y: topo - 20, width: passo, height: base - topo + 20, fill: 'transparent' }));
+    if (altura > 0) {
+      grupo.appendChild(elementoSvg('path', {
+        class: `distribuicao-barra ${faixa.cor}`,
+        d: `M${x},${base} V${base - altura + raio} Q${x},${base - altura} ${x + raio},${base - altura} `
+          + `H${x + larguraBarra - raio} Q${x + larguraBarra},${base - altura} ${x + larguraBarra},${base - altura + raio} V${base} Z`,
+      }));
+    }
+    grupo.appendChild(elementoSvg('text', { x: centro(i), y: base + 22, class: 'distribuicao-rotulo' }, faixa.rotulo));
+    svg.appendChild(grupo);
+  });
+
+  // Curva da meta, com o numero da faixa verde no pico.
+  const pontos = dist.faixas.map((faixa, i) => ({ x: centro(i), y: y(faixa.meta) }));
+  svg.appendChild(elementoSvg('path', { d: caminhoSuave(pontos), class: 'distribuicao-meta' }));
+  const verde = dist.faixas.find((f) => f.chave === 'dentro');
+  const pico = pontos[dist.faixas.indexOf(verde)];
+  svg.appendChild(elementoSvg('circle', { cx: pico.x, cy: pico.y, r: 4, class: 'distribuicao-meta-ponto' }));
+  svg.appendChild(elementoSvg('text', { x: pico.x + 10, y: pico.y - 6, class: 'distribuicao-meta-valor' }, num(verde.meta)));
+
+  // Os numeros das barras por ultimo, por cima da curva, com um contorno
+  // da cor do fundo: onde a curva passa perto, o numero continua legivel.
+  dist.faixas.forEach((faixa, i) => {
+    svg.appendChild(elementoSvg('text', { x: centro(i), y: y(faixa.pessoas) - 8, class: 'distribuicao-valor' },
+      num(faixa.pessoas)));
+  });
+
+  // A mesma informacao em tabela, como na planilha: pessoas e meta.
+  const tabela = document.getElementById('distribuicao-tabela');
+  const cabecalho = dist.faixas.map((f) => `<th>${f.rotulo}</th>`).join('');
+  const pessoas = dist.faixas.map((f) => `<td>${num(f.pessoas)}</td>`).join('');
+  const metas = dist.faixas.map((f) => `<td>${num(f.meta)}</td>`).join('');
+  tabela.innerHTML = `<thead><tr><th></th>${cabecalho}<th>Total</th></tr></thead>`
+    + `<tbody><tr><th>Pessoas</th>${pessoas}<td>${num(dist.total)}</td></tr>`
+    // Total da meta em branco, como na planilha: as metas arredondadas
+    // nao somam o total de pessoas (6 + 1 + 1 = 8 de 9).
+    + `<tr class="meta"><th>Meta</th>${metas}<td></td></tr></tbody>`;
 }
 
 function desenharCabecalho(tabela) {

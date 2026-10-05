@@ -302,3 +302,31 @@ def test_fila_multipla_conta_as_que_ficaram_sem_indicador(
     assert "sem indicador" in resultado["message"]
     finais = [p["status"] for p in avisos if p.get("status") != "running"]
     assert finais == ["warning", "warning"]
+
+
+def test_distribuicao_da_dispersao_vem_da_extracao_do_mes(store):
+    from api import Api
+
+    api_obj = Api()
+    tabela = api_obj.get_indicator_table("hugo_boss", mes="2026-09")
+    assert tabela["distribuicao"] == {"estado": "sem_extracao"}
+
+    # Mes extraido antes do grafico existir: sem contagem por faixa.
+    store.salvar_extracao("hugo_boss", "month", {"2026-09": {"efetividade": 1.0}},
+                                        meta={"group_by": "User ID"})
+    assert api_obj.get_indicator_table("hugo_boss", mes="2026-09")["distribuicao"] == {
+        "estado": "extrair_de_novo"}
+
+    store.salvar_extracao("hugo_boss", "month", {"2026-09": {
+        "efetividade": 1.0, "faixas_dispersao": {
+            "abaixo_15": 1, "abaixo_10": 3, "dentro": 3, "acima_10": 1, "acima_15": 1}}},
+        meta={"group_by": "User ID"})
+    dist = api_obj.get_indicator_table("hugo_boss", mes="2026-09")["distribuicao"]
+    assert dist["estado"] == "ok" and dist["total"] == 9
+    assert [f["meta"] for f in dist["faixas"]] == [0, 1, 6, 1, 0]
+
+    # Agrupado por outra coisa que nao User ID, a contagem nao e de pessoas.
+    store.salvar_extracao("hugo_boss", "month", {"2026-09": {
+        "efetividade": 1.0, "faixas_dispersao": None}}, meta={"group_by": "Shift"})
+    assert api_obj.get_indicator_table("hugo_boss", mes="2026-09")["distribuicao"] == {
+        "estado": "sem_user_id"}

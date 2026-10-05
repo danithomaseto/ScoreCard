@@ -673,10 +673,25 @@ class Api:
             "operacao": OPERATIONS[operation_key]["label"],
             "colunas": colunas,
             "linhas": linhas,
+            "distribuicao": self._distribuicao_do_mes(meses.get(mes)),
             "mes": mes,
             "meses": [{"id": m, "rotulo": periodos.rotulo_mes_ano(m)}
                       for m in sorted(set(meses_com_dado) | {atual}, reverse=True)],
         }
+
+    @staticmethod
+    def _distribuicao_do_mes(entrada_mes):
+        """O grafico de distribuicao da dispersao do mes, da extracao
+        Month. Mes extraido antes deste grafico existir nao tem a
+        contagem por faixa guardada: a tela pede para extrair de novo."""
+        if not entrada_mes:
+            return {"estado": "sem_extracao"}
+        if entrada_mes.get("faixas_dispersao") is None:
+            # Sem User ID no agrupamento a contagem nao e de pessoas.
+            if entrada_mes.get("group_by") not in (None, "User ID"):
+                return {"estado": "sem_user_id"}
+            return {"estado": "extrair_de_novo"}
+        return {"estado": "ok", **weekly.distribuicao_da_dispersao(entrada_mes["faixas_dispersao"])}
 
     def _coluna_pico(self, chave, entrada_pico, entrada_mes, vivo):
         """O pico usa efetividade, dispersao e presenteismo do mes; so a

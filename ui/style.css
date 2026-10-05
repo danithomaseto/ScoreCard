@@ -1713,3 +1713,53 @@ body.apresentacao .legend-item { font-size: 14px; }
   font-weight: 600;
   color: #fbbf24;
 }
+
+/* ---------- Distribuicao da dispersao do mes (aba Inicio) ---------- */
+
+.distribuicao-card { width: 100%; max-width: none; margin-top: 20px; }
+.distribuicao-card[hidden] { display: none; }
+.distribuicao-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.distribuicao-topo .section-title { margin-bottom: 4px; }
+.distribuicao-sub { margin: 0; font-size: 12px; color: var(--text-muted); }
+.distribuicao-legenda { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.legend-dot.amarelo { background: rgba(250, 204, 21, 0.35); border: 1px solid #facc15; }
+.distribuicao-linha-meta { display: inline-block; width: 18px; height: 2px; border-radius: 1px; background: #f97316; }
+.distribuicao-aviso { margin: 12px 0 4px; font-size: 13px; color: var(--text-muted); }
+
+/* Grafico em cima e a tabela sempre embaixo, como na planilha. */
+.distribuicao-corpo { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.distribuicao-corpo[hidden] { display: none; }
+.distribuicao-grafico { width: 100%; max-width: 760px; max-height: 280px; overflow: visible; }
+.distribuicao-eixo { stroke: #344054; stroke-width: 1; }
+.distribuicao-barra.verde { fill: #22c55e; }
+.distribuicao-barra.amarelo { fill: #facc15; }
+.distribuicao-barra.vermelho { fill: #ef4444; }
+.distribuicao-faixa:hover .distribuicao-barra { filter: brightness(1.15); }
+.distribuicao-valor,
+.distribuicao-meta-valor { paint-order: stroke; stroke: var(--card-bg); stroke-width: 5px; stroke-linejoin: round; pointer-events: none; }
+.distribuicao-valor { fill: var(--text); font-size: 14px; font-weight: 700; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.distribuicao-rotulo { fill: var(--text-muted); font-size: 12px; text-anchor: middle; }
+.distribuicao-meta { fill: none; stroke: #f97316; stroke-width: 2; stroke-linecap: round; pointer-events: none; }
+.distribuicao-meta-ponto { fill: #f97316; stroke: var(--card-bg); stroke-width: 2; pointer-events: none; }
+.distribuicao-meta-valor { fill: var(--text); font-size: 14px; font-weight: 700; }
+
+.distribuicao-tabela { width: 100%; border-collapse: collapse; font-size: 12px; }
+.distribuicao-tabela th,
+.distribuicao-tabela td { padding: 8px 10px; text-align: center; border-bottom: 1px solid #1e2438; white-space: nowrap; }
+.distribuicao-tabela thead th { color: var(--text-muted); font-weight: 600; font-size: 11px; }
+.distribuicao-tabela tbody th { text-align: left; color: var(--text); font-weight: 700; }
+.distribuicao-tabela tbody td { color: var(--text); font-weight: 600; }
+.distribuicao-tabela tr.meta td,
+.distribuicao-tabela tr.meta th { color: var(--text-muted); font-weight: 500; }
+.distribuicao-tabela tbody tr:last-child th,
+.distribuicao-tabela tbody tr:last-child td { border-bottom: none; }
+
+/* Fica fora do modo apresentacao: la vai so a tabela dos indicadores. */
+body.apresentacao #distribuicao-card { display: none; }

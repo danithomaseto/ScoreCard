@@ -1144,3 +1144,20 @@ Sem mudar calculo nenhum:
   13/09 a 02/10, 15 dias uteis (sabado 03 e domingo 04 nao contam fora
   da escala espanhola). Na semana seguinte, ate 09/10, e assim ate o dia
   12, quando o ciclo fecha com o calendario inteiro.
+
+## 25. Distribuicao da dispersao do mes (05/10/2026)
+
+Grafico na aba Inicio, embaixo da tabela (fora do modo apresentacao):
+pessoas por faixa de Var na extracao Month, com a curva da meta.
+
+- **Regra:** a mesma da dispersao (`weekly.classificar`): Goal ou
+  Measured Direct zero fica fora; a faixa verde (-10 a +10, inclusive) e
+  o DENTRO. Faixas: `<-15` vermelha, `>=-15 <-10` amarela, `>=-10 <=10`
+  verde, `>10 <=15` amarela, `>15` vermelha.
+- **Meta:** total x 0,7 na verde, total x 0,15 em cada amarela, zero nas
+  vermelhas (planilha: `=$R$17*0,7` e `=$R$17*0,15`, R17 = soma das
+  faixas). Arredondada para pessoas inteiras, meio para cima.
+- **Dado:** a contagem por faixa (`faixas_dispersao`) e gravada na hora
+  da extracao, junto dos outros totais. Mes extraido antes nao tem: o
+  quadro pede para extrair de novo. Agrupamento sem User ID nao conta
+  pessoas e o quadro avisa.

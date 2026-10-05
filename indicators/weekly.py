@@ -10,7 +10,7 @@ vem consolidado e vira um grupo so. As formulas sao as mesmas (ver
 docs/INDICADORES.md, secao 10.2).
 """
 
-from .limits import TOLERANCIA_VAR
+from .limits import META_DAS_FAIXAS_DA_DISPERSAO, TOLERANCIA_VAR
 
 
 def classificar(linha, tolerancia=TOLERANCIA_VAR):
@@ -34,6 +34,87 @@ def classificar(linha, tolerancia=TOLERANCIA_VAR):
     if var is None:
         return None
     return "fora" if abs(var) > tolerancia else "dentro"
+
+
+# Faixas do grafico de distribuicao da dispersao, da esquerda para a
+# direita, em pontos de "Var" (o mesmo numero da classificacao acima):
+#   <-15 | >=-15 <-10 | >=-10 <=10 | >10 <=15 | >15
+# A faixa do meio e exatamente o DENTRO da dispersao.
+FAIXAS_DA_DISPERSAO = ("abaixo_15", "abaixo_10", "dentro", "acima_10", "acima_15")
+
+
+def faixa_da_dispersao(linha, tolerancia=TOLERANCIA_VAR):
+    """Em qual das cinco faixas a pessoa cai, ou None se ela esta fora
+    da conta da dispersao (mesma regra de classificar)."""
+    if classificar(linha, tolerancia) is None:
+        return None
+    var = linha["var"]
+    if var < -15:
+        return "abaixo_15"
+    if var < -tolerancia:
+        return "abaixo_10"
+    if var <= tolerancia:
+        return "dentro"
+    if var <= 15:
+        return "acima_10"
+    return "acima_15"
+
+
+def faixas_da_dispersao(linhas, tolerancia=TOLERANCIA_VAR):
+    """Quantas pessoas em cada faixa: {"abaixo_15": 1, ..., "acima_15": 1}."""
+    contagem = dict.fromkeys(FAIXAS_DA_DISPERSAO, 0)
+    for linha in linhas:
+        faixa = faixa_da_dispersao(linha, tolerancia)
+        if faixa:
+            contagem[faixa] += 1
+    return contagem
+
+
+ROTULOS_DAS_FAIXAS = {
+    "abaixo_15": "<-15",
+    "abaixo_10": ">=-15 <-10",
+    "dentro": ">=-10 <=10",
+    "acima_10": ">10 <=15",
+    "acima_15": ">15",
+}
+CORES_DAS_FAIXAS = {
+    "abaixo_15": "vermelho",
+    "abaixo_10": "amarelo",
+    "dentro": "verde",
+    "acima_10": "amarelo",
+    "acima_15": "vermelho",
+}
+
+
+def _arredondar(valor):
+    """Arredondamento comum (2,5 -> 3), e nao o "do banqueiro" do round()
+    do Python (2,5 -> 2), para bater com o Excel. O 1e-9 segura erros de
+    ponto flutuante (10 x 0,15 = 1,4999999...)."""
+    return int(valor + 0.5 + 1e-9)
+
+
+def distribuicao_da_dispersao(faixas):
+    """O grafico da aba Inicio: pessoas e meta de cada faixa.
+
+    A meta de cada faixa e uma parte do total de pessoas (a soma das
+    cinco faixas): 70% na verde e 15% em cada amarela, como na planilha
+    (=$R$17*0,7 e =$R$17*0,15), arredondada para pessoas inteiras como a
+    planilha mostra (9 pessoas: 6,3 -> 6 e 1,35 -> 1; meio para cima).
+    None se nao ha contagem guardada.
+    """
+    if not faixas:
+        return None
+    total = sum(faixas.get(chave, 0) for chave in FAIXAS_DA_DISPERSAO)
+    return {
+        "total": total,
+        "faixas": [{
+            "chave": chave,
+            "rotulo": ROTULOS_DAS_FAIXAS[chave],
+            "cor": CORES_DAS_FAIXAS[chave],
+            "pessoas": faixas.get(chave, 0),
+            "meta": _arredondar(total * META_DAS_FAIXAS_DA_DISPERSAO[chave]),
+        } for chave in FAIXAS_DA_DISPERSAO],
+    }
 
 
 def calcular_cubo(efetividade, hora_direta, presenteismo):
@@ -83,6 +164,7 @@ def totais(linhas, nivel_detalhe=None, tolerancia=TOLERANCIA_VAR):
     dispersao = _dividir(dentro, dentro + fora)
 
     conta_pessoas = nivel_detalhe is None or nivel_detalhe == "User ID"
+    faixas = faixas_da_dispersao(linhas, tolerancia) if conta_pessoas else None
     if not conta_pessoas:
         dentro = fora = dispersao = None
 
@@ -96,6 +178,9 @@ def totais(linhas, nivel_detalhe=None, tolerancia=TOLERANCIA_VAR):
         "soma_pd_brk": round(soma["pd_brk"], 2),
         "dentro": dentro,
         "fora": fora,
+        # Pessoas por faixa de Var, para o grafico de distribuicao da
+        # dispersao do mes na aba Inicio.
+        "faixas_dispersao": faixas,
         # Os seis, na ordem de limits.ORDEM. Presenteismo e coverage sao
         # digitados a mao depois; o cubo espera o presenteismo.
         "cubo": None,
