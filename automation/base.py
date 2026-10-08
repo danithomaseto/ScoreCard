@@ -323,20 +323,22 @@ def _is_checked(locator):
     return None
 
 
-def enable_second_grouping(frame):
-    """Marca o checkbox do segundo nivel de agrupamento, que habilita o
-    campo "Group By 2".
+def _seletores_do_nivel(nivel):
+    return [
+        lambda f: f.locator(f"#groupinglvl{nivel}_check-inputEl"),
+        lambda f: f.get_by_role("checkbox", name=f"Group By {nivel}", exact=False),
+    ]
+
+
+def enable_grouping_level(frame, nivel):
+    """Marca o checkbox de um nivel de agrupamento (2 ou 3), que habilita
+    o campo "Group By N".
 
     Precisa ser idempotente: o checkbox guarda estado entre execucoes e
     um clique cego no que ja esta marcado **desmarca**, deixando o
-    Group By 2 inacessivel e a extracao com o agrupamento errado.
+    Group By N inacessivel e a extracao com o agrupamento errado.
     """
-    selectors = [
-        lambda f: f.locator("#groupinglvl2_check-inputEl"),
-        lambda f: f.get_by_role("checkbox", name="Group By 2", exact=False),
-    ]
-
-    for selector in selectors:
+    for selector in _seletores_do_nivel(nivel):
         try:
             locator = selector(frame)
             locator.wait_for(state="visible", timeout=4000)
@@ -351,7 +353,40 @@ def enable_second_grouping(frame):
             continue
         return True
 
-    raise RuntimeError("Nao foi possivel habilitar o segundo nivel de agrupamento.")
+    raise RuntimeError(f"Nao foi possivel habilitar o nivel {nivel} de agrupamento.")
+
+
+def enable_second_grouping(frame):
+    """O segundo nivel (Group By 2). Ver enable_grouping_level."""
+    try:
+        return enable_grouping_level(frame, 2)
+    except RuntimeError:
+        raise RuntimeError("Nao foi possivel habilitar o segundo nivel de agrupamento.") from None
+
+
+def disable_grouping_level(frame, nivel):
+    """Desmarca um nivel de agrupamento que ficou marcado de uma
+    extracao anterior (o checkbox guarda estado). Sem isso, um Month
+    depois de uma Week com tres niveis sairia quebrado por Supervisor.
+
+    Nao espera o campo aparecer: nivel que nem esta na tela ja esta
+    desligado, e esperar custaria segundos em toda extracao.
+    """
+    for selector in _seletores_do_nivel(nivel):
+        try:
+            locator = selector(frame)
+            if locator.count() == 0 or not locator.first.is_visible():
+                continue
+            locator = locator.first
+        except Exception:
+            continue
+        if _is_checked(locator) is True:
+            try:
+                locator.click()
+            except Exception:
+                continue
+        return True
+    return False
 
 
 def select_custom_date_range(frame, from_date, to_date, from_time=None, to_time=None):

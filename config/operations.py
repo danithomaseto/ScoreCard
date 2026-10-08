@@ -44,18 +44,30 @@ GROUP_BY_OPTIONS = [
     "Work Team",
 ]
 
-# Opcao do "Date Range" (bloco "Default Date Range" do relatorio) usada
-# quando nao se digita um intervalo na tela. O nome vai completo de
-# proposito: digitar so um pedaco ("Las") deixaria o combobox escolher
-# a primeira opcao que sobrar na lista, que pode ser Last Week, Last
-# Month ou Last Year conforme o relatorio.
 # Tipo de extracao -> subpasta da operacao onde o arquivo e salvo. Os
-# nomes precisam bater com as pastas do SharePoint.
+# nomes precisam bater com as pastas do SharePoint. Gestor e Turno tem
+# uma subpasta Week e uma Month dentro da pasta deles.
 PASTAS_DO_PERIODO = {
     "week": "Week",
     "month": "Month",
     "peak": "Dias de Pico",
     "indiretas": "Indiretas",
+    "gestor_week": "Gestor/Week",
+    "gestor_month": "Gestor/Month",
+    "turno_week": "Turno/Week",
+    "turno_month": "Turno/Month",
+}
+
+# Nome do tipo de extracao na tela e no historico.
+ROTULOS_DO_PERIODO = {
+    "week": "Week",
+    "month": "Month",
+    "peak": "Dias de Pico",
+    "indiretas": "Indiretas",
+    "gestor_week": "Gestor · Week",
+    "gestor_month": "Gestor · Month",
+    "turno_week": "Turno · Week",
+    "turno_month": "Turno · Month",
 }
 
 # Horas indiretas: o agrupamento e fixo pelo sistema (o usuario nao
@@ -63,6 +75,47 @@ PASTAS_DO_PERIODO = {
 # atividade em cada semana (ver indicators/indiretas.py).
 GROUP_BY_DAS_INDIRETAS = "Job Code"
 
+# Agrupamento fixo de cada tipo de extracao, do Group By 1 ao ultimo.
+# So o Month fica de fora: nele o Group By 1 e o escolhido na tela.
+#
+# A Week tem o Supervisor no meio: as somas da operacao nao mudam (cada
+# pessoa so tem as horas dela repartidas entre os supervisores) e o
+# Coverage ganha o gestor de cada usuario.
+AGRUPAMENTOS = {
+    "week": ["Week", "Supervisor", "User ID"],
+    "peak": ["Report Date"],
+    "indiretas": ["Week", GROUP_BY_DAS_INDIRETAS],
+    "gestor_week": ["Week", "Supervisor", "User ID"],
+    "gestor_month": ["Supervisor", "User ID"],
+    "turno_week": ["Week", "Shift", "User ID"],
+    "turno_month": ["Shift", "User ID"],
+}
+
+# Tipos que quebram o resultado por gestor ou por turno (abas Resultado
+# Gestor e Resultado Turno): (dimensao, periodo).
+POR_GRUPO = {
+    "gestor_week": ("gestor", "week"),
+    "gestor_month": ("gestor", "month"),
+    "turno_week": ("turno", "week"),
+    "turno_month": ("turno", "month"),
+}
+
+
+def agrupamento(tipo, group_by=None, padrao="User ID"):
+    """Os niveis de Group By de um tipo de extracao, na ordem."""
+    return list(AGRUPAMENTOS.get(tipo) or [group_by or padrao])
+
+
+def e_semanal(tipo):
+    """O tipo vem quebrado por semana (Week no Group By 1)?"""
+    return agrupamento(tipo)[0] == "Week"
+
+
+# Opcao do "Date Range" (bloco "Default Date Range" do relatorio) usada
+# quando nao se digita um intervalo na tela. O nome vai completo de
+# proposito: digitar so um pedaco ("Las") deixaria o combobox escolher
+# a primeira opcao que sobrar na lista, que pode ser Last Week, Last
+# Month ou Last Year conforme o relatorio.
 DEFAULT_DATE_RANGE = {
     "week": "Last Week",
     "month": "Last Month",

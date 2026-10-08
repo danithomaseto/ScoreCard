@@ -36,6 +36,12 @@ Detalhes de uso:
   letra maior. As setas trocam a operacao e Esc sai.
 - **Tela sem extracao** (Inicio e Coverage) mostra o botao "Extrair
   agora", que abre Extrair Dados com a operacao ja escolhida.
+- **Resultado Gestor e Resultado Turno:** a tabela da aba Inicio, uma por
+  gestor (ou turno), das extracoes Gestor/Turno · Week e · Month (pastas
+  `Gestor\Week`, `Gestor\Month`, `Turno\Week`, `Turno\Month`). A Week
+  sai Week > Supervisor > User ID e leva o gestor para o Coverage.
+- **Extrair Multiplos > Varios filtros:** uma operacao e varios tipos de
+  extracao (Week, Month, Gestor...) em sequencia.
 
 Toda a logica de automacao (login no Summary, navegacao pelo iframe de
 relatorios, filtros, exportacao) e a mesma ja validada — o empacotamento
@@ -250,6 +256,8 @@ coverage_store.py     # horas por usuario das extracoes e o digitado no Coverage
 coverage_tela.py      # monta a aba Coverage (filtros, cards, linhas, total)
 indiretas_store.py    # horas indiretas por operacao e semana
 indiretas_tela.py     # monta a aba Horas Indiretas (semanas, cards, tabela)
+grupos_store.py       # resultados por gestor e por turno
+grupos_tela.py        # monta as abas Resultado Gestor e Resultado Turno
 automation/
   base.py              # login, iframe, comboboxes, export (Playwright)
   generic.py            # orquestra o fluxo por operacao
@@ -262,6 +270,7 @@ indicators/
   presenteismo.py       # semanas do mes, ciclos 13->12 e a formula
   pico.py               # hora direta dos 5 dias de pico do mes
   coverage.py           # coverage por usuario e total
+  grupos.py             # indicadores por gestor e por turno
 config/
   operations.py         # cadastro das operacoes
 ui/
@@ -278,6 +287,7 @@ tests/
   test_pico.py           # dias de pico e sabados da escala espanhola
   test_coverage.py       # coverage conferido com a planilha
   test_indiretas.py      # horas indiretas conferidas com a planilha
+  test_grupos.py         # gestor, turno, Supervisor na Week e varios filtros
   test_api.py            # extracao unica, fila multipla e validacoes
   test_lancador.py       # app dentro do .exe, descompactado uma vez
   test_infra.py          # gravacao segura e log sem credenciais

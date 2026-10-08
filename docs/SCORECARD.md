@@ -1,6 +1,6 @@
 # Score Card — documento completo da ferramenta
 
-**Versão:** V.01.1 · **Criado por:** Daniel Thomaseto · **Atualizado em:** 05/10/2026
+**Versão:** V.01.1 · **Criado por:** Daniel Thomaseto · **Atualizado em:** 08/10/2026
 
 Este documento explica o Score Card de ponta a ponta: para que serve,
 como se usa, como cada indicador é calculado, onde ficam os dados, como
@@ -40,7 +40,8 @@ arquivo (`ScoreCard.exe`), que:
   arquivo na pasta da operação no SharePoint;
 - **calcula** os seis indicadores do Score Card — Cubo, Efetividade,
   Hora Direta, Presenteísmo, Dispersão e Coverage — por semana, por mês
-  e nos dias de pico;
+  e nos dias de pico, para a operação inteira, **por gestor** e **por
+  turno**;
 - **mostra** tudo num painel único (aba Início), com cores por meta,
   botão para copiar cada coluna para a apresentação e um modo
   apresentação em tela cheia;
@@ -116,6 +117,10 @@ caso, `"escala_espanhola": True`). Nenhuma outra parte do código muda.
   versão** ele leva alguns segundos a mais, porque prepara os arquivos
   internos (a tela de abertura mostra o andamento). Das próximas vezes
   abre direto.
+- Ao abrir, toca a **animação de abertura** (as faixas da DHL cruzando a
+  tela, o logo, as seis barras dos indicadores subindo e o título),
+  enquanto o app termina de carregar; ela sobe como uma cortina e o
+  login entra.
 - A janela abre maximizada.
 - **Uma janela só:** clicar no `ScoreCard.exe` com o app já aberto não
   abre outra janela — traz para a frente a que está aberta (inclusive
@@ -130,6 +135,13 @@ caso, `"escala_espanhola": True`). Nenhuma outra parte do código muda.
   [Segurança](#8-segurança)).
 - Se o Caps Lock estiver ligado, aparece um aviso embaixo da senha —
   senha errada repetida pode bloquear o usuário no Summary.
+- **Animação:** o card entra subindo, com um feixe amarelo girando na
+  borda; usuário ou senha em branco/errados fazem o card balançar; login
+  aceito confirma o card, uma cortina amarela com o logo da DHL cobre a
+  tela e sai revelando o app, que entra por partes (barra do topo, menu
+  item a item e o conteúdo).
+- Com "reduzir movimento" ligado no Windows (Configurações >
+  Acessibilidade > Efeitos visuais), nenhuma animação roda.
 - Na primeira vez, o app pede a **pasta do SharePoint** (a pasta
   sincronizada pelo OneDrive onde ficam as subpastas das operações).
   Ela fica guardada e pode ser trocada em Configurações.
@@ -175,22 +187,38 @@ faixa de Var no mês, da extração Month — ver [5.7](#57-distribuição-da-di
 
 ### 4.4 Extrair Dados (uma operação)
 
-1. **Período do indicador:** Week, Month, Dias de Pico ou Horas Indiretas.
+1. **Período do indicador**, em dois grupos:
+   - **Operação:** Week, Month, Dias de Pico e Horas Indiretas;
+   - **Por gestor e por turno:** Gestor · Week, Gestor · Month,
+     Turno · Week e Turno · Month.
 2. **Operação.**
 3. **Período (datas):** digite a data inicial e final, ou use os
    atalhos **Semana passada** / **Mês passado**. Sem datas, o app usa o
-   "Last Week" / "Last Month" do próprio relatório.
-4. **Agrupamento:** o rótulo do campo diz para onde ele vai:
-   - **Week:** Group By 1 fica fixo em Week e o campo escolhido (User ID)
-     vai no Group By 2;
-   - **Month:** o campo escolhido vai no Group By 1;
-   - **Dias de Pico:** Group By 1 fixo em Report Date (campo travado);
-   - **Horas Indiretas:** agrupamento fixo Week + Job Code (campo
-     travado, com a nota em amarelo); o arquivo vai para a pasta
-     `Indiretas`.
-5. **Iniciar extração.** O painel "Andamento" mostra as 10 etapas
+   "Last Week" / "Last Month" do próprio relatório. Com Gestor ou Turno
+   escolhido, os atalhos trocam só entre o Week e o Month deles.
+4. **Agrupamento:** só o **Month** tem campo para escolher (o Group By 1,
+   User ID por padrão). Nos outros o agrupamento é **fixo pelo sistema**
+   e o campo vira uma nota em amarelo com o agrupamento e a pasta:
+
+   | Tipo | Group By 1 › 2 › 3 | Pasta da operação |
+   |---|---|---|
+   | Week | Week › Supervisor › User ID | `Week` |
+   | Month | escolhido (User ID) | `Month` |
+   | Dias de Pico | Report Date | `Dias de Pico` |
+   | Horas Indiretas | Week › Job Code | `Indiretas` |
+   | Gestor · Week | Week › Supervisor › User ID | `Gestor\Week` |
+   | Gestor · Month | Supervisor › User ID | `Gestor\Month` |
+   | Turno · Week | Week › Shift › User ID | `Turno\Week` |
+   | Turno · Month | Shift › User ID | `Turno\Month` |
+
+   A **Week** passou a sair com o Supervisor no meio: é ele que leva o
+   gestor de cada usuário para o Coverage. Os números da operação não
+   mudam (ver [5.2](#52-efetividade-hora-direta-e-dispersão-vêm-do-summary)).
+5. **Iniciar extração.** O painel "Andamento" mostra as 11 etapas
    (abrir o navegador, login, menu Reports, relatório, período, Group
-   By 1 e 2, exportar, salvar) e o percentual.
+   By 1, 2 e 3, exportar, salvar) e o percentual. Os níveis de
+   agrupamento que não entram no tipo escolhido são desmarcados no
+   relatório (ele guarda o que ficou marcado da extração anterior).
 
 Antes de abrir o navegador, o app confere se o servidor da operação
 responde (VPN). Sem VPN, ele avisa na hora, em vez de esperar o login
@@ -209,8 +237,18 @@ período, agrupamento, tipo, duração, resultado).
 
 ### 4.5 Extrair Múltiplos (fila)
 
-Mesmos parâmetros, mas com várias operações marcadas (há "Selecionar
-todas" e "Limpar"). As operações rodam uma depois da outra, num único
+No topo, ao lado do título, escolhe-se o modo:
+
+- **Várias operações:** um tipo de extração (Week, Month, Gestor ·
+  Week…) para várias operações marcadas (há "Selecionar todas" e
+  "Limpar").
+- **Vários filtros:** **uma** operação e **vários tipos** marcados ao
+  mesmo tempo (por exemplo Week, Month, Gestor · Week e Turno · Month),
+  com as mesmas datas. A fila do painel "Andamento" mostra um item por
+  tipo, com a pasta de cada um. Se o Month estiver marcado, o campo
+  "Group By 1 do Month" vale para ele; os outros usam o agrupamento fixo.
+
+Nos dois modos as extrações rodam uma depois da outra, num único
 navegador:
 
 - uma falha não interrompe a fila — as outras continuam;
@@ -246,9 +284,18 @@ Onde se lança o quadro de cada gestor para o presenteísmo.
 
 Quanto das horas que cada pessoa deveria trabalhar aparece no LMS.
 
-- **Filtros:** operação (ou "Todas as Operações"), mês, semana e
-  Semanal / Resultado do Mês. As semanas são as extraídas em Week (com
-  User ID); o Resultado do Mês é a extração Month.
+- **Filtros:** operação (ou "Todas as Operações"), mês, semana,
+  **gestor** e Semanal / Resultado do Mês. As semanas são as extraídas
+  em Week; o Resultado do Mês é a extração Month.
+- **Coverage por gestor:** o filtro **Gestor** mostra só os usuários
+  daquele gestor, e os cards e a linha TOTAL viram o coverage do gestor.
+  O gestor de cada usuário vem do Supervisor da extração Week (no
+  Resultado do Mês, das semanas extraídas do mês, já que o Month não
+  traz o Supervisor). Quem trabalhou com dois supervisores fica com o
+  que tem mais horas dele. Com um gestor no filtro, a sinergia da
+  operação não entra (ela é da operação inteira). Week extraída antes
+  dessa mudança não tem gestor: aparece "Sem gestor na extração".
+- **Coluna Gestor** na tabela, ao lado da operação.
 - **Cards:** operação, período, Horas LMS (com o número de usuários),
   Horas Metrics e o Coverage do total.
 - **Tabela por usuário:** User ID, operação, Horas LMS, Diretas sem
@@ -291,14 +338,57 @@ nele, como na aba Início).
     linha do % acumulado das indiretas, e a mesma tabela embaixo.
 - **Tabela atividade × semana:** cada célula com horas e %; no fim,
   TOTAL INDIRETAS e % INDIRETA de cada semana. Só o corpo rola.
+- **Copiar para o PowerPoint:** cada quadro de semana tem um botão
+  **Copiar** (copia horas totais, totais indiretas e as atividades, com
+  horas e %, como na planilha), e a tabela atividade × semana tem
+  **Copiar tabela**. Mesmo formato da cópia da aba Início: cada valor
+  numa célula, fonte de 10 pt, sem quebra de linha.
 
-### 4.9 Configurações
+### 4.9 Resultado Gestor
+
+A mesma tabela da aba Início, **uma por gestor**: os seis indicadores
+nas linhas, as semanas do mês nas colunas e o mês no fim, com o botão
+**Copiar** em cada coluna (igual ao Início).
+
+- **Dados:** extrações **Gestor · Week** (Week › Supervisor › User ID)
+  para as semanas e **Gestor · Month** (Supervisor › User ID) para o
+  mês. Os arquivos vão para `Gestor\Week` e `Gestor\Month` da operação.
+- **Filtros:** operação e mês.
+- **Gestores:** no topo, a lista de gestores que vieram no arquivo, com
+  caixas de marcar (como a lista de operações do Extrair Múltiplos),
+  "Selecionar todos" e "Limpar". Só os marcados ganham tabela. A
+  escolha fica guardada por operação; um gestor novo que aparecer no
+  Summary já vem marcado.
+- **Nome:** o nome é exatamente o da planilha (coluna B, ex.:
+  "ANDRE,RICARDO RODRIGUES"). Quem está sem supervisor aparece como
+  "Sem supervisor".
+- **Ligação com o Headcount:** o **presenteísmo** (e com ele o **cubo**)
+  só entra quando existe no Headcount, na mesma operação, um gestor com
+  **o mesmo nome** da planilha. A comparação ignora maiúsculas,
+  acentos e espaços (inclusive em volta da vírgula); nome diferente não
+  puxa nada. O gestor ligado ganha a marca **HC** na lista e "presenteísmo
+  do Headcount" no canto da tabela; o não ligado, "sem o mesmo nome no
+  Headcount".
+- Ver o cálculo em [5.9](#59-indicadores-por-gestor-e-por-turno).
+
+### 4.10 Resultado Turno
+
+Igual ao Resultado Gestor, uma tabela **por turno** (os turnos que
+vieram no arquivo, coluna Shift: ex.: ADM, T1, T2; vazio vira "Sem
+turno"). Extrações **Turno · Week** (Week › Shift › User ID) e
+**Turno · Month** (Shift › User ID), nas pastas `Turno\Week` e
+`Turno\Month`. O turno não tem presenteísmo (o Headcount é por
+gestor), então **presenteísmo e cubo não se aplicam** — as células ficam
+em branco e a cópia guarda a posição delas, para os outros valores não
+mudarem de linha.
+
+### 4.11 Configurações
 
 - **Pasta do SharePoint:** mostra a pasta atual e permite trocar.
 - **Gerar diagnóstico:** cria um zip para mandar ao suporte (ver
   [Suporte](#10-suporte-e-diagnóstico)).
 
-### 4.10 Rodapé do menu
+### 4.12 Rodapé do menu
 
 Status do sistema, "DHL — Excellence. Simply delivered.", **Criado por
 Daniel Thomaseto** e a versão (passando o mouse, a data do build).
@@ -345,6 +435,16 @@ senão                               -> DENTRO
 
 `Var` já vem calculado pelo relatório. A dispersão depende do detalhe
 por **User ID**; com outro agrupamento ela perde o sentido.
+
+**Week com o Supervisor no meio.** Quem trabalhou com dois supervisores
+na mesma semana vem em duas linhas, cada uma com uma parte das horas.
+Para as somas tanto faz; para a dispersão, a pessoa contaria duas vezes.
+Por isso, para o resultado da **operação**, as linhas da mesma pessoa
+na mesma semana são somadas e o Var é refeito com as horas somadas
+(`(Goal ÷ Measured Direct − 1) × 100`, arredondado, a mesma conta do
+relatório). Quem tem uma linha só fica exatamente como veio. Conferido
+com os exports reais da SWA: Week › Supervisor › User ID e Week › Shift ›
+User ID dão exatamente os mesmos números da operação, semana a semana.
 
 Conferido contra a planilha de referência (semana 36): Efetividade
 96,38%, Hora Direta 85,37%, Dispersão 81,82% (9 de 11) — iguais.
@@ -503,6 +603,24 @@ Conferido com a planilha, semana de 06/09/2026: **715,26 h** totais,
 **135,88 h** indiretas, **19,00%** (LUNCH 9,37%, ISTART 3,66%, MEET
 3,14%).
 
+### 5.9 Indicadores por gestor e por turno
+
+As mesmas contas da operação, feitas só com as linhas de cada gestor
+(ou turno), uma coluna à direita por causa do nível a mais no export:
+
+| Indicador | Por gestor / turno |
+|---|---|
+| **EFETIVIDADE, HORA DIRETA, DISPERSÃO** | as fórmulas de [5.2](#52-efetividade-hora-direta-e-dispersão-vêm-do-summary) com as linhas do grupo |
+| **PRESENTEÍSMO** | gestor: o do Headcount quando o nome bate (semana do Summary e ciclo da folha do mês, como no Início); turno: não se aplica |
+| **CUBO** | EFETIVIDADE × HORA DIRETA × PRESENTEÍSMO (turno: não se aplica) |
+| **COVERAGE** | horas LMS dos usuários do grupo ÷ dias × horas de cada um (os digitados na aba Coverage, ou o calendário), sem a sinergia, que é da operação |
+
+Quem trabalhou com dois gestores (ou turnos) no período conta nos dois
+para efetividade, hora direta e dispersão (cada linha é o trabalho dele
+com aquele gestor). Para o coverage ele fica num só — o que tem mais
+horas dele —, senão as horas que ele deveria trabalhar contariam duas
+vezes.
+
 ---
 
 ## 6. Regras de calendário
@@ -524,19 +642,21 @@ Tudo fica **no próprio computador**, em `%APPDATA%\ScoreCard\`:
 
 | Arquivo | O que guarda |
 |---|---|
-| `settings.json` | só o caminho da pasta do SharePoint |
+| `settings.json` | o caminho da pasta do SharePoint e os gestores/turnos escondidos nas abas de resultado |
 | `history.json` | histórico das extrações (últimas 200) |
 | `indicators.json` | indicadores calculados, por operação e período |
 | `headcount.json` | gestores e o quadro de cada período (HC, dias, horas, faltas) |
 | `coverage.json` | horas por usuário das extrações e o que foi digitado no Coverage |
 | `indiretas.json` | horas indiretas por operação e semana (da extração Horas Indiretas) |
+| `grupos.json` | resultados por gestor e por turno, por operação e período (extrações Gestor e Turno) |
 | `logs\scorecard.log` | registro do que o app fez (até 1 MB, com 3 cópias antigas) |
 
 - Os arquivos são gravados de forma **segura**: primeiro num arquivo
   temporário e só depois trocados de uma vez. Se o PC desligar no
   meio, fica o arquivo antigo inteiro — nunca um pedaço.
 - Os relatórios baixados ficam na pasta do SharePoint, em
-  `<pasta>\<operação>\Week|Month|Dias de Pico\`.
+  `<pasta>\<operação>\Week|Month|Dias de Pico|Indiretas\` e
+  `<pasta>\<operação>\Gestor|Turno\Week|Month\`.
 - O app descompactado fica em `%LOCALAPPDATA%\ScoreCard\app-<versão>`
   (a versão anterior é apagada ao abrir uma nova).
 - Os dados são **por computador**: cada pessoa que usa o app tem os
@@ -650,6 +770,8 @@ ScoreCard.exe (lancador.py)
 | `headcount.py` / `headcount_store.py` | tela e dados do Headcount |
 | `coverage_tela.py` / `coverage_store.py` | tela e dados do Coverage |
 | `indicators/indiretas.py` | horas indiretas por semana (regra da planilha) |
+| `indicators/grupos.py` | indicadores por gestor e por turno |
+| `grupos_tela.py` / `grupos_store.py` | telas e dados do Resultado Gestor e Resultado Turno |
 | `indiretas_tela.py` / `indiretas_store.py` | tela e dados das Horas Indiretas |
 | `indicators_store.py` / `history_store.py` / `settings_store.py` | indicadores, histórico e configurações |
 | `arquivo_seguro.py` | gravação dos JSON sem corromper |
@@ -664,11 +786,13 @@ ScoreCard.exe (lancador.py)
 
 ## 12. Testes
 
-São cerca de 200 testes automáticos (`tests/`). Eles rodam a extração
+São cerca de 240 testes automáticos (`tests/`). Eles rodam a extração
 contra páginas que imitam o BlueYonder, conferem cada cálculo contra as
 planilhas de referência (Efetividade 96,38%, Hora Direta 85,37%,
 Dispersão 81,82%, Pico 96,57%/96,82%, Coverage) e cobrem presenteísmo,
-calendário, gravação, lançador, log e segurança.
+calendário, gravação, lançador, log e segurança. As planilhas de teste
+com Supervisor e Shift (`summary_gestor_*.xlsx`, `summary_turno_*.xlsx`)
+têm nomes fictícios.
 
 ```bat
 pip install -r requirements-dev.txt
@@ -692,6 +816,9 @@ python -m pytest -q tests
 - **Validado em ambiente de teste:** a checagem final (janela única,
   aviso ao fechar, tela cheia, detalhes do .exe) é feita no Windows
   após o build.
+- **Group By 3:** o campo e o checkbox do terceiro nível seguem o mesmo
+  padrão do segundo (`#groupinglvl3_check-inputEl`, "Group By 3"); a
+  primeira extração real de Week ou Gestor/Turno confirma no Summary.
 
 **Ideias para próximas versões**
 
@@ -721,6 +848,7 @@ python -m pytest -q tests
 | 30/09/2026 | **V.01.0 fechada para apresentação** e este documento |
 | 05/10/2026 | Gráfico de distribuição da dispersão do mês na aba Início; aba **Horas Indiretas** (extração Week + Job Code, pasta Indiretas, quadros por semana, Barras e Pareto) |
 | 05/10/2026 | **V.01.1:** correção do erro ao digitar dias úteis no Resultado do Mês; o ciclo da folha passa a ir para o mês em que fecha (e para o Pico); ciclo em aberto conta até ontem; cópia para o PowerPoint numa linha só por célula |
+| 08/10/2026 | Abas **Resultado Gestor** e **Resultado Turno** (extrações Gestor e Turno, Week e Month, com Group By 3); Week com o Supervisor no meio e **Coverage por gestor**; **Vários filtros** no Extrair Múltiplos; cópia das Horas Indiretas para o PowerPoint; animações de abertura, login, entrada no app e transições |
 
 ---
 

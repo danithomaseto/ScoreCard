@@ -1848,6 +1848,12 @@ body.apresentacao #distribuicao-card { display: none; }
   cursor: pointer;
 }
 .ind-quadro-topo strong { border-left: 3px solid var(--yellow); padding-left: 8px; font-size: 14px; color: var(--text); }
+/* Titulo e Copiar na mesma linha; as datas ficam a direita, como antes. */
+.ind-quadro-titulo { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ind-quadro-topo .ind-copiar { margin: 0; height: 24px; padding: 2px 8px; font-size: 10px; opacity: 0.75; }
+.ind-quadro:hover .ind-copiar,
+.ind-quadro-topo .ind-copiar:focus-visible,
+.ind-quadro-topo .ind-copiar.copiado { opacity: 1; }
 .ind-quadro-topo span { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .ind-quadro-topo .ind-incompleta { color: #fbbf24; font-weight: 600; }
 .ind-totais { padding: 8px 14px; border-bottom: 1px solid var(--card-border); }
@@ -1896,7 +1902,21 @@ body.apresentacao #distribuicao-card { display: none; }
 .ind-barras-linha.total { padding-top: 10px; font-weight: 700; border-top: 1px solid var(--input-border); }
 
 /* Tabela por semana (Barras e Pareto). */
-.ind-tabela-wrap { overflow: auto; max-height: 460px; border: 1px solid var(--card-border); border-radius: 8px; }
+.ind-tabela-wrap { overflow: hidden; border: 1px solid var(--card-border); border-radius: 8px; }
+.ind-tabela-rolagem { overflow: auto; max-height: 420px; }
+.ind-tabela-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px 6px 12px;
+  background: #1b2135;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.ind-tabela-topo .copy-btn { margin: 0; }
 .ind-tabela { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
 .ind-tabela th,
 .ind-tabela td { padding: 9px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid #1e2438; background: var(--card-bg); }
@@ -1941,3 +1961,567 @@ body.apresentacao #distribuicao-card { display: none; }
 .nota-agrupamento-fixo { display: flex; align-items: center; gap: 6px; margin: -8px 0 16px; font-size: 12px; color: #facc15; }
 .nota-agrupamento-fixo[hidden] { display: none; }
 .nota-agrupamento-fixo .btn-icone { width: 14px; height: 14px; }
+
+
+/* ---------- Tipos de extracao: dois grupos de quatro ---------- */
+
+/* Operacao (Week, Month, Pico, Indiretas) e Por gestor e por turno, cada
+   grupo numa linha de quatro. Numa coluna estreita os icones somem e,
+   mais estreita ainda, ficam dois por linha. */
+.period-escolha { container-type: inline-size; margin-bottom: 16px; }
+.period-grupo-rotulo {
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #667085;
+}
+.period-escolha .period-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+  container-type: normal;
+}
+.period-escolha .period-options:last-child { margin-bottom: 0; }
+.period-escolha .period-option { min-height: 46px; padding: 8px 10px; gap: 8px; }
+.period-escolha .period-option strong { font-size: 13px; line-height: 1.25; }
+.period-escolha .period-option .source-icon { width: 28px; height: 28px; }
+@container (max-width: 640px) {
+  .period-escolha .period-option .source-icon { display: none; }
+  .period-escolha .period-option { justify-content: center; text-align: center; }
+}
+@container (max-width: 380px) {
+  .period-escolha .period-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Nota do agrupamento fixo: ocupa o lugar do campo, com a mesma altura. */
+.nota-agrupamento-fixo:not([hidden]) {
+  margin: 0 0 16px;
+  min-height: 46px;
+  padding: 8px 14px;
+  border: 1px dashed rgba(250, 204, 21, 0.45);
+  border-radius: 8px;
+  background: rgba(250, 204, 21, 0.05);
+  line-height: 1.45;
+}
+
+/* Extrair Multiplos: Várias operações | Vários filtros, ao lado do titulo. */
+.multi-modo { width: auto; flex-shrink: 0; margin-top: 2px; }
+.multi-modo .seg-opcao { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; }
+.multi-modo .seg-opcao .btn-icone { width: 14px; height: 14px; }
+/* No modo filtros cada operacao e um "radio": a marca fica redonda. */
+.modo-filtros #multi-operations input[type="checkbox"] { border-radius: 50%; }
+.modo-filtros #multi-period-options .period-option.active { box-shadow: inset 0 0 0 1px var(--yellow); }
+.modo-filtros #multi-period-options .period-option.active .source-icon { background: var(--yellow); color: #1d1300; }
+
+.step.entrando { animation: linha-entra 260ms ease-out both; }
+
+
+/* ---------- Abas Resultado Gestor e Resultado Turno ---------- */
+
+.grupos-card { width: 100%; max-width: none; margin-bottom: 20px; padding-top: 20px; padding-bottom: 16px; }
+.grupos-card .field-header label { margin-bottom: 10px; color: var(--text); }
+.grupos-contador { font-weight: 500; color: var(--text-muted); }
+.grupos-lista { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin-bottom: 10px; }
+.grupo-item { position: relative; }
+.grupo-nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grupo-selo {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #1d1300;
+  background: var(--yellow);
+}
+.grupos-nota { margin: 0; font-size: 12px; color: #667085; line-height: 1.5; }
+
+.grupos-tabelas { display: flex; flex-direction: column; gap: 16px; }
+.grupos-tabelas .indicators-card { padding-top: 18px; padding-bottom: 12px; }
+.grupos-nenhum { color: var(--text-muted); font-size: 13px; text-align: center; padding: 28px; }
+.grupos-esqueleto { height: 240px; }
+.grupos-legenda { margin-top: 16px; padding: 14px 4px 0; border-top: none; }
+.estado-vazio-card { margin-bottom: 20px; }
+
+.corner-nota { margin-top: 6px; font-size: 10px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.corner-nota.ok { color: #6ee7a0; }
+.corner-nota.aviso { color: #fbbf24; }
+
+/* Cada tabela nova entra subindo, uma depois da outra. */
+.grupo-entrando { animation: cartao-entra 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes cartao-entra {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Coverage: o gestor de cada usuario. */
+.cv-gestor-celula { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .step.entrando,
+  .grupo-entrando { animation: none; }
+}
+
+
+/* ================================================================
+   Animacoes: abertura, login, entrada no app e transicoes
+   ================================================================
+   So apresentacao. Tudo some com "reduzir movimento" do Windows
+   (prefers-reduced-motion), no fim deste bloco. */
+
+/* ---------- Abertura ---------- */
+
+.abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    radial-gradient(900px 520px at 50% 42%, rgba(255, 204, 0, 0.10), transparent 62%),
+    radial-gradient(1200px 700px at 50% 120%, rgba(212, 5, 17, 0.12), transparent 60%),
+    #0b0e1a;
+}
+/* A borda amarela aparece embaixo quando a abertura sobe. */
+.abertura::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  background: var(--yellow);
+  box-shadow: 0 0 24px rgba(255, 204, 0, 0.6);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.abertura-grade {
+  position: absolute;
+  inset: -10%;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(closest-side, #000 30%, transparent 100%);
+  animation: grade-aparece 1.4s ease-out both, grade-anda 12s linear infinite;
+}
+@keyframes grade-aparece { from { opacity: 0; transform: scale(1.08); } }
+@keyframes grade-anda { to { background-position: 48px 48px, 48px 48px; } }
+
+/* As faixas de velocidade da DHL cruzando a tela. */
+.abertura-faixas { position: absolute; inset: 0; pointer-events: none; }
+.abertura-faixas i {
+  position: absolute;
+  left: -70%;
+  width: 60%;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--yellow);
+  transform: skewX(-32deg);
+  animation: faixa-cruza 1.15s cubic-bezier(0.7, 0, 0.2, 1) both;
+}
+.abertura-faixas i:nth-child(1) { top: calc(50% - 150px); animation-delay: 60ms; }
+.abertura-faixas i:nth-child(2) { top: calc(50% - 128px); background: var(--red); width: 45%; animation-delay: 140ms; }
+.abertura-faixas i:nth-child(3) { top: calc(50% - 106px); width: 35%; animation-delay: 220ms; }
+@keyframes faixa-cruza { 0% { left: -70%; opacity: 1; } 100% { left: 130%; opacity: 1; } }
+
+.abertura-centro { position: relative; text-align: center; }
+
+.abertura-marca {
+  display: inline-flex;
+  gap: 2px;
+  padding: 8px 20px 8px 16px;
+  border-radius: 6px;
+  background: var(--yellow);
+  color: var(--red);
+  font-size: 42px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 3px;
+  transform-origin: left center;
+  animation: marca-abre 520ms 280ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+  box-shadow: 0 10px 40px rgba(255, 204, 0, 0.25);
+}
+.abertura-marca span { display: inline-block; animation: letra-cai 520ms cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.abertura-marca span:nth-child(1) { animation-delay: 520ms; }
+.abertura-marca span:nth-child(2) { animation-delay: 590ms; }
+.abertura-marca span:nth-child(3) { animation-delay: 660ms; }
+@keyframes marca-abre { from { transform: scaleX(0); opacity: 0; } 40% { opacity: 1; } }
+@keyframes letra-cai { from { opacity: 0; transform: translateY(-22px) rotate(-10deg); } }
+
+/* Seis barras, os seis indicadores, subindo uma depois da outra. */
+.abertura-grafico {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  width: 168px;
+  height: 82px;
+  margin: 32px auto 22px;
+  padding-bottom: 2px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.14);
+}
+.abertura-grafico i {
+  flex: 1;
+  height: var(--h);
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, #ffd84d, #e6b800);
+  transform-origin: bottom;
+  animation: barra-sobe 620ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  animation-delay: calc(760ms + var(--i) * 75ms);
+}
+.abertura-grafico i:last-of-type { background: linear-gradient(180deg, #4ade80, #16a34a); box-shadow: 0 0 18px rgba(34, 197, 94, 0.45); }
+@keyframes barra-sobe { from { transform: scaleY(0); } }
+.abertura-tendencia { position: absolute; inset: -8px 0 0; width: 100%; height: 82px; overflow: visible; }
+.abertura-tendencia polyline {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 180;
+  stroke-dashoffset: 180;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.6));
+  animation: linha-desenha 700ms 1250ms ease-out forwards;
+}
+@keyframes linha-desenha { to { stroke-dashoffset: 0; } }
+
+.abertura-titulo { font-size: 54px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); line-height: 1.1; }
+.abertura-titulo span {
+  display: inline-block;
+  margin: 0 6px;
+  animation: titulo-revela 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.abertura-titulo span:nth-child(1) { animation-delay: 1050ms; }
+.abertura-titulo span:nth-child(2) { color: var(--yellow); animation-delay: 1170ms; }
+@keyframes titulo-revela {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateX(-10px); filter: blur(4px); }
+  to { opacity: 1; clip-path: inset(0 0 0 0); transform: none; filter: none; }
+}
+.abertura-sub {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  animation: sub-aparece 800ms 1400ms ease-out both;
+}
+@keyframes sub-aparece { from { opacity: 0; letter-spacing: 0.6em; } }
+.abertura-progresso {
+  width: 240px;
+  height: 3px;
+  margin: 30px auto 0;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.abertura-progresso span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--yellow), #fff3b0, var(--yellow));
+  background-size: 200% 100%;
+  animation: progresso-enche 1.9s 250ms cubic-bezier(0.6, 0, 0.3, 1) both, progresso-brilha 0.9s linear infinite;
+}
+@keyframes progresso-enche { from { width: 0; } to { width: 100%; } }
+@keyframes progresso-brilha { to { background-position: -200% 0; } }
+
+/* Saida: a abertura sobe como uma cortina, com a borda amarela. */
+.abertura.saindo { animation: abertura-sobe 760ms cubic-bezier(0.76, 0, 0.24, 1) forwards; pointer-events: none; }
+.abertura.saindo::after { animation: borda-corre 380ms ease-out forwards; }
+.abertura.saindo .abertura-centro { animation: centro-sai 520ms cubic-bezier(0.7, 0, 0.3, 1) forwards; }
+@keyframes abertura-sobe { to { transform: translateY(-100%); } }
+@keyframes borda-corre { to { transform: scaleX(1); } }
+@keyframes centro-sai { to { opacity: 0; transform: translateY(-40px) scale(0.96); filter: blur(3px); } }
+
+
+/* ---------- Login ---------- */
+
+#login-view { position: relative; overflow: hidden; isolation: isolate; background: #0b0e1a; }
+/* A foto aproxima devagar (Ken Burns) atras do card. */
+#login-view::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    linear-gradient(180deg, rgba(11, 14, 26, 0.25), rgba(11, 14, 26, 0.45)),
+    url("assets/dhl-login-bg.png") center / cover no-repeat;
+  animation: foto-respira 26s ease-in-out infinite alternate;
+}
+/* Um brilho amarelo que passeia pelo fundo. */
+#login-view::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  z-index: -1;
+  background: radial-gradient(420px 420px at 30% 40%, rgba(255, 204, 0, 0.16), transparent 70%);
+  animation: brilho-passeia 14s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes foto-respira { from { transform: scale(1); } to { transform: scale(1.09) translate(-1%, -1%); } }
+@keyframes brilho-passeia { from { transform: translate(-10%, -6%); } to { transform: translate(28%, 18%); } }
+
+.login-card {
+  position: relative;
+  background: rgba(22, 27, 46, 0.86);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+/* Borda com um feixe amarelo girando em volta do card. */
+@property --giro { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+.login-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 1.5px;
+  border-radius: 13px;
+  background: conic-gradient(from var(--giro), transparent 0 62%, rgba(255, 204, 0, 0.0) 64%,
+    rgba(255, 204, 0, 0.95) 76%, rgba(212, 5, 17, 0.8) 82%, transparent 90%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: borda-gira 4.5s linear infinite;
+  pointer-events: none;
+}
+@keyframes borda-gira { to { --giro: 360deg; } }
+
+.login-marca { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.login-marca .dhl-logo {
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: var(--yellow);
+  font-size: 15px;
+  font-style: italic;
+  letter-spacing: 1.5px;
+}
+.login-marca-texto { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+
+/* Entrada do card: sobe, desfoca e cada campo vem depois do outro. */
+.login-card.entrando { animation: card-entra 720ms cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+.login-card.entrando > *,
+.login-card.entrando form > * { animation: campo-entra 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.login-card.entrando > :nth-child(1) { animation-delay: 160ms; }
+.login-card.entrando > :nth-child(2) { animation-delay: 220ms; }
+.login-card.entrando > :nth-child(3) { animation-delay: 270ms; }
+.login-card.entrando > :nth-child(4) { animation: none; }
+.login-card.entrando form > :nth-child(1) { animation-delay: 320ms; }
+.login-card.entrando form > :nth-child(2) { animation-delay: 360ms; }
+.login-card.entrando form > :nth-child(3) { animation-delay: 400ms; }
+.login-card.entrando form > :nth-child(4) { animation-delay: 440ms; }
+.login-card.entrando form > :nth-child(5) { animation-delay: 470ms; }
+.login-card.entrando form > :nth-child(6) { animation-delay: 520ms; }
+@keyframes card-entra { from { opacity: 0; transform: translateY(28px) scale(0.95); filter: blur(8px); } }
+@keyframes campo-entra { from { opacity: 0; transform: translateY(10px); } }
+
+/* Campo em foco ganha um brilho amarelo. */
+#login-view input:focus {
+  outline: none;
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.18), 0 0 18px rgba(255, 204, 0, 0.12);
+}
+
+/* Botao Entrar: um reflexo passa por ele. */
+#login-btn { position: relative; overflow: hidden; min-width: 140px; }
+#login-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-20deg);
+  animation: reflexo 3.2s 1.4s ease-in-out infinite;
+}
+@keyframes reflexo { 0% { left: -60%; } 35%, 100% { left: 130%; } }
+
+/* Senha errada: o card balanca. */
+.login-card.tremendo { animation: tremer 460ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+@keyframes tremer {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-8px); }
+  40%, 60% { transform: translateX(8px); }
+}
+
+/* Login aceito: o card confirma e sai antes da cortina. */
+.login-card.confirmado { animation: card-confirma 420ms cubic-bezier(0.6, 0, 0.4, 1) forwards; }
+@keyframes card-confirma {
+  0% { transform: none; }
+  35% { transform: scale(1.03); box-shadow: 0 0 0 2px var(--yellow), 0 30px 80px rgba(0, 0, 0, 0.45); }
+  100% { transform: scale(0.94) translateY(-10px); opacity: 0; filter: blur(4px); }
+}
+
+
+/* ---------- Cortina da entrada no app ---------- */
+
+.cortina {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--yellow);
+  transform: translateX(-101%);
+  visibility: hidden;
+  pointer-events: none;
+}
+.cortina.cobrindo { visibility: visible; transform: none; transition: transform 520ms cubic-bezier(0.76, 0, 0.24, 1); }
+.cortina.saindo { visibility: visible; transform: translateX(101%); transition: transform 620ms cubic-bezier(0.76, 0, 0.24, 1); }
+.cortina-logo {
+  position: relative;
+  font-size: 96px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 6px;
+  color: var(--red);
+  opacity: 0;
+  transform: translateX(-40px);
+}
+.cortina.cobrindo .cortina-logo { opacity: 1; transform: none; transition: opacity 300ms 260ms, transform 500ms 220ms cubic-bezier(0.2, 0.9, 0.2, 1); }
+.cortina.saindo .cortina-logo { opacity: 0; transform: translateX(60px); transition: opacity 260ms, transform 400ms; }
+.cortina-faixas i {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  background: var(--red);
+  transform: skewX(-30deg) scaleX(0);
+  transform-origin: left;
+}
+.cortina-faixas i:nth-child(1) { top: calc(50% + 70px); }
+.cortina-faixas i:nth-child(2) { top: calc(50% + 90px); opacity: 0.7; }
+.cortina-faixas i:nth-child(3) { top: calc(50% + 110px); opacity: 0.4; }
+.cortina.cobrindo .cortina-faixas i { transform: skewX(-30deg) scaleX(1); transition: transform 600ms cubic-bezier(0.2, 0.9, 0.2, 1); }
+.cortina.cobrindo .cortina-faixas i:nth-child(2) { transition-delay: 60ms; }
+.cortina.cobrindo .cortina-faixas i:nth-child(3) { transition-delay: 120ms; }
+
+
+/* ---------- Entrada no app ---------- */
+
+.app-entrando .topbar-dhl { animation: topo-desce 560ms cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+.app-entrando .sidebar > * { animation: menu-entra 520ms cubic-bezier(0.2, 0.9, 0.2, 1) both; animation-delay: calc(140ms + var(--i, 0) * 45ms); }
+.app-entrando .content-area { animation: conteudo-entra 700ms 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes topo-desce { from { transform: translateY(-100%); } }
+@keyframes menu-entra { from { opacity: 0; transform: translateX(-24px); } }
+@keyframes conteudo-entra { from { opacity: 0; transform: translateY(18px) scale(0.99); } }
+
+
+/* ---------- Transicoes entre telas e dentro delas ---------- */
+
+/* Troca de aba um pouco mais marcada: a antiga sai para cima e a nova
+   sobe com um leve desfoque que se desfaz. */
+::view-transition-old(conteudo) { animation: vt-sair-2 160ms ease-in both; }
+::view-transition-new(conteudo) { animation: vt-entrar-2 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes vt-sair-2 { to { opacity: 0; transform: translateY(-8px) scale(0.995); } }
+@keyframes vt-entrar-2 { from { opacity: 0; transform: translateY(12px); filter: blur(3px); } }
+
+/* Os blocos da pagina entram um depois do outro ao abrir a aba. */
+.pagina-entrando .page-wide-wrap > *,
+.pagina-entrando .hc-cards > * {
+  animation: bloco-entra 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pagina-entrando .page-wide-wrap > :nth-child(2) { animation-delay: 50ms; }
+.pagina-entrando .page-wide-wrap > :nth-child(3) { animation-delay: 100ms; }
+.pagina-entrando .page-wide-wrap > :nth-child(4) { animation-delay: 150ms; }
+.pagina-entrando .page-wide-wrap > :nth-child(n+5) { animation-delay: 200ms; }
+.pagina-entrando .hc-cards > :nth-child(2) { animation-delay: 160ms; }
+.pagina-entrando .hc-cards > :nth-child(3) { animation-delay: 200ms; }
+.pagina-entrando .hc-cards > :nth-child(4) { animation-delay: 240ms; }
+.pagina-entrando .hc-cards > :nth-child(5) { animation-delay: 280ms; }
+@keyframes bloco-entra { from { opacity: 0; transform: translateY(12px); } }
+
+/* Cards, quadros e opcoes reagem ao mouse. */
+.hc-card,
+.ind-quadro,
+.period-option,
+.ops-item { transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease; }
+.hc-card:hover,
+.ind-quadro:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32); }
+.period-option:hover,
+.ops-item:hover { transform: translateY(-1px); }
+.hc-card.destaque:hover { box-shadow: 0 12px 32px rgba(255, 204, 0, 0.22); }
+
+/* Valores da tabela de indicadores aparecem com um leve "pop". */
+.linha-entrando .indicator-value { animation: valor-pop 420ms cubic-bezier(0.2, 1.3, 0.4, 1) both; animation-delay: var(--atraso, 0ms); }
+@keyframes valor-pop { from { opacity: 0; transform: scale(0.82); } }
+
+/* Copiado: o botao pula de leve. */
+.copy-btn.copiado { animation: copiado-pula 380ms cubic-bezier(0.2, 1.5, 0.4, 1); }
+@keyframes copiado-pula { 40% { transform: scale(1.12); } }
+
+/* Etapa em andamento pulsa. */
+.step.active .step-number { animation: etapa-pulsa 1.3s ease-out infinite; }
+@keyframes etapa-pulsa {
+  0% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.55); }
+  100% { box-shadow: 0 0 0 10px rgba(255, 204, 0, 0); }
+}
+.step.done .step-number { animation: etapa-ok 420ms cubic-bezier(0.2, 1.5, 0.4, 1); }
+@keyframes etapa-ok { 50% { transform: scale(1.18); } }
+
+/* "Sistema Online": o ponto verde respira. */
+.status-dot { animation: ponto-respira 2.4s ease-in-out infinite; }
+@keyframes ponto-respira {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+}
+
+/* Avisos de status entram deslizando. */
+.status:not([hidden]) { animation: surgir 220ms ease-out; }
+
+/* Ondinha no clique dos botoes principais. */
+button.com-onda { position: relative; overflow: hidden; }
+.onda {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  transform: scale(0);
+  animation: onda-abre 520ms ease-out forwards;
+  pointer-events: none;
+}
+button.secondary .onda { background: rgba(255, 204, 0, 0.25); }
+@keyframes onda-abre { to { transform: scale(2.6); opacity: 0; } }
+
+/* Icone do item ativo do menu da um pulinho ao chegar. */
+.nav-item.active .nav-icon { animation: icone-chega 420ms cubic-bezier(0.2, 1.5, 0.4, 1); }
+@keyframes icone-chega { 40% { transform: scale(1.22) rotate(-6deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .abertura,
+  .cortina { display: none !important; }
+  #login-view::before,
+  #login-view::after,
+  .login-card::before,
+  #login-btn::before,
+  .login-card.entrando,
+  .login-card.entrando > *,
+  .login-card.entrando form > *,
+  .login-card.tremendo,
+  .login-card.confirmado,
+  .app-entrando .topbar-dhl,
+  .app-entrando .sidebar > *,
+  .app-entrando .content-area,
+  .pagina-entrando .page-wide-wrap > *,
+  .pagina-entrando .hc-cards > *,
+  .linha-entrando .indicator-value,
+  .copy-btn.copiado,
+  .step.active .step-number,
+  .step.done .step-number,
+  .status-dot,
+  .status:not([hidden]),
+  .onda,
+  .nav-item.active .nav-icon { animation: none !important; }
+  .hc-card:hover,
+  .ind-quadro:hover,
+  .period-option:hover,
+  .ops-item:hover { transform: none; }
+}

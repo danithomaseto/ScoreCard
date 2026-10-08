@@ -1,5 +1,6 @@
-"""Configuracoes persistidas localmente (fora do codigo-fonte): hoje, so
-o caminho da pasta do SharePoint/OneDrive onde os relatorios sao salvos.
+"""Configuracoes persistidas localmente (fora do codigo-fonte): o caminho
+da pasta do SharePoint/OneDrive onde os relatorios sao salvos e os
+gestores/turnos escondidos nas abas de resultado.
 Cada usuario que roda o aplicativo tem o seu proprio arquivo, guardado
 na pasta de dados do Windows (%APPDATA%).
 """
@@ -45,4 +46,19 @@ def get_sharepoint_folder():
 def set_sharepoint_folder(folder):
     settings = get_settings()
     settings["sharepoint_base_dir"] = folder
+    save_settings(settings)
+
+
+# Gestores (ou turnos) que a pessoa escondeu nas abas Resultado Gestor e
+# Resultado Turno, por operacao. Guarda os escondidos, e nao os
+# escolhidos: um gestor novo que aparecer no Summary ja vem marcado.
+
+def get_grupos_ocultos(dimensao, operacao):
+    return list(get_settings().get("grupos_ocultos", {}).get(dimensao, {}).get(operacao, []))
+
+
+def set_grupos_ocultos(dimensao, operacao, nomes):
+    settings = get_settings()
+    por_dimensao = settings.setdefault("grupos_ocultos", {}).setdefault(dimensao, {})
+    por_dimensao[operacao] = sorted(set(nomes))
     save_settings(settings)

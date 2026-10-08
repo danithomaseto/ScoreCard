@@ -101,6 +101,14 @@ def resumo():
     for operacao, semanas in sorted(horas_indiretas.items()):
         linhas.append(f"  {operacao}: {len(semanas)}")
 
+    # So contagens: os nomes dos gestores sao dados das pessoas.
+    por_grupo = _ler_json("grupos.json") or {}
+    linhas.append("Resultado Gestor/Turno (periodos e grupos por operacao):")
+    for dimensao in ("gestor", "turno"):
+        for operacao, periodos in sorted((por_grupo.get(dimensao) or {}).items()):
+            nomes = {n for p in periodos.values() for n in (p.get("grupos") or {})}
+            linhas.append(f"  {dimensao} {operacao}: {len(periodos)} periodos, {len(nomes)} grupos")
+
     linhas += ["", "Chromium:"] + [f"  {n}" for n in _navegadores()]
 
     historico = _ler_json("history.json") or []

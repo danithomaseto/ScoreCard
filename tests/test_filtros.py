@@ -9,6 +9,8 @@ o que define se o relatorio extraido e o certo.
 import pytest
 
 from automation.base import (
+    disable_grouping_level,
+    enable_grouping_level,
     enable_second_grouping,
     open_browser_session,
     select_combobox,
@@ -80,3 +82,29 @@ def test_group_by_2_aceita_qualquer_opcao_da_lista(report_page):
     select_combobox(report_page, "Group By 2", "Work Team", option_text="Work Team")
 
     assert valor(report_page, "#groupBy2") == "Work Team"
+
+
+def test_terceiro_nivel_com_supervisor_no_meio(report_page):
+    select_combobox(report_page, "Group By 1", "Week", option_text="Week")
+    enable_grouping_level(report_page, 2)
+    select_combobox(report_page, "Group By 2", "Supervisor", option_text="Supervisor")
+    enable_grouping_level(report_page, 3)
+    select_combobox(report_page, "Group By 3", "User ID", option_text="User ID")
+
+    assert valor(report_page, "#groupBy2") == "Supervisor"
+    assert valor(report_page, "#groupBy3") == "User ID"
+    assert report_page.locator("#groupinglvl3_check-inputEl").is_checked()
+
+
+def test_nivel_que_sobrou_marcado_e_desmarcado(report_page):
+    """O relatorio guarda o que ficou marcado: um Month depois de uma Week
+    com tres niveis precisa desmarcar o terceiro e o segundo."""
+    enable_grouping_level(report_page, 2)
+    enable_grouping_level(report_page, 3)
+
+    disable_grouping_level(report_page, 3)
+    disable_grouping_level(report_page, 2)
+    disable_grouping_level(report_page, 2)  # ja desmarcado: nao marca de novo
+
+    assert not report_page.locator("#groupinglvl3_check-inputEl").is_checked()
+    assert not report_page.locator("#groupinglvl2_check-inputEl").is_checked()

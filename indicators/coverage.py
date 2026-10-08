@@ -22,10 +22,30 @@ HORAS_PADRAO = 8.75
 CAMPOS_MANUAIS = ("dias", "horas", "cedida", "recebida")
 
 
+def grupo_principal(linhas):
+    """{usuario: gestor (ou turno)} com mais horas de cada usuario.
+
+    Quem trabalhou com dois supervisores no periodo aparece nos dois; para
+    o coverage a pessoa precisa ficar num so, senao as horas que ela
+    deveria trabalhar (dias x horas) contariam duas vezes. Fica com quem
+    tem mais horas dela (empate: o primeiro em ordem alfabetica)."""
+    horas = {}
+    for linha in linhas:
+        usuario = (linha.get("detalhe") or "").strip()
+        if not usuario or linha.get("grupo") is None:
+            continue
+        por_grupo = horas.setdefault(usuario, {})
+        por_grupo[linha["grupo"]] = por_grupo.get(linha["grupo"], 0.0) + (linha.get("total") or 0.0)
+    return {u: min(g, key=lambda nome: (-g[nome], nome)) for u, g in horas.items()}
+
+
 def por_usuario(linhas):
     """{usuario: {"lms", "diretas_sem_meta"}} de um conjunto de linhas do
-    reader (a coluna do usuario e o "detalhe": o segundo nivel no
-    semanal, o primeiro no mensal)."""
+    reader (a coluna do usuario e o "detalhe", o ultimo nivel).
+
+    Com o Supervisor no agrupamento (a Week), cada usuario leva tambem o
+    "gestor" com mais horas dele (grupo_principal), para o filtro por
+    gestor da aba Coverage."""
     usuarios = {}
     for linha in linhas:
         usuario = (linha.get("detalhe") or "").strip()
@@ -34,7 +54,10 @@ def por_usuario(linhas):
         soma = usuarios.setdefault(usuario, {"lms": 0.0, "diretas_sem_meta": 0.0})
         soma["lms"] += linha.get("total") or 0.0
         soma["diretas_sem_meta"] += linha.get("signon_direct") or 0.0
-    return {u: {k: round(v, 4) for k, v in s.items()} for u, s in usuarios.items()}
+    resultado = {u: {k: round(v, 4) for k, v in s.items()} for u, s in usuarios.items()}
+    for usuario, gestor in grupo_principal(linhas).items():
+        resultado[usuario]["gestor"] = gestor
+    return resultado
 
 
 def por_semana_e_usuario(linhas):

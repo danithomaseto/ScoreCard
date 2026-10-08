@@ -11,6 +11,7 @@ from config.operations import OPERATIONS, escala_espanhola
 import headcount_store
 from indicators import periodos as rotulos
 from indicators import presenteismo
+from indicators.reader import normalizar
 
 TODAS = "todas"
 
@@ -685,12 +686,14 @@ def _pedacos_da_semana(inicio, hoje, escala):
     return list(pedacos.values())
 
 
-def _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses):
+def _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses, so_os_gestores=None):
     dados = headcount_store.ler()
     config = dados["config"]
     escala = escala_espanhola(operacao)
     resultado = {"week": {}, "month": {}}
     gestores = [g for g in dados["gestores"] if g["operacao"] == operacao]
+    if so_os_gestores is not None:
+        gestores = [g for g in gestores if g["id"] in so_os_gestores]
     if not gestores:
         return resultado
 
@@ -723,3 +726,42 @@ def _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses):
                 "em_aberto": ciclo["status"] == "Em aberto",
             }
     return resultado
+
+
+# ---------------------------------------------------------------
+# Presenteismo de um gestor, para a aba Resultado Gestor
+# ---------------------------------------------------------------
+# O nome do gestor vem do Summary ("ANDRE,RICARDO RODRIGUES") e o do
+# Headcount e digitado. So conta quando os dois batem: nome diferente
+# nao puxa nada, para o presenteismo de um gestor nunca cair no outro.
+
+def nome_comparavel(nome):
+    """O nome como e comparado: sem diferenca de maiusculas, acentos,
+    espacos repetidos e espaco em volta da virgula ("Andre , Ricardo" e
+    "ANDRE,RICARDO" batem)."""
+    return ",".join(parte.strip() for parte in normalizar(nome).split(","))
+
+
+def gestores_do_headcount(operacao, nome, dados=None):
+    """Os gestores do Headcount da operacao com o mesmo nome."""
+    dados = dados or headcount_store.ler()
+    alvo = nome_comparavel(nome)
+    if not alvo.strip(", "):
+        return []
+    return [g for g in dados["gestores"]
+            if g["operacao"] == operacao and nome_comparavel(g["nome"]) == alvo]
+
+
+def presenteismo_do_gestor(operacao, nome, hoje=None, semanas=None, meses=None):
+    """{"week": {...}, "month": {...}} como presenteismo_por_periodo, so
+    com o gestor do Headcount que tem esse nome; vazio se nenhum bate.
+
+    Com a planilha de faltas ligada (FALTAS_DA_PLANILHA), o presenteismo
+    por gestor ainda nao existe: devolve vazio."""
+    hoje = hoje or datetime.date.today()
+    if FALTAS_DA_PLANILHA:
+        return {"week": {}, "month": {}}
+    ids = {g["id"] for g in gestores_do_headcount(operacao, nome)}
+    if not ids:
+        return {"week": {}, "month": {}}
+    return _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses, so_os_gestores=ids)

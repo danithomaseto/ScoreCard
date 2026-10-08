@@ -4,7 +4,8 @@ import time
 from datetime import date, datetime, timedelta
 
 from automation.base import (
-    enable_second_grouping,
+    disable_grouping_level,
+    enable_grouping_level,
     export_report,
     get_report_frame,
     login,
@@ -17,12 +18,11 @@ from automation.base import (
     take_screenshot,
 )
 from config.operations import (
-    DEFAULT_DATE_RANGE, GROUP_BY_DAS_INDIRETAS, OPERATIONS, PASTAS_DO_PERIODO,
+    DEFAULT_DATE_RANGE, OPERATIONS, PASTAS_DO_PERIODO, ROTULOS_DO_PERIODO, agrupamento, e_semanal,
 )
 
-# Dias de pico: uma linha por dia do mes, sem quebra por pessoa — so a
-# hora direta sai daqui; efetividade e dispersao vem do mensal.
-GROUP_BY_DO_PICO = "Report Date"
+# Quantos niveis de Group By o relatorio tem.
+NIVEIS_DO_RELATORIO = 3
 
 registro = logging.getLogger("scorecard.automacao")
 
@@ -71,16 +71,18 @@ def run(
     atualizar a tela do app em tempo real). date_range, se informado, e
     um dict {"from_date": "yyyy-mm-dd", "to_date": "yyyy-mm-dd"} pra usar
     um periodo especifico em vez do padrao (Ultima semana) da operacao.
-    group_by, se informado, e o texto exato de uma das opcoes de "Group
-    By 1" (config.operations.GROUP_BY_OPTIONS) escolhida na tela, usado
-    no lugar do padrao "User ID" da operacao. period ("week", "month",
-    "peak" ou "indiretas") define em qual subpasta da operacao o arquivo e salvo -
-    "Week", "Month", "Dias de Pico" ou "Indiretas" (PASTAS_DO_PERIODO).
-    Nas indiretas o Group By 2 e sempre Job Code. No pico o
-    Group By 1 e sempre Report Date, e o escolhido na tela e ignorado.
-    navegador, se informado, e um Navegador ja
-    aberto (fila do Extrair Multiplos): a operacao usa uma sessao nova
-    dele e nao o fecha no fim.
+
+    period define o tipo de extracao, o agrupamento e a subpasta da
+    operacao onde o arquivo e salvo (config.operations: AGRUPAMENTOS e
+    PASTAS_DO_PERIODO): "week" (Week > Supervisor > User ID), "month",
+    "peak" (Report Date), "indiretas" (Week > Job Code) e os de Gestor e
+    Turno, com Week e Month cada um. group_by, o texto exato de uma das
+    opcoes de "Group By 1" (config.operations.GROUP_BY_OPTIONS), so vale
+    no Month, no lugar do padrao "User ID" da operacao; nos outros tipos
+    o agrupamento e fixo, venha o que vier da tela.
+
+    navegador, se informado, e um Navegador ja aberto (fila do Extrair
+    Multiplos): a operacao usa uma sessao nova dele e nao o fecha no fim.
     """
     config = OPERATIONS[operation_key]
 
@@ -104,15 +106,13 @@ def run(
     period_folder = PASTAS_DO_PERIODO[tipo]
 
     folder = config.get("sharepoint_folder") or config["label"]
-    download_dir = os.path.join(base_dir, folder, period_folder)
+    # "Gestor/Week" vira duas pastas, uma dentro da outra.
+    download_dir = os.path.join(base_dir, folder, *period_folder.split("/"))
 
-    is_month = tipo == "month"
-    is_peak = tipo == "peak"
-    # Horas indiretas: Week no Group By 1 (como o semanal) e Job Code
-    # fixo no Group By 2, venha o que vier da tela.
-    is_indiretas = tipo == "indiretas"
-    # O pico e do mes do calendario: sem datas digitadas, "Last Month".
-    default_range = DEFAULT_DATE_RANGE["week" if tipo in ("week", "indiretas") else "month"]
+    semanal = e_semanal(tipo)
+    # Sem Week no agrupamento o export nao traz data nenhuma: o mes vem
+    # de quem pediu a extracao. O pico e do mes do calendario.
+    default_range = DEFAULT_DATE_RANGE["week" if semanal else "month"]
 
     if date_range:
         period_label = (
@@ -123,12 +123,7 @@ def run(
     else:
         period_label = default_range
         origem = default_range.lower().replace(" ", "_")
-    if is_peak:
-        group_by_option = GROUP_BY_DO_PICO
-    elif is_indiretas:
-        group_by_option = GROUP_BY_DAS_INDIRETAS
-    else:
-        group_by_option = group_by or config["group_by_option"]
+    niveis = agrupamento(tipo, group_by, config["group_by_option"])
 
     def log(step):
         print(f"[{operation_key}] {step}", flush=True)
@@ -152,13 +147,15 @@ def run(
         "operation_label": config["label"],
         "period_label": period_label,
         # E sempre o nivel de detalhe (uma linha por pessoa quando e
-        # User ID): Group By 2 na semana, Group By 1 no mes.
-        "group_by": group_by_option,
-        "period_type": period_folder,
+        # User ID): o ultimo Group By.
+        "group_by": niveis[-1],
+        "agrupamento": " › ".join(niveis),
+        "tipo": tipo,
+        "period_type": ROTULOS_DO_PERIODO[tipo],
         "origem": origem,
         "date_from": date_range["from_date"] if date_range else None,
         "date_to": date_range["to_date"] if date_range else None,
-        "month_key": _month_key(date_range) if (is_month or is_peak) else None,
+        "month_key": None if semanal else _month_key(date_range),
     }
 
     try:
@@ -185,22 +182,17 @@ def run(
             log(f"preenchendo Date Range ({default_range})...")
             select_default_date_range(frame, default_range)
 
-        if is_month or is_peak:
-            # O mensal vem consolidado (e o pico, por dia): um nivel so, sem quebra por
-            # semana. Uma linha por pessoa com os totais do periodo.
-            log(f"preenchendo Group By 1 ({group_by_option})...")
-            select_combobox(frame, "Group By 1", group_by_option, option_text=group_by_option)
-        else:
-            # Semanal: a quebra por semana fica fixa no primeiro nivel e
-            # o campo escolhido na tela vai pro segundo.
-            log("preenchendo Group By 1 (Week)...")
-            select_combobox(frame, "Group By 1", "Week", option_text="Week")
-
-            log("marcando o segundo nivel de agrupamento...")
-            enable_second_grouping(frame)
-
-            log(f"preenchendo Group By 2 ({group_by_option})...")
-            select_combobox(frame, "Group By 2", group_by_option, option_text=group_by_option)
+        # Um Group By por nivel, do primeiro ao ultimo. Os niveis que nao
+        # entram sao desmarcados: o relatorio guarda o que ficou marcado
+        # da extracao anterior.
+        for nivel in range(NIVEIS_DO_RELATORIO, len(niveis), -1):
+            disable_grouping_level(frame, nivel)
+        for nivel, campo in enumerate(niveis, start=1):
+            if nivel > 1:
+                log(f"marcando o {'segundo' if nivel == 2 else 'terceiro'} nivel de agrupamento...")
+                enable_grouping_level(frame, nivel)
+            log(f"preenchendo Group By {nivel} ({campo})...")
+            select_combobox(frame, f"Group By {nivel}", campo, option_text=campo)
 
         log("exportando e baixando o arquivo...")
         saved_path = export_report(

@@ -205,6 +205,49 @@ def totais(linhas, nivel_detalhe=None, tolerancia=TOLERANCIA_VAR):
     }
 
 
+# Colunas somadas quando uma pessoa aparece em mais de uma linha.
+SOMAVEIS = ("goal", "measured_direct", "signon_direct", "insert_direct", "pd_brk", "total",
+            "signon_indirect", "unpd_brk")
+
+
+def var_de(goal, medido):
+    """O "Var" do Summary: quanto a meta passa da hora medida, em pontos
+    inteiros ((Goal / Measured Direct - 1) x 100). Conferido com a
+    coluna do export; a diferenca de 1 ponto que aparece as vezes e do
+    arredondamento das horas que o export mostra."""
+    if not goal or not medido:
+        return None
+    return float(round((goal / medido - 1) * 100))
+
+
+def juntar_por_pessoa(linhas):
+    """Uma linha por pessoa em cada semana, como no export Week > User ID.
+
+    Com o Supervisor no meio do agrupamento, quem trabalhou com dois
+    supervisores na mesma semana vem em duas linhas, cada uma com uma
+    parte das horas. Para as somas tanto faz, mas a DISPERSAO conta
+    pessoas: sem juntar, essa pessoa contaria duas vezes, com dois Var
+    diferentes. Juntas, as horas sao somadas e o Var e refeito com elas
+    (var_de). Quem tem uma linha so fica exatamente como veio.
+    """
+    grupos = {}
+    for linha in linhas:
+        chave = (linha.get("semana"), linha.get("detalhe"))
+        grupos.setdefault(chave, []).append(linha)
+    juntas = []
+    for partes in grupos.values():
+        if len(partes) == 1:
+            juntas.append(partes[0])
+            continue
+        junta = {k: v for k, v in partes[0].items() if k not in SOMAVEIS and k not in ("var", "grupo")}
+        for campo in SOMAVEIS:
+            valores = [p.get(campo) for p in partes if p.get(campo) is not None]
+            junta[campo] = sum(valores) if valores else None
+        junta["var"] = var_de(junta.get("goal"), junta.get("measured_direct"))
+        juntas.append(junta)
+    return juntas
+
+
 def por_semana(linhas, nivel_detalhe=None, tolerancia=TOLERANCIA_VAR):
     """Agrupa pela data da semana e calcula cada grupo.
 

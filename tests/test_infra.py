@@ -229,12 +229,14 @@ def test_diagnostico_leva_log_e_ambiente_sem_dados_pessoais(log_em_arquivo, tmp_
     import zipfile
 
     import diagnostico
+    import grupos_store
     import headcount_store
     from api import Api
 
     api = Api()
     api.login("daniel.usuario", "S3nh@Secreta!")
     headcount_store.adicionar_gestor("Marina Duarte", "hugo_boss")
+    grupos_store.salvar("gestor", "hugo_boss", "week", {"2026-09-06": {"COSTA,RAFAEL": {}}})
     logging.getLogger("scorecard").info("erro com S3nh@Secreta! no meio")
 
     caminho = diagnostico.gerar(str(tmp_path / "saida"))
@@ -245,6 +247,8 @@ def test_diagnostico_leva_log_e_ambiente_sem_dados_pessoais(log_em_arquivo, tmp_
     assert "info.txt" in nomes and "logs/scorecard.log" in nomes
     assert "Gestores cadastrados: 1" in tudo
     assert "Marina Duarte" not in tudo, "nome de gestor nao sai da maquina"
+    assert "gestor hugo_boss: 1 periodos, 1 grupos" in tudo
+    assert "COSTA,RAFAEL" not in tudo, "nem o do Supervisor do Summary"
     assert "S3nh@Secreta!" not in tudo and "daniel.usuario" not in tudo
 
 

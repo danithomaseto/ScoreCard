@@ -27,11 +27,54 @@ def test_extracao_salva_arquivo_na_pasta_da_operacao(operations, sharepoint_dir)
     assert result["period_label"] == "01/09/2026 - 07/09/2026"
 
 
-def test_group_by_escolhido_na_tela_e_aplicado(operations, sharepoint_dir):
-    result = run_mock(operations, sharepoint_dir, group_by="Work Team")
+def test_group_by_escolhido_na_tela_e_aplicado_no_month(operations, sharepoint_dir):
+    result = run_mock(operations, sharepoint_dir, group_by="Work Team", period="month")
 
     assert result["success"], result.get("message")
     assert result["group_by"] == "Work Team"
+
+
+def test_week_tem_agrupamento_fixo_com_o_supervisor(operations, sharepoint_dir):
+    """A Week sai sempre Week > Supervisor > User ID, venha o que vier da
+    tela: e o Supervisor que leva o gestor para o Coverage."""
+    passos = []
+    result = run_mock(operations, sharepoint_dir, group_by="Work Team", period="week",
+                      on_progress=passos.append)
+
+    assert result["success"], result.get("message")
+    assert result["group_by"] == "User ID"
+    assert result["agrupamento"] == "Week › Supervisor › User ID"
+    texto = " | ".join(passos).lower()
+    for esperado in ("group by 1 (week)", "group by 2 (supervisor)", "terceiro nivel", "group by 3 (user id)"):
+        assert esperado in texto, f"etapa ausente no progresso: {esperado}"
+
+
+def test_gestor_e_turno_vao_para_week_e_month_dentro_da_pasta_deles(operations, sharepoint_dir):
+    pastas = {}
+    for tipo in ("gestor_week", "gestor_month", "turno_week", "turno_month"):
+        result = run_mock(operations, sharepoint_dir, key="mock_g", folder="MockCo", period=tipo)
+        assert result["success"], result.get("message")
+        pastas[tipo] = os.path.relpath(os.path.dirname(result["file_path"]), sharepoint_dir)
+
+    assert pastas == {
+        "gestor_week": os.path.join("MockCo", "Gestor", "Week"),
+        "gestor_month": os.path.join("MockCo", "Gestor", "Month"),
+        "turno_week": os.path.join("MockCo", "Turno", "Week"),
+        "turno_month": os.path.join("MockCo", "Turno", "Month"),
+    }
+
+
+def test_agrupamento_de_gestor_e_turno(operations, sharepoint_dir):
+    agrupamentos = {
+        tipo: run_mock(operations, sharepoint_dir, key="mock_g", period=tipo)["agrupamento"]
+        for tipo in ("gestor_week", "gestor_month", "turno_week", "turno_month")
+    }
+    assert agrupamentos == {
+        "gestor_week": "Week › Supervisor › User ID",
+        "gestor_month": "Supervisor › User ID",
+        "turno_week": "Week › Shift › User ID",
+        "turno_month": "Shift › User ID",
+    }
 
 
 def test_week_e_month_vao_para_subpastas_diferentes(operations, sharepoint_dir):

@@ -24,9 +24,24 @@ import unicodedata
 # custam uma fracao de segundo que a abertura do app pagaria sem
 # precisar, ja que so sao usados quando chega um arquivo.
 
+# Colunas dos niveis de agrupamento. Elas encostam na direita: o ultimo
+# Group By e sempre o "Detail Level Group", o penultimo o "Medium" e o
+# primeiro de tres o "High". O que cada uma traz depende da extracao:
+#
+#   Week > User ID                  Medium = semana, Detail = usuario
+#   Week > Supervisor > User ID     High = semana, Medium = gestor, Detail = usuario
+#   Supervisor > User ID (mes)      Medium = gestor, Detail = usuario
+#   User ID (mes)                   so o Detail
+#
+# Por isso o Medium e decidido pelo conteudo (ver _papel_do_medio).
+NIVEIS = {
+    "high level group": "nivel_alto",
+    "medium level group": "nivel_medio",
+}
+
 # Titulo normalizado no export -> nome usado no resto do codigo.
 COLUNAS = {
-    "medium level group": "semana",
+    **NIVEIS,
     "detail level group": "detalhe",
     "var": "var",
     "goal": "goal",
@@ -183,13 +198,39 @@ def _linhas_cruas(caminho):
     )
 
 
+def _texto(valor):
+    if valor is None:
+        return ""
+    if isinstance(valor, float) and valor.is_integer():
+        valor = int(valor)
+    return str(valor).strip()
+
+
+def _papel_do_medio(cruas, coluna, tem_alto):
+    """"semana" ou "grupo": o que o Medium Level Group traz.
+
+    Com tres niveis, a semana e o High e o Medium e o grupo (gestor ou
+    turno). Com dois, o Medium e a semana quando todos os valores dele
+    sao datas (Week > User ID) e o grupo quando nao (Supervisor > User
+    ID): nome de gestor e de turno nunca vira data.
+    """
+    if tem_alto:
+        return "grupo"
+    valores = [c[coluna] for c in cruas if coluna < len(c) and c[coluna] not in (None, "")]
+    if valores and all(_para_data(v) for v in valores):
+        return "semana"
+    return "grupo" if valores else "semana"
+
+
 def ler(caminho):
-    """Le o export e devolve {"linhas": [...], "tem_semana": bool}.
+    """Le o export e devolve {"linhas": [...], "tem_semana": bool,
+    "tem_grupo": bool}.
 
     Cada linha e um dicionario com os nomes internos das colunas.
-    tem_semana diz qual dos dois formatos veio: com coluna de semana
-    (export semanal) ou sem nenhuma coluna de data (mensal, ja
-    consolidado).
+    tem_semana diz se veio a coluna de semana (export semanal) ou nenhuma
+    coluna de data (mensal, ja consolidado). tem_grupo diz se veio um
+    nivel de gestor ou de turno ("grupo" em cada linha, com o nome igual
+    ao da planilha; vazio quando a pessoa esta sem supervisor/turno).
     """
     cruas = _linhas_cruas(caminho)
 
@@ -205,6 +246,15 @@ def ler(caminho):
         nome = COLUNAS.get(normalizar(titulo))
         if nome and nome not in posicoes:
             posicoes[nome] = coluna
+
+    # Os niveis viram "semana" e "grupo" conforme o que trazem.
+    alto = posicoes.pop("nivel_alto", None)
+    medio = posicoes.pop("nivel_medio", None)
+    if alto is not None:
+        posicoes["semana"] = alto
+    if medio is not None:
+        papel = _papel_do_medio(cruas[indice + 1:], medio, alto is not None)
+        posicoes[papel] = medio
 
     faltando = [c for c in OBRIGATORIAS if c not in posicoes]
     if faltando:
@@ -222,6 +272,8 @@ def ler(caminho):
                 registro[nome] = _para_data(valor)
             elif nome == "detalhe":
                 registro[nome] = None if valor is None else str(valor).strip()
+            elif nome == "grupo":
+                registro[nome] = _texto(valor)
             else:
                 registro[nome] = _para_numero(valor)
 
@@ -232,4 +284,4 @@ def ler(caminho):
 
         linhas.append(registro)
 
-    return {"linhas": linhas, "tem_semana": "semana" in posicoes}
+    return {"linhas": linhas, "tem_semana": "semana" in posicoes, "tem_grupo": "grupo" in posicoes}

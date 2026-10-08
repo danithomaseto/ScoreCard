@@ -1185,3 +1185,51 @@ tem as mesmas letras do export:
 So a visao por semana (sem resultado do mes): o mes escolhe as semanas
 que tem algum dia nele. Guardado em `indiretas.json` por operacao e
 semana; uma extracao nova substitui as semanas que trouxe.
+
+## 27. Gestor, turno e o Supervisor na Week (08/10/2026)
+
+Tipos de extracao novos, com agrupamento fixo (`AGRUPAMENTOS` em
+`config/operations.py`) e pasta propria dentro da operacao:
+
+| Tipo | Group By 1 > 2 > 3 | Pasta |
+|---|---|---|
+| Week | Week > Supervisor > User ID | `Week` |
+| Gestor · Week | Week > Supervisor > User ID | `Gestor\Week` |
+| Gestor · Month | Supervisor > User ID | `Gestor\Month` |
+| Turno · Week | Week > Shift > User ID | `Turno\Week` |
+| Turno · Month | Shift > User ID | `Turno\Month` |
+
+O Month continua com o Group By 1 escolhido na tela; Pico e Indiretas
+como antes. Os niveis que nao entram sao desmarcados antes
+(`disable_grouping_level`): o relatorio guarda o checkbox marcado da
+extracao anterior. O terceiro nivel segue o padrao do segundo
+(`#groupinglvl3_check-inputEl`, combobox "Group By 3") — confirmar na
+primeira extracao real.
+
+- **Leitura:** os niveis encostam na direita (`Detail` e sempre o ultimo).
+  Com tres niveis, High = semana, Medium = grupo. Com dois, o Medium e a
+  semana quando todos os valores sao data, senao e o grupo (Supervisor
+  > User ID). O nome do grupo fica igual ao da planilha; vazio (","
+  sem supervisor, celula vazia sem turno) vira "Sem supervisor"/"Sem
+  turno" so na tela.
+- **Operacao com o Supervisor no meio:** quem teve dois supervisores na
+  semana vem em duas linhas. Para o resultado da operacao as linhas da
+  mesma pessoa e semana sao somadas e o Var refeito
+  (`round((Goal / Measured Direct - 1) x 100)`, a conta do relatorio;
+  `weekly.juntar_por_pessoa`). Conferido com os exports reais da SWA
+  (30/08 a 27/09): Week > Supervisor e Week > Shift dao os mesmos
+  numeros da operacao, e as horas por pessoa sao identicas nos dois.
+- **Por grupo:** efetividade, hora direta e dispersao com as linhas do
+  grupo (`indicators/grupos.py`). Presenteismo so para gestor e so
+  quando o Headcount tem, na mesma operacao, um gestor com o mesmo nome
+  (comparacao sem maiusculas, acentos e espacos, inclusive em volta da
+  virgula); turno nao tem presenteismo nem cubo. Coverage do grupo:
+  horas dos usuarios dele / dias x horas (os da aba Coverage, ou o
+  calendario), sem sinergia; cada usuario fica no grupo com mais horas
+  dele (`coverage.grupo_principal`), para nao contar as horas que ele
+  deveria trabalhar duas vezes.
+- **Coverage por gestor:** a Week guarda o gestor de cada usuario (o
+  principal). No Resultado do Mes o gestor vem das semanas do mes. Com
+  um gestor no filtro, a sinergia da operacao nao entra.
+- **Gestores escondidos:** guardados em `settings.json` por operacao
+  (os escondidos, nao os escolhidos: gestor novo aparece marcado).

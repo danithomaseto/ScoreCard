@@ -62,6 +62,8 @@ function entrarEmSequencia(tbody) {
   Array.from(tbody.rows).forEach((tr, i) => {
     tr.classList.add('linha-entrando');
     tr.style.animationDelay = `${i * 30}ms`;
+    // Os valores da linha "pulam" logo depois dela entrar.
+    tr.style.setProperty('--atraso', `${i * 30 + 90}ms`);
   });
 }
 
@@ -112,11 +114,12 @@ const PROGRESS_STEPS = [
   { key: 'frame', match: (t) => t.includes('localizando o iframe') },
   { key: 'report', match: (t) => t.includes('abrindo o relatorio') },
   { key: 'period', match: (t) => t.includes('periodo especifico') || t.includes('date range') },
-  // "group by 1" cobre tanto o Week fixo da semana quanto o User ID do
-  // mes; o segundo nivel so existe no fluxo semanal, e quando nao
-  // acontece o passo simplesmente nao acende.
+  // "group by 1" cobre o primeiro nivel de qualquer tipo; o segundo e o
+  // terceiro so existem em alguns, e quando nao acontecem o passo
+  // simplesmente nao acende.
   { key: 'groupby1', match: (t) => t.includes('group by 1') },
   { key: 'groupby2', match: (t) => t.includes('segundo nivel') || t.includes('group by 2') },
+  { key: 'groupby3', match: (t) => t.includes('terceiro nivel') || t.includes('group by 3') },
   { key: 'export', match: (t) => t.includes('exportando e baixando') },
   { key: 'save', match: (t) => t.includes('concluido') },
 ];
@@ -190,6 +193,8 @@ function showLogin() {
   loginView.hidden = false;
   appView.hidden = true;
   (loginUsername.value ? loginPassword : loginUsername).focus();
+  // Com a abertura na frente, o card entra quando ela sai.
+  if (!document.getElementById('abertura')) animarEntradaDoLogin();
 }
 
 // Caps Lock ligado na senha: avisa antes de errar (senha errada repetida
@@ -304,6 +309,7 @@ function trocarPagina(pageName) {
   }
   contentArea.scrollTop = 0;
   moverIndicadorDoMenu();
+  animarEntradaDaPagina(pageName);
 }
 
 // Com a View Transitions API do navegador, a pagina antiga esmaece
@@ -316,6 +322,173 @@ function trocarComTransicao(pageName) {
   }
   document.startViewTransition(() => trocarPagina(pageName));
 }
+
+// ---------------------------------------------------------------
+// Animacoes: abertura, login, entrada no app e numeros dos cards
+// ---------------------------------------------------------------
+// So apresentacao. Com "reduzir movimento" ligado no Windows nada disso
+// roda (SEM_ANIMACAO), e a tela funciona igual.
+
+const esperar = (ms) => new Promise((resolver) => setTimeout(resolver, ms));
+
+// A abertura toca enquanto o app carrega: fica no minimo o tempo da
+// animacao e sai assim que a ponte com o Python estiver pronta.
+const INICIO_DA_ABERTURA = performance.now();
+const DURACAO_DA_ABERTURA = 2300;
+
+function encerrarAbertura() {
+  const abertura = document.getElementById('abertura');
+  if (!abertura || abertura.classList.contains('saindo')) return;
+  if (SEM_ANIMACAO) {
+    abertura.remove();
+    animarEntradaDoLogin();
+    return;
+  }
+  const falta = Math.max(0, DURACAO_DA_ABERTURA - (performance.now() - INICIO_DA_ABERTURA));
+  setTimeout(() => {
+    abertura.classList.add('saindo');
+    // O card do login entra enquanto a abertura sobe.
+    setTimeout(animarEntradaDoLogin, 260);
+    setTimeout(() => abertura.remove(), 800);
+  }, falta);
+}
+// Se a ponte com o Python demorar demais, a abertura nao prende a tela.
+setTimeout(() => {
+  const abertura = document.getElementById('abertura');
+  if (abertura && !abertura.classList.contains('saindo')) encerrarAbertura();
+}, 9000);
+
+const loginCard = document.getElementById('login-card');
+
+function reiniciarAnimacao(elemento, classe) {
+  elemento.classList.remove(classe);
+  void elemento.offsetWidth; // forca o navegador a recomecar a animacao
+  elemento.classList.add(classe);
+}
+
+function animarEntradaDoLogin() {
+  if (SEM_ANIMACAO || loginView.hidden) return;
+  loginCard.classList.remove('confirmado', 'tremendo');
+  reiniciarAnimacao(loginCard, 'entrando');
+}
+
+function tremerLogin() {
+  if (SEM_ANIMACAO) return;
+  loginCard.classList.remove('entrando');
+  reiniciarAnimacao(loginCard, 'tremendo');
+}
+
+// Login aceito: o card confirma, a cortina amarela cobre a tela, o app
+// monta por baixo e a cortina sai revelando o app, que entra por partes.
+async function entrarNoApp(mostrarApp) {
+  const cortina = document.getElementById('cortina');
+  if (SEM_ANIMACAO || !cortina) {
+    await mostrarApp();
+    return;
+  }
+  loginCard.classList.remove('entrando', 'tremendo');
+  loginCard.classList.add('confirmado');
+  await esperar(300);
+  cortina.className = 'cortina cobrindo';
+  await esperar(560);
+  try {
+    await mostrarApp();
+  } finally {
+    loginCard.classList.remove('confirmado');
+    reiniciarAnimacao(appView, 'app-entrando');
+    cortina.className = 'cortina saindo';
+    setTimeout(() => { cortina.className = 'cortina'; }, 700);
+    setTimeout(() => appView.classList.remove('app-entrando'), 1600);
+  }
+}
+
+// Cada item do menu entra um pouco depois do anterior.
+document.querySelectorAll('.sidebar > *').forEach((item, indice) => item.style.setProperty('--i', indice));
+
+// Os blocos da aba entram um depois do outro ao abrir a aba.
+function animarEntradaDaPagina(pageName) {
+  if (SEM_ANIMACAO) return;
+  const pagina = document.getElementById(`page-${pageName}`);
+  if (!pagina) return;
+  reiniciarAnimacao(pagina, 'pagina-entrando');
+  clearTimeout(pagina.timerEntrada);
+  pagina.timerEntrada = setTimeout(() => pagina.classList.remove('pagina-entrando'), 900);
+}
+
+// Os numeros dos cards (horas, percentuais) contam ate o valor novo em
+// vez de trocar de uma vez. Le e escreve no padrao brasileiro.
+const NUMERO_BR = /^(-?\d{1,3}(?:\.\d{3})*(?:,\d+)?|-?\d+(?:,\d+)?)(\s*(?:%|h))?$/;
+
+function lerNumeroBR(texto) {
+  const achado = NUMERO_BR.exec((texto || '').trim());
+  if (!achado) return null;
+  const [, numero, sufixo = ''] = achado;
+  const casas = numero.includes(',') ? numero.split(',')[1].length : 0;
+  return { valor: Number(numero.replace(/\./g, '').replace(',', '.')), casas, sufixo };
+}
+
+// Contagem em andamento de cada card: {escrito} e o ultimo texto que a
+// propria contagem escreveu, para separar isso de um valor novo chegando.
+const contagens = new WeakMap();
+
+function contarAte(elemento, de, para, final) {
+  const contagem = { escrito: null };
+  contagens.set(elemento, contagem);
+  const inicio = performance.now();
+  const duracao = 650;
+  const formato = { minimumFractionDigits: para.casas, maximumFractionDigits: para.casas };
+  const passo = (agora) => {
+    if (contagens.get(elemento) !== contagem) return; // um valor mais novo assumiu
+    const t = Math.min(1, (agora - inicio) / duracao);
+    const suave = 1 - Math.pow(1 - t, 3);
+    const texto = t < 1 ? (de + (para.valor - de) * suave).toLocaleString('pt-BR', formato) + para.sufixo : final;
+    contagem.escrito = texto;
+    elemento.textContent = texto;
+    if (t < 1) requestAnimationFrame(passo);
+    else contagens.delete(elemento);
+  };
+  requestAnimationFrame(passo);
+}
+
+function observarNumero(elemento) {
+  let anterior = elemento.textContent;
+  new MutationObserver(() => {
+    const texto = elemento.textContent;
+    const emCurso = contagens.get(elemento);
+    if (emCurso && texto === emCurso.escrito) return; // e a propria contagem escrevendo
+    // De onde a contagem parte: o que estava na tela antes do valor novo.
+    const deTexto = emCurso ? emCurso.escrito : anterior;
+    anterior = texto;
+    if (texto === deTexto) return;
+    const novo = lerNumeroBR(texto);
+    const velho = lerNumeroBR(deTexto);
+    if (SEM_ANIMACAO || !novo || (velho && velho.valor === novo.valor)) {
+      contagens.delete(elemento);
+      return;
+    }
+    contarAte(elemento, velho ? velho.valor : 0, novo, texto);
+  }).observe(elemento, { childList: true, characterData: true, subtree: true });
+}
+document.querySelectorAll('.hc-card-valor:not(.texto)').forEach(observarNumero);
+
+// Ondinha no clique dos botoes principais (Entrar, Iniciar extracao,
+// Extrair, Aplicar...). Os de apoio (copiar, links, menu) ficam de fora.
+document.addEventListener('pointerdown', (evento) => {
+  if (SEM_ANIMACAO) return;
+  const botao = evento.target.closest('button');
+  if (!botao || botao.disabled) return;
+  if (botao.matches('.nav-item, .seg-opcao, .link-btn, .copy-btn, .period-option, .hc-ajuda, .hc-icone-btn')) return;
+  const caixa = botao.getBoundingClientRect();
+  const tamanho = Math.max(caixa.width, caixa.height);
+  const onda = document.createElement('span');
+  onda.className = 'onda';
+  onda.style.width = onda.style.height = `${tamanho}px`;
+  onda.style.left = `${evento.clientX - caixa.left - tamanho / 2}px`;
+  onda.style.top = `${evento.clientY - caixa.top - tamanho / 2}px`;
+  botao.classList.add('com-onda');
+  botao.appendChild(onda);
+  setTimeout(() => onda.remove(), 560);
+});
 
 async function showPage(pageName) {
   trocarComTransicao(pageName);
@@ -331,6 +504,10 @@ async function showPage(pageName) {
     await carregarCoverage();
   } else if (pageName === 'indiretas') {
     await carregarIndiretas();
+  } else if (pageName === 'gestor') {
+    await abaGestor.carregar();
+  } else if (pageName === 'turno') {
+    await abaTurno.carregar();
   } else if (pageName === 'settings') {
     const check = await pywebview.api.validate_sharepoint_folder();
     folderPathEl.textContent = check.valid ? check.folder : 'Nenhuma pasta configurada ainda.';
@@ -522,7 +699,14 @@ function desenharDistribuicao(dist) {
 }
 
 function desenharCabecalho(tabela) {
-  indicatorsHead.innerHTML = '';
+  desenharCabecalhoEm(indicatorsHead, indicatorsBody, tabela.colunas, 'Operação', tabela.operacao);
+}
+
+// O cabecalho de uma tabela de indicadores (Inicio, Resultado Gestor e
+// Resultado Turno): o canto com de quem e a tabela, e uma coluna por
+// semana ou mes, cada uma com o seu botao Copiar.
+function desenharCabecalhoEm(linhaDoCabecalho, corpo, colunas, rotuloDoCanto, nomeDoCanto, notaDoCanto) {
+  linhaDoCabecalho.innerHTML = '';
 
   // O canto leva o nome da operacao: num print levado pra reuniao o
   // filtro costuma ficar fora do recorte, e a tabela precisa dizer de
@@ -532,15 +716,22 @@ function desenharCabecalho(tabela) {
   canto.className = 'indicator-corner';
   const rotulo = document.createElement('div');
   rotulo.className = 'corner-label';
-  rotulo.textContent = 'Operação';
+  rotulo.textContent = rotuloDoCanto;
   const nome = document.createElement('div');
   nome.className = 'corner-operation';
-  nome.textContent = tabela.operacao;
+  nome.textContent = nomeDoCanto;
   canto.appendChild(rotulo);
   canto.appendChild(nome);
-  indicatorsHead.appendChild(canto);
+  if (notaDoCanto) {
+    const nota = document.createElement('div');
+    nota.className = 'corner-nota' + (notaDoCanto.classe ? ` ${notaDoCanto.classe}` : '');
+    nota.textContent = notaDoCanto.texto;
+    if (notaDoCanto.dica) nota.title = notaDoCanto.dica;
+    canto.appendChild(nota);
+  }
+  linhaDoCabecalho.appendChild(canto);
 
-  tabela.colunas.forEach((coluna, indice) => {
+  colunas.forEach((coluna, indice) => {
     const th = document.createElement('th');
     th.scope = 'col';
     th.className = 'indicator-col' + classeDaColuna(coluna);
@@ -563,8 +754,8 @@ function desenharCabecalho(tabela) {
       th.appendChild(aviso);
     }
 
-    th.appendChild(botaoCopiar(indice, coluna.titulo));
-    indicatorsHead.appendChild(th);
+    th.appendChild(botaoCopiar(indice, coluna.titulo, corpo));
+    linhaDoCabecalho.appendChild(th);
   });
 }
 
@@ -575,8 +766,12 @@ function classeDaColuna(coluna) {
 }
 
 function desenharLinhas(tabela) {
-  indicatorsBody.innerHTML = '';
-  for (const linha of tabela.linhas) {
+  desenharLinhasEm(indicatorsBody, tabela.linhas, tabela.colunas);
+}
+
+function desenharLinhasEm(corpo, linhas, colunas) {
+  corpo.innerHTML = '';
+  for (const linha of linhas) {
     const tr = document.createElement('tr');
 
     const th = document.createElement('th');
@@ -594,12 +789,15 @@ function desenharLinhas(tabela) {
 
     linha.celulas.forEach((celula, indice) => {
       const td = document.createElement('td');
-      const coluna = tabela.colunas[indice];
+      const coluna = colunas[indice];
       td.className = 'indicator-cell' + classeDaColuna(coluna);
       if (celula.nao_se_aplica) {
         // Indicador que nao existe nesta coluna (coverage no pico): nem
         // traco, que quer dizer "ainda sem numero".
         td.classList.add('nao-se-aplica');
+        // No turno (presenteismo e cubo) a copia guarda a posicao vazia,
+        // para o valor de baixo nao subir de linha.
+        if (celula.copia_vazia) td.dataset.copiaVazia = '1';
       } else if (celula.texto) {
         const valor = document.createElement('span');
         valor.className = 'indicator-value ' + (celula.cor || '');
@@ -614,28 +812,29 @@ function desenharLinhas(tabela) {
       tr.appendChild(td);
     });
 
-    indicatorsBody.appendChild(tr);
+    corpo.appendChild(tr);
   }
 }
 
-function botaoCopiar(indice, titulo) {
+function botaoCopiar(indice, titulo, corpo = indicatorsBody) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'copy-btn';
   btn.setAttribute('aria-label', `Copiar os números de ${titulo}`);
   btn.textContent = 'Copiar';
-  btn.addEventListener('click', () => copiarColuna(indice, btn));
+  btn.addEventListener('click', () => copiarColuna(indice, btn, corpo));
   return btn;
 }
 
 // Os valores da coluna, na ordem dos indicadores. Indicador sem numero
 // vira posicao vazia, pra nenhum valor subir de lugar. Indicador que
 // nao existe na coluna (coverage no pico) fica de fora: o pico copia
-// cinco valores, do cubo a dispersao.
-function valoresDaColuna(indice) {
-  return Array.from(indicatorsBody.querySelectorAll('tr'))
+// cinco valores, do cubo a dispersao. No turno, presenteismo e cubo nao
+// se aplicam mas guardam a posicao (data-copia-vazia).
+function valoresDaColuna(indice, corpo = indicatorsBody) {
+  return Array.from(corpo.querySelectorAll('tr'))
     .map((tr) => tr.querySelectorAll('td')[indice])
-    .filter((celula) => !(celula && celula.classList.contains('nao-se-aplica')))
+    .filter((celula) => !(celula && celula.classList.contains('nao-se-aplica') && !celula.dataset.copiaVazia))
     .map((celula) => {
       if (!celula) return '';
       const valor = celula.querySelector('.indicator-value');
@@ -643,8 +842,8 @@ function valoresDaColuna(indice) {
     });
 }
 
-function textoDaColuna(indice) {
-  return valoresDaColuna(indice).join('\n');
+function textoDaColuna(indice, corpo = indicatorsBody) {
+  return valoresDaColuna(indice, corpo).join('\n');
 }
 
 // A mesma coluna como tabela de uma coluna por seis linhas. E isso que
@@ -662,26 +861,53 @@ function textoDaColuna(indice) {
 // Word e o Excel copiam: o PowerPoint ignora o font-size da celula <td>
 // e aplica o padrao de tabela dele, 18 pt.
 const TAMANHO_DA_FONTE_COPIADA = '10.0pt';
-const ESTILO_DA_CELULA_COPIADA =
-  `text-align:center;white-space:nowrap;padding:0;margin:0;font-size:${TAMANHO_DA_FONTE_COPIADA}`;
 
-function tabelaDaColuna(indice) {
-  const linhas = valoresDaColuna(indice)
-    .map((valor) => `<tr><td nowrap style="${ESTILO_DA_CELULA_COPIADA}">`
-      + `<p class="MsoNormal" align="center" style="margin:0;text-align:center;font-size:${TAMANHO_DA_FONTE_COPIADA}">`
-      + `<span style="font-size:${TAMANHO_DA_FONTE_COPIADA};mso-bidi-font-size:${TAMANHO_DA_FONTE_COPIADA}">`
-      + `<font size="2">${valor}</font></span></p></td></tr>`)
-    .join('');
-  return `<table style="border-collapse:collapse">${linhas}</table>`;
+function celulaParaColar(valor, alinhamento = 'center', negrito = false) {
+  const estilo = `text-align:${alinhamento};white-space:nowrap;padding:0;margin:0;font-size:${TAMANHO_DA_FONTE_COPIADA}`;
+  const texto = negrito ? `<b>${valor}</b>` : valor;
+  return `<td nowrap style="${estilo}">`
+    + `<p class="MsoNormal" align="${alinhamento}" style="margin:0;text-align:${alinhamento};font-size:${TAMANHO_DA_FONTE_COPIADA}">`
+    + `<span style="font-size:${TAMANHO_DA_FONTE_COPIADA};mso-bidi-font-size:${TAMANHO_DA_FONTE_COPIADA}">`
+    + `<font size="2">${texto}</font></span></p></td>`;
 }
 
-async function copiarColuna(indice, btn) {
-  const copiado = await copiarTexto(textoDaColuna(indice), tabelaDaColuna(indice));
+// Uma tabela qualquer para colar: linhas de celulas, cada celula um
+// texto ou {texto, alinhamento, negrito}. Os textos vem da propria tela
+// (numeros, nomes de atividade) e sao escapados.
+function tabelaParaColar(linhas) {
+  const corpo = linhas.map((linha) => '<tr>' + linha.map((celula) => {
+    const c = typeof celula === 'object' && celula !== null ? celula : { texto: celula };
+    return celulaParaColar(escaparHtml(c.texto ?? ''), c.alinhamento || 'center', c.negrito);
+  }).join('') + '</tr>').join('');
+  return `<table style="border-collapse:collapse">${corpo}</table>`;
+}
 
-  const original = btn.textContent;
+function textoParaColar(linhas) {
+  return linhas.map((linha) => linha.map((celula) =>
+    (typeof celula === 'object' && celula !== null ? celula.texto : celula) ?? '').join('\t')).join('\n');
+}
+
+function escaparHtml(texto) {
+  return String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function tabelaDaColuna(indice, corpo = indicatorsBody) {
+  return tabelaParaColar(valoresDaColuna(indice, corpo).map((valor) => [valor]));
+}
+
+async function copiarColuna(indice, btn, corpo = indicatorsBody) {
+  await copiarComAviso(btn, textoDaColuna(indice, corpo), tabelaDaColuna(indice, corpo));
+}
+
+// Copia e mostra no proprio botao se deu certo.
+async function copiarComAviso(btn, texto, html) {
+  const copiado = await copiarTexto(texto, html);
+  const original = btn.dataset.rotulo || btn.textContent;
+  btn.dataset.rotulo = original;
   btn.textContent = copiado ? 'Copiado' : 'Não deu';
   btn.classList.toggle('copiado', copiado);
-  setTimeout(() => {
+  clearTimeout(btn.timerCopia);
+  btn.timerCopia = setTimeout(() => {
     btn.textContent = original;
     btn.classList.remove('copiado');
   }, 2000);
@@ -828,7 +1054,7 @@ async function loadHistoryTable(tbody = historyTableBody) {
     row.appendChild(makeCell(entry.operation || '-'));
     row.appendChild(makeCell(entry.period_type || '-'));
     row.appendChild(makeCell(entry.period_label || '-'));
-    row.appendChild(makeCell(entry.group_by || '-'));
+    row.appendChild(makeCell(entry.agrupamento || entry.group_by || '-'));
     row.appendChild(makeCell(formatDuration(entry.duration_seconds)));
 
     const statusCell = document.createElement('td');
@@ -915,6 +1141,15 @@ async function loadOperations() {
     checkbox.type = 'checkbox';
     checkbox.value = op.key;
     checkbox.addEventListener('change', () => {
+      // "Vários filtros" e de uma operacao so: marcar uma desmarca a outra.
+      if (multiModo === 'filtros' && checkbox.checked) {
+        multiOperationsEl.querySelectorAll('input[type="checkbox"]').forEach((outro) => {
+          if (outro !== checkbox && outro.checked) {
+            outro.checked = false;
+            outro.parentElement.classList.remove('selected');
+          }
+        });
+      }
       item.classList.toggle('selected', checkbox.checked);
       refreshMultiQueue();
     });
@@ -941,55 +1176,151 @@ async function loadGroupByOptions() {
   }
 }
 
-// Dias de pico: o Group By 1 e sempre Report Date (uma linha por dia),
-// entao o campo trava nesse valor enquanto o pico estiver escolhido e
-// volta ao que estava ao trocar de novo.
-const GROUP_BY_DO_PICO = 'Report Date';
-
-// No Week o campo escolhido vai para o Group By 2 (o 1 e fixo em Week);
-// no Month e o Group By 1; no pico, Group By 1 fixo em Report Date.
-const ROTULO_DO_GROUP_BY = {
-  week: 'Group By 2 (Group By 1 fixo em Week)',
-  month: 'Group By 1',
-  peak: 'Group By 1 (fixo em Report Date)',
-  indiretas: 'Agrupamento (fixo: Week + Job Code)',
+// Agrupamento de cada tipo de extracao, fixo pelo sistema (o mesmo de
+// config/operations.py, AGRUPAMENTOS). So o Month usa o Group By 1
+// escolhido no campo; nos outros o campo some e fica a nota com o
+// agrupamento e a pasta.
+const AGRUPAMENTO_FIXO = {
+  week: ['Week', 'Supervisor', 'User ID'],
+  peak: ['Report Date'],
+  indiretas: ['Week', 'Job Code'],
+  gestor_week: ['Week', 'Supervisor', 'User ID'],
+  gestor_month: ['Supervisor', 'User ID'],
+  turno_week: ['Week', 'Shift', 'User ID'],
+  turno_month: ['Shift', 'User ID'],
 };
+const PASTA_DO_TIPO = {
+  week: 'Week', month: 'Month', peak: 'Dias de Pico', indiretas: 'Indiretas',
+  gestor_week: 'Gestor › Week', gestor_month: 'Gestor › Month',
+  turno_week: 'Turno › Week', turno_month: 'Turno › Month',
+};
+const ROTULO_DO_TIPO = {
+  week: 'Week', month: 'Month', peak: 'Dias de Pico', indiretas: 'Horas Indiretas',
+  gestor_week: 'Gestor · Week', gestor_month: 'Gestor · Month',
+  turno_week: 'Turno · Week', turno_month: 'Turno · Month',
+};
+// Os tipos na ordem da tela (e da fila do "Vários filtros").
+const ORDEM_DOS_TIPOS = Object.keys(ROTULO_DO_TIPO);
 
-// Agrupamento que o sistema fixa em cada tipo de extracao: o campo
-// trava nesse valor enquanto o tipo estiver escolhido.
-const GROUP_BY_FIXO = { peak: GROUP_BY_DO_PICO, indiretas: 'Job Code' };
+// Mostra o campo de Group By (so no Month) ou a nota do agrupamento fixo.
+// tipos e a lista de tipos escolhidos: um so no modo normal, varios no
+// "Vários filtros".
+function mostrarAgrupamento(select, tipos) {
+  const rotulo = document.querySelector(`label[for="${select.id}"]`);
+  const nota = select.nextElementSibling;
+  const comMonth = tipos.includes('month');
+  select.hidden = !comMonth;
+  select.disabled = !comMonth;
+  if (rotulo) {
+    rotulo.textContent = comMonth
+      ? (tipos.length > 1 ? 'Group By 1 do Month' : 'Group By 1')
+      : 'Agrupamento';
+  }
+  if (!nota || !nota.classList.contains('nota-agrupamento-fixo')) return;
+  const fixos = tipos.filter((t) => AGRUPAMENTO_FIXO[t]);
+  nota.hidden = !fixos.length;
+  const texto = nota.querySelector('.nota-agrupamento-texto');
+  if (tipos.length === 1 && fixos.length === 1) {
+    const tipo = fixos[0];
+    texto.textContent = `Agrupamento fixo: ${AGRUPAMENTO_FIXO[tipo].join(' › ')}. O arquivo vai para a pasta ${PASTA_DO_TIPO[tipo]}.`;
+  } else if (fixos.length) {
+    texto.textContent = comMonth
+      ? 'Os outros tipos têm agrupamento fixo e cada um vai para a sua pasta.'
+      : 'Todos com agrupamento fixo; cada tipo vai para a sua pasta.';
+  }
+}
 
 function escolherPeriodo(botoes, select, periodo) {
   botoes.forEach((el) => el.classList.toggle('active', el.dataset.period === periodo));
-  const rotulo = document.querySelector(`label[for="${select.id}"]`);
-  if (rotulo) rotulo.textContent = ROTULO_DO_GROUP_BY[periodo] || 'Group By 1';
-  const fixo = GROUP_BY_FIXO[periodo];
-  if (fixo) {
-    if (!select.disabled) select.dataset.anterior = select.value;
-    select.value = fixo;
-  } else if (select.disabled) {
-    select.value = select.dataset.anterior || 'User ID';
-  }
-  select.disabled = Boolean(fixo);
-  select.title = periodo === 'peak' ? 'Nos dias de pico o Group By 1 e sempre Report Date.'
-    : periodo === 'indiretas' ? 'Nas horas indiretas o agrupamento e fixo: Week + Job Code.' : '';
-  // Nota embaixo do campo, so nas horas indiretas.
-  const nota = select.nextElementSibling;
-  if (nota && nota.classList.contains('nota-agrupamento-fixo')) nota.hidden = periodo !== 'indiretas';
+  mostrarAgrupamento(select, [periodo]);
 }
 
 periodOptionEls.forEach((btn) => {
   btn.addEventListener('click', () => escolherPeriodo(periodOptionEls, groupBySelect, btn.dataset.period));
 });
 
+// ---------------------------------------------------------------
+// Extrair Multiplos: varias operacoes ou varios filtros
+// ---------------------------------------------------------------
+// "Várias operações": o mesmo tipo de extracao para as operacoes
+// marcadas. "Vários filtros": uma operacao e varios tipos (Week, Month,
+// Gestor...) em sequencia, com as mesmas datas.
+
+let multiModo = 'operacoes';
+const multiModoEl = document.getElementById('multi-modo');
+
+function tiposEscolhidosNoMulti() {
+  return ORDEM_DOS_TIPOS.filter((tipo) =>
+    Array.from(multiPeriodOptionEls).some((b) => b.dataset.period === tipo && b.classList.contains('active')));
+}
+
 multiPeriodOptionEls.forEach((btn) => {
-  btn.addEventListener('click', () => escolherPeriodo(multiPeriodOptionEls, multiGroupBySelect, btn.dataset.period));
+  btn.addEventListener('click', () => {
+    if (multiModo === 'filtros') {
+      // Varios de uma vez; o ultimo marcado nao desmarca (fila vazia).
+      const ativos = tiposEscolhidosNoMulti();
+      if (btn.classList.contains('active') && ativos.length === 1) return;
+      btn.classList.toggle('active');
+      btn.setAttribute('aria-pressed', btn.classList.contains('active'));
+      mostrarAgrupamento(multiGroupBySelect, tiposEscolhidosNoMulti());
+      refreshMultiQueue();
+    } else {
+      escolherPeriodo(multiPeriodOptionEls, multiGroupBySelect, btn.dataset.period);
+    }
+  });
 });
+
+function trocarModoMulti(modo) {
+  if (modo === multiModo) return;
+  multiModo = modo;
+  const filtros = modo === 'filtros';
+  multiModoEl.querySelectorAll('.seg-opcao').forEach((b) => b.classList.toggle('active', b.dataset.modo === modo));
+  moverDestaque(multiModoEl);
+  document.getElementById('page-multi').classList.toggle('modo-filtros', filtros);
+  document.getElementById('multi-subtitulo').textContent = filtros
+    ? 'Escolha uma operação e marque vários tipos de extração (Week, Month, Gestor...): todos rodam em sequência, com as mesmas datas.'
+    : 'Selecione várias operações e extraia todas em sequência, usando os mesmos filtros.';
+  document.getElementById('multi-operacoes-rotulo').textContent = filtros ? 'Operação' : 'Operações';
+  document.getElementById('multi-operacoes-acoes').hidden = filtros;
+  document.getElementById('multi-periodo-rotulo').textContent = filtros
+    ? 'Tipos de extração (marque quantos quiser)' : 'Período do indicador';
+
+  // Operacoes: no modo filtros fica so uma (a primeira marcada).
+  if (filtros) {
+    const marcadas = multiOperationsEl.querySelectorAll('input[type="checkbox"]:checked');
+    marcadas.forEach((c, i) => {
+      if (i > 0) { c.checked = false; c.parentElement.classList.remove('selected'); }
+    });
+  }
+  multiOperationsEl.querySelectorAll('input[type="checkbox"]').forEach((c) => {
+    c.setAttribute('role', filtros ? 'radio' : 'checkbox');
+  });
+  // Tipos: no modo operacoes volta a ficar um so (o primeiro marcado).
+  if (!filtros) {
+    const primeiro = tiposEscolhidosNoMulti()[0] || 'week';
+    escolherPeriodo(multiPeriodOptionEls, multiGroupBySelect, primeiro);
+    multiPeriodOptionEls.forEach((b) => b.removeAttribute('aria-pressed'));
+  } else {
+    multiPeriodOptionEls.forEach((b) => b.setAttribute('aria-pressed', b.classList.contains('active')));
+    mostrarAgrupamento(multiGroupBySelect, tiposEscolhidosNoMulti());
+  }
+  refreshMultiQueue();
+}
+
+multiModoEl.addEventListener('click', (evento) => {
+  const botao = evento.target.closest('.seg-opcao');
+  if (botao) trocarModoMulti(botao.dataset.modo);
+});
+window.addEventListener('resize', () => moverDestaque(multiModoEl));
 
 function getSelectedMultiPeriod() {
   const active = document.querySelector('#multi-period-options .period-option.active');
   return active ? active.dataset.period : 'week';
 }
+
+// Estado inicial dos dois campos de agrupamento: Week, fixo.
+mostrarAgrupamento(groupBySelect, ['week']);
+mostrarAgrupamento(multiGroupBySelect, ['week']);
 
 function getSelectedOperations() {
   const selected = [];
@@ -1017,21 +1348,29 @@ multiClearBtn.addEventListener('click', () => setMultiChecked(false));
 function refreshMultiQueue() {
   const selected = getSelectedOperations();
   multiStepsEl.innerHTML = '';
+  const filtros = multiModo === 'filtros';
 
   if (!selected.length) {
     const empty = document.createElement('p');
     empty.className = 'subtitle';
-    empty.textContent = 'Selecione as operações ao lado para ver a fila aqui.';
+    empty.textContent = filtros
+      ? 'Escolha a operação ao lado para ver a fila aqui.'
+      : 'Selecione as operações ao lado para ver a fila aqui.';
     multiStepsEl.appendChild(empty);
     multiProgressDetailEl.textContent = 'Nenhuma extração em andamento';
     multiProgressPercentEl.textContent = '0%';
     return;
   }
 
-  selected.forEach((op, index) => {
+  // No "Vários filtros" a fila e de tipos de extracao da operacao escolhida.
+  const fila = filtros
+    ? tiposEscolhidosNoMulti().map((tipo) => ({ titulo: ROTULO_DO_TIPO[tipo], nota: `${selected[0].label} · pasta ${PASTA_DO_TIPO[tipo]}` }))
+    : selected.map((op) => ({ titulo: op.label, nota: 'Na fila' }));
+
+  fila.forEach((item, index) => {
     const step = document.createElement('div');
-    step.className = 'step';
-    step.dataset.opKey = op.key;
+    step.className = 'step entrando';
+    step.style.animationDelay = `${index * 40}ms`;
 
     const number = document.createElement('div');
     number.className = 'step-number';
@@ -1041,10 +1380,10 @@ function refreshMultiQueue() {
     content.className = 'step-content';
     const title = document.createElement('div');
     title.className = 'step-title';
-    title.textContent = op.label;
+    title.textContent = item.titulo;
     const subtitle = document.createElement('div');
     subtitle.className = 'step-subtitle';
-    subtitle.textContent = 'Na fila';
+    subtitle.textContent = item.nota;
     content.appendChild(title);
     content.appendChild(subtitle);
 
@@ -1053,7 +1392,9 @@ function refreshMultiQueue() {
     multiStepsEl.appendChild(step);
   });
 
-  multiProgressDetailEl.textContent = `${selected.length} operação(ões) na fila`;
+  multiProgressDetailEl.textContent = filtros
+    ? `${plural(fila.length, 'extração', 'extrações')} de ${selected[0].label} na fila`
+    : `${selected.length} operação(ões) na fila`;
   multiProgressPercentEl.textContent = '0%';
 }
 
@@ -1132,12 +1473,18 @@ document.querySelectorAll('[data-date-shortcuts]').forEach((group) => {
       const [inicio, fim] = mensal ? lastMonthRange() : lastWeekRange();
       fromInput.value = toInputDate(inicio);
       toInput.value = toInputDate(fim);
+      // No "Vários filtros" os tipos sao escolhidos a mao: so as datas mudam.
+      if (isMulti && multiModo === 'filtros') return;
 
       // "Mes passado" com Dias de Pico escolhido continua no pico: o pico
       // tambem e de um mes inteiro.
       const atual = Array.from(periodButtons).find((el) => el.classList.contains('active'));
       const noPico = atual && atual.dataset.period === 'peak';
-      const alvo = mensal ? (noPico ? 'peak' : 'month') : 'week';
+      const tipo = atual ? atual.dataset.period : 'week';
+      // Gestor e Turno trocam so entre Week e Month deles.
+      const grupo = tipo.startsWith('gestor') ? 'gestor_' : tipo.startsWith('turno') ? 'turno_' : null;
+      const alvo = grupo ? `${grupo}${mensal ? 'month' : 'week'}`
+        : mensal ? (noPico ? 'peak' : 'month') : 'week';
       escolherPeriodo(periodButtons, select, alvo);
     });
   });
@@ -1179,6 +1526,7 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
 
   if (!username || !password) {
     showStatus(loginStatus, 'Preencha usuário e senha.', 'error');
+    tremerLogin();
     return;
   }
 
@@ -1188,10 +1536,11 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
     const result = await pywebview.api.login(username, password);
     if (!result.success) {
       showStatus(loginStatus, result.message || 'Falha no login.', 'error');
+      tremerLogin();
       return;
     }
     loginPassword.value = '';
-    await showApp();
+    await entrarNoApp(showApp);
     await ensureFolderConfigured();
   } finally {
     loginBtn.disabled = false;
@@ -1285,8 +1634,9 @@ multiRunBtn.addEventListener('click', async () => {
   multiRunActions.hidden = true;
 
   const selected = getSelectedOperations();
+  const filtros = multiModo === 'filtros';
   if (!selected.length) {
-    showStatus(multiRunStatus, 'Selecione pelo menos uma operação.', 'error');
+    showStatus(multiRunStatus, filtros ? 'Escolha a operação.' : 'Selecione pelo menos uma operação.', 'error');
     return;
   }
   if (!multiFromDateInput.value || !multiToDateInput.value) {
@@ -1315,12 +1665,14 @@ multiRunBtn.addEventListener('click', async () => {
   multiStopBtn.disabled = false;
   multiStopBtn.textContent = 'Parar apos a atual';
   try {
-    const result = await pywebview.api.run_multi_extraction(
-      selected.map((op) => op.key),
-      dateRange,
-      multiGroupBySelect.value,
-      getSelectedMultiPeriod(),
-    );
+    const result = filtros
+      ? await pywebview.api.run_multi_filters(selected[0].key, tiposEscolhidosNoMulti(), dateRange, multiGroupBySelect.value)
+      : await pywebview.api.run_multi_extraction(
+        selected.map((op) => op.key),
+        dateRange,
+        multiGroupBySelect.value,
+        getSelectedMultiPeriod(),
+      );
     let badgeTexto = 'Concluida';
     if (result.cancelled) badgeTexto = 'Interrompida';
     else if (!result.success) badgeTexto = 'Com falhas';
@@ -1386,6 +1738,7 @@ logoutBtn.addEventListener('click', async () => {
 window.addEventListener('pywebviewready', () => {
   carregarVersao();
   showLogin();
+  encerrarAbertura();
 });
 
 // ---------------------------------------------------------------
@@ -2198,8 +2551,9 @@ const cvCorpo = document.getElementById('cv-corpo');
 const cvTotal = document.getElementById('cv-total');
 const cvStatus = document.getElementById('cv-status');
 const cvVazio = document.getElementById('cv-vazio');
+const cvGestor = document.getElementById('cv-gestor');
 
-let cvEstado = { operacao: 'todas', visualizacao: 'semanal', mes: null, periodo_id: null };
+let cvEstado = { operacao: 'todas', visualizacao: 'semanal', mes: null, periodo_id: null, gestor: '' };
 let cvTela = null;
 
 function pct(valor) {
@@ -2208,10 +2562,11 @@ function pct(valor) {
 }
 
 async function carregarCoverage() {
-  cvTela = await comEsqueleto(cvCorpo, 10, () => pywebview.api.get_coverage(
-    cvEstado.operacao, cvEstado.visualizacao, cvEstado.mes, cvEstado.periodo_id));
+  cvTela = await comEsqueleto(cvCorpo, 11, () => pywebview.api.get_coverage(
+    cvEstado.operacao, cvEstado.visualizacao, cvEstado.mes, cvEstado.periodo_id, cvEstado.gestor || null));
   cvEstado.mes = cvTela.mes;
   cvEstado.periodo_id = cvTela.periodo_id;
+  cvEstado.gestor = cvTela.gestor || '';
   desenharFiltrosCv(cvTela);
   desenharCardsCv(cvTela);
   desenharTabelaCv(cvTela);
@@ -2256,6 +2611,11 @@ function desenharFiltrosCv(tela) {
     preencherSelect(cvPeriodo, tela.periodos, tela.periodo_id);
   }
   cvPeriodo.disabled = noMes || !tela.periodos.length;
+  // Gestor: o de cada usuario vem do Supervisor da extracao Week.
+  preencherSelect(cvGestor, tela.gestores, tela.gestor || '');
+  cvGestor.disabled = tela.gestores.length <= 1;
+  cvGestor.title = tela.gestores.length <= 1
+    ? 'Sem gestor nesta extração: extraia a Week de novo (agora ela vem com o Supervisor).' : '';
   for (const botao of cvVisualizacao.querySelectorAll('.seg-opcao')) {
     botao.classList.toggle('active', botao.dataset.visualizacao === tela.visualizacao);
   }
@@ -2265,6 +2625,7 @@ function desenharFiltrosCv(tela) {
 function desenharCardsCv(tela) {
   const c = tela.cards;
   document.getElementById('cv-card-operacao').textContent = c.operacao;
+  document.getElementById('cv-card-operacao-nota').textContent = c.operacao_nota || '';
   document.getElementById('cv-card-periodo').textContent = c.periodo;
   document.getElementById('cv-card-periodo-nota').textContent = c.periodo_nota;
   document.getElementById('cv-card-lms').textContent = `${num(c.lms)} h`;
@@ -2345,7 +2706,9 @@ function campoSinergiaOperacao(t, campo) {
   if (!t.sinergia_editavel) {
     input.disabled = true;
     input.value = t[campo];
-    input.title = 'A sinergia é de uma operação: escolha uma operação para lançar.';
+    input.title = cvTela.gestor
+      ? 'A sinergia é da operação inteira: com um gestor no filtro ela não entra no total.'
+      : 'A sinergia é de uma operação: escolha uma operação para lançar.';
   } else {
     input.title = `Sinergia ${campo} da operação nesta semana (horas).`;
     input.addEventListener('change', async () => {
@@ -2392,7 +2755,7 @@ function desenharTabelaCv(tela) {
       `Nenhuma extração ${noMes ? 'Month' : 'Week'} de ${tela.cards.operacao} em ${cvMes.selectedOptions[0]?.text || 'neste mês'} ainda`;
     document.getElementById('cv-vazio-texto').textContent = noMes
       ? 'Extraia o mês (Month) para ver o coverage de cada usuário.'
-      : 'Extraia a semana (Week, com User ID no Group By 2) para ver o coverage de cada usuário.';
+      : 'Extraia a semana (Week) para ver o coverage de cada usuário e de cada gestor.';
   }
 
   cvCorpo.innerHTML = '';
@@ -2404,6 +2767,7 @@ function desenharTabelaCv(tela) {
     usuario.textContent = linha.usuario;
     tr.appendChild(celulaCv(usuario));
     tr.appendChild(celulaCv(linha.operacao));
+    tr.appendChild(celulaCv(linha.gestor_rotulo, 'cv-gestor-celula'));
     tr.appendChild(celulaCv(num(linha.lms), 'num'));
     tr.appendChild(celulaCv(num(linha.diretas_sem_meta), 'num'));
     tr.appendChild(celulaCv(campoCoverage(linha, 'dias', '1'), 'num'));
@@ -2420,7 +2784,7 @@ function desenharTabelaCv(tela) {
   const t = tela.total;
   const tr = document.createElement('tr');
   [
-    ['TOTAL', ''], [plural(t.usuarios, 'usuário', 'usuários'), ''],
+    ['TOTAL', ''], [plural(t.usuarios, 'usuário', 'usuários'), ''], [cvTela.gestor_rotulo || '', 'cv-gestor-celula'],
     [num(t.lms), 'num'], [num(t.diretas_sem_meta), 'num'], ['', 'num'], ['', 'num'],
     [num(t.metrics), 'num'],
   ].forEach(([texto, classe]) => tr.appendChild(celulaCv(texto, classe)));
@@ -2436,6 +2800,11 @@ function desenharTabelaCv(tela) {
 cvOperacao.addEventListener('change', async () => {
   cvEstado.operacao = cvOperacao.value;
   cvEstado.periodo_id = null;
+  cvEstado.gestor = '';
+  await carregarCoverage();
+});
+cvGestor.addEventListener('change', async () => {
+  cvEstado.gestor = cvGestor.value;
   await carregarCoverage();
 });
 cvMes.addEventListener('change', async () => {
@@ -2473,7 +2842,8 @@ cvAplicar.addEventListener('click', () => comCarregando(cvAplicar, async () => {
   }
   for (const [campo, entrada] of pedidos) {
     const resposta = await pywebview.api.set_coverage_todos(
-      cvEstado.operacao, cvEstado.visualizacao, cvEstado.mes, cvEstado.periodo_id, campo, entrada.value);
+      cvEstado.operacao, cvEstado.visualizacao, cvEstado.mes, cvEstado.periodo_id, campo, entrada.value,
+      cvEstado.gestor || null);
     if (!resposta.success) {
       cvStatus.textContent = resposta.message;
       return;
@@ -2589,7 +2959,7 @@ function desenharIndiretas() {
   desenharBarrasIndiretas(t);
   desenharParetoIndiretas(t);
   for (const wrap of document.querySelectorAll('#page-indiretas .ind-tabela-wrap')) {
-    wrap.replaceChildren(tabelaIndiretas(t));
+    wrap.replaceChildren(tabelaIndiretasComCopia(t));
   }
 }
 
@@ -2651,7 +3021,21 @@ function desenharSemanasIndiretas(t) {
       aviso.textContent = 'incompleta';
       datas.appendChild(aviso);
     }
-    topo.append(titulo, datas);
+    const copiar = document.createElement('button');
+    copiar.type = 'button';
+    copiar.className = 'copy-btn ind-copiar';
+    copiar.textContent = 'Copiar';
+    copiar.setAttribute('aria-label', `Copiar o quadro de ${semana.rotulo} para o PowerPoint`);
+    copiar.title = 'Copia o quadro da semana (totais e atividades) para colar no PowerPoint ou no Excel.';
+    copiar.addEventListener('click', (evento) => {
+      evento.stopPropagation(); // o topo do quadro escolhe a semana
+      const linhas = linhasDoQuadroIndiretas(semana);
+      copiarComAviso(copiar, textoParaColar(linhas), tabelaParaColar(linhas));
+    });
+    const cabecaTopo = document.createElement('div');
+    cabecaTopo.className = 'ind-quadro-titulo';
+    cabecaTopo.append(titulo, copiar);
+    topo.append(cabecaTopo, datas);
     topo.addEventListener('click', () => escolherSemanaIndiretas(semana.id));
 
     const totais = document.createElement('div');
@@ -2682,6 +3066,56 @@ function desenharSemanasIndiretas(t) {
     grade.appendChild(quadro);
   }
   document.getElementById('ind-vis-semanas').replaceChildren(grade);
+}
+
+// O quadro da semana como a planilha de referencia: totais em cima, o
+// cabecalho das indiretas e as atividades da maior para a menor.
+function linhasDoQuadroIndiretas(semana) {
+  const esquerda = (texto, negrito = false) => ({ texto, alinhamento: 'left', negrito });
+  return [
+    [esquerda('Horas totais', true), num(semana.horas_totais), '100,00%'],
+    [esquerda('Totais indiretas', true), num(semana.horas_indiretas), pct(semana.percentual)],
+    [esquerda('Indiretas', true), { texto: 'Horas', negrito: true }, { texto: '%', negrito: true }],
+    ...semana.atividades.map((a) => [esquerda(a.atividade), num(a.horas), pct(a.percentual)]),
+  ];
+}
+
+// A tabela atividade x semana, com o cabecalho das semanas.
+function linhasDaTabelaIndiretas(t) {
+  const esquerda = (texto, negrito = false) => ({ texto, alinhamento: 'left', negrito });
+  const cabecalho = [esquerda('Atividade', true),
+    ...t.semanas.map((s) => ({ texto: `${s.rotulo} (${s.datas})`, negrito: true }))];
+  const linhas = t.tabela.linhas.map((linha) => [esquerda(linha.atividade), ...t.semanas.map((s) => {
+    const celula = linha.celulas[s.id];
+    return celula ? `${num(celula.horas)} h · ${pct(celula.percentual)}` : '—';
+  })]);
+  const total = [esquerda('TOTAL INDIRETAS', true), ...t.semanas.map((s) => `${num(t.tabela.totais[s.id].horas)} h`)];
+  const percentual = [esquerda('% INDIRETA', true), ...t.semanas.map((s) => pct(t.tabela.totais[s.id].percentual))];
+  return [cabecalho, ...linhas, total, percentual];
+}
+
+function tabelaIndiretasComCopia(t) {
+  const caixa = document.createElement('div');
+  const barra = document.createElement('div');
+  barra.className = 'ind-tabela-topo';
+  const titulo = document.createElement('span');
+  titulo.textContent = `Atividades × semanas · ${t.mes_rotulo}`;
+  const copiar = document.createElement('button');
+  copiar.type = 'button';
+  copiar.className = 'copy-btn';
+  copiar.textContent = 'Copiar tabela';
+  copiar.title = 'Copia a tabela inteira para colar no PowerPoint ou no Excel.';
+  copiar.addEventListener('click', () => {
+    const linhas = linhasDaTabelaIndiretas(t);
+    copiarComAviso(copiar, textoParaColar(linhas), tabelaParaColar(linhas));
+  });
+  barra.append(titulo, copiar);
+  // So a tabela rola; a barra com o Copiar fica parada em cima.
+  const rolagem = document.createElement('div');
+  rolagem.className = 'ind-tabela-rolagem';
+  rolagem.appendChild(tabelaIndiretas(t));
+  caixa.append(barra, rolagem);
+  return caixa;
 }
 
 function semanaEscolhida(t) {
@@ -2931,3 +3365,167 @@ indExtrairBtn.addEventListener('click', async () => {
   });
   await carregarIndiretas();
 });
+
+// ---------------------------------------------------------------
+// Abas Resultado Gestor e Resultado Turno
+// ---------------------------------------------------------------
+// A mesma tabela da aba Inicio, uma por gestor (ou turno). No topo, a
+// lista para marcar quais aparecem, como a lista de operacoes do Extrair
+// Multiplos. Os numeros e as cores vem prontos do Python (grupos_tela.py).
+
+function criarAbaDeGrupo(dimensao, pre) {
+  const el = (id) => document.getElementById(`${pre}-${id}`);
+  const estado = { operacao: null, mes: null };
+  const nomes = dimensao === 'gestor'
+    ? { singular: 'Gestor', plural: 'gestores', tipo: 'Gestor · Week', mes: 'Gestor · Month', nivel: 'Supervisor' }
+    : { singular: 'Turno', plural: 'turnos', tipo: 'Turno · Week', mes: 'Turno · Month', nivel: 'Shift' };
+  const tipoWeek = `${dimensao}_week`;
+  let tela = null;
+
+  async function carregar() {
+    const tabelas = el('tabelas');
+    if (!tela) tabelas.innerHTML = '<div class="card indicators-card"><div class="ind-esqueleto grupos-esqueleto"></div></div>';
+    tela = await pywebview.api.get_resultado_grupo(dimensao, estado.operacao, estado.mes);
+    estado.operacao = tela.operacao;
+    estado.mes = tela.mes;
+    desenhar();
+  }
+
+  function desenhar() {
+    preencherSelect(el('operacao'), tela.operacoes, tela.operacao, 'key', 'label');
+    preencherSelect(el('mes'), tela.meses, tela.mes);
+    el('ultima').textContent = tela.ultima_extracao || `Nenhuma extração de ${tela.operacao_rotulo} neste mês ainda`;
+
+    const temDados = tela.colunas.length > 0;
+    el('grupos-card').hidden = !temDados;
+    el('vazio').hidden = temDados;
+    el('legenda').hidden = !temDados || !tela.tabelas.length;
+    if (!temDados) {
+      el('tabelas').innerHTML = '';
+      el('vazio-titulo').textContent =
+        `Nenhuma extração ${nomes.tipo} de ${tela.operacao_rotulo} em ${tela.mes_rotulo} ainda`;
+      el('vazio-texto').textContent = `Extraia ${nomes.tipo} (Week › ${nomes.nivel} › User ID) e ${nomes.mes} `
+        + `(${nomes.nivel} › User ID): cada semana vira uma coluna, o mês entra no final e cada ${nomes.singular.toLowerCase()} ganha a sua tabela.`;
+      return;
+    }
+    desenharLista();
+    desenharTabelas();
+    el('legenda-nota').textContent = dimensao === 'gestor'
+      ? 'Presenteísmo e cubo só para gestor com o mesmo nome no Headcount.'
+      : 'Turno não tem presenteísmo: presenteísmo e cubo não se aplicam.';
+  }
+
+  function desenharLista() {
+    const lista = el('lista');
+    lista.innerHTML = '';
+    for (const grupo of tela.grupos) {
+      const item = document.createElement('label');
+      item.className = 'ops-item grupo-item' + (grupo.visivel ? ' selected' : '');
+      const caixa = document.createElement('input');
+      caixa.type = 'checkbox';
+      caixa.checked = grupo.visivel;
+      caixa.value = grupo.id;
+      caixa.addEventListener('change', () => {
+        item.classList.toggle('selected', caixa.checked);
+        salvarVisiveis();
+      });
+      const nome = document.createElement('span');
+      nome.className = 'grupo-nome';
+      nome.textContent = grupo.rotulo;
+      nome.title = grupo.rotulo;
+      item.append(caixa, nome);
+      if (grupo.vinculado) {
+        const selo = document.createElement('span');
+        selo.className = 'grupo-selo';
+        selo.textContent = 'HC';
+        selo.title = 'Presenteísmo do Headcount: há um gestor com este mesmo nome lá.';
+        item.appendChild(selo);
+      }
+      lista.appendChild(item);
+    }
+    const visiveis = tela.grupos.filter((g) => g.visivel).length;
+    el('contador').textContent = `· ${visiveis} de ${tela.grupos.length}`;
+    el('nota').textContent = dimensao === 'gestor'
+      ? 'O nome é o da planilha. O presenteísmo e o cubo aparecem para quem está no Headcount com o mesmo nome (marcado com HC); nome diferente não puxa nada.'
+      : 'Os turnos são os que vieram no arquivo extraído (coluna Shift).';
+  }
+
+  async function salvarVisiveis(todos) {
+    const caixas = Array.from(el('lista').querySelectorAll('input[type="checkbox"]'));
+    if (todos !== undefined) {
+      caixas.forEach((c) => { c.checked = todos; c.parentElement.classList.toggle('selected', todos); });
+    }
+    const resposta = await pywebview.api.set_grupos_visiveis(
+      dimensao, estado.operacao, tela.grupos.map((g) => g.id), caixas.filter((c) => c.checked).map((c) => c.value));
+    if (resposta && resposta.success === false) {
+      avisarErro(resposta.message);
+      return;
+    }
+    await carregar();
+  }
+
+  function desenharTabelas() {
+    const area = el('tabelas');
+    const antes = new Set(Array.from(area.querySelectorAll('[data-grupo]')).map((c) => c.dataset.grupo));
+    area.innerHTML = '';
+    if (!tela.tabelas.length) {
+      const vazio = document.createElement('div');
+      vazio.className = 'card indicators-card grupos-nenhum';
+      vazio.textContent = `Nenhum ${nomes.singular.toLowerCase()} marcado. Marque acima quais ${nomes.plural} aparecem.`;
+      area.appendChild(vazio);
+      return;
+    }
+    tela.tabelas.forEach((tabela, indice) => {
+      const card = document.createElement('div');
+      card.className = 'card indicators-card grupo-tabela';
+      card.dataset.grupo = tabela.id;
+      // So o que acabou de entrar na tela anima; o resto so troca o valor.
+      if (!antes.has(tabela.id) && !SEM_ANIMACAO) {
+        card.classList.add('grupo-entrando');
+        card.style.animationDelay = `${Math.min(indice, 6) * 50}ms`;
+      }
+      const wrap = document.createElement('div');
+      wrap.className = 'table-wrap';
+      const t = document.createElement('table');
+      t.className = 'indicators-table';
+      const thead = document.createElement('thead');
+      const linhaCabecalho = document.createElement('tr');
+      thead.appendChild(linhaCabecalho);
+      const corpo = document.createElement('tbody');
+      t.append(thead, corpo);
+      wrap.appendChild(t);
+      card.appendChild(wrap);
+      area.appendChild(card);
+
+      let nota = null;
+      if (dimensao === 'gestor') {
+        nota = tabela.vinculado
+          ? { texto: 'presenteísmo do Headcount', classe: 'ok' }
+          : { texto: 'sem o mesmo nome no Headcount', classe: 'aviso',
+            dica: 'Cadastre no Headcount um gestor com exatamente este nome para o presenteísmo e o cubo aparecerem.' };
+      }
+      desenharCabecalhoEm(linhaCabecalho, corpo, tela.colunas, nomes.singular, tabela.rotulo, nota);
+      desenharLinhasEm(corpo, tabela.linhas, tela.colunas);
+      wrap.scrollLeft = wrap.scrollWidth;
+    });
+  }
+
+  el('operacao').addEventListener('change', async () => {
+    estado.operacao = el('operacao').value;
+    await carregar();
+  });
+  el('mes').addEventListener('change', async () => {
+    estado.mes = el('mes').value;
+    await carregar();
+  });
+  el('todos').addEventListener('click', () => salvarVisiveis(true));
+  el('nenhum').addEventListener('click', () => salvarVisiveis(false));
+  const extrair = () => irParaExtracao(estado.operacao, tipoWeek);
+  el('ir-extrair').addEventListener('click', extrair);
+  el('vazio-extrair').addEventListener('click', extrair);
+
+  return { carregar };
+}
+
+const abaGestor = criarAbaDeGrupo('gestor', 'rg');
+const abaTurno = criarAbaDeGrupo('turno', 'rt');

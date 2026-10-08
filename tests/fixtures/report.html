@@ -35,6 +35,12 @@
 <input id="groupBy2" role="combobox" aria-label="Group By 2" value="" disabled>
 <div id="groupBy2Options"></div>
 
+<!-- Terceiro nivel: mesmo esquema do segundo. -->
+<label><input type="checkbox" id="groupinglvl3_check-inputEl" onclick="toggleLevel3()"> Group By 3</label>
+<label for="groupBy3">Group By 3</label>
+<input id="groupBy3" role="combobox" aria-label="Group By 3" value="" disabled>
+<div id="groupBy3Options"></div>
+
 <script>
 const GROUP_BY_OPTIONS = [
   "Aisle Area","Aisle Area Desc.","Client","Customer","Fiscal Month","Fiscal Week",
@@ -68,11 +74,19 @@ function ligarCombo(inputId, boxId, opcoes) {
 
 ligarCombo('groupBy', 'groupByOptions', GROUP_BY_OPTIONS);
 ligarCombo('groupBy2', 'groupBy2Options', GROUP_BY_OPTIONS);
+ligarCombo('groupBy3', 'groupBy3Options', GROUP_BY_OPTIONS);
 ligarCombo('dateRange', 'dateRangeOptions', DATE_RANGE_OPTIONS);
 
 function toggleLevel2() {
   const ligado = document.getElementById('groupinglvl2_check-inputEl').checked;
   const campo = document.getElementById('groupBy2');
+  campo.disabled = !ligado;
+  if (!ligado) campo.value = '';
+}
+
+function toggleLevel3() {
+  const ligado = document.getElementById('groupinglvl3_check-inputEl').checked;
+  const campo = document.getElementById('groupBy3');
   campo.disabled = !ligado;
   if (!ligado) campo.value = '';
 }
@@ -94,17 +108,24 @@ function toggleMode() {
 <a id="downloadLink" href="summary_3semanas.xlsx" download="RawSummaryReport.xlsx" style="display:none;"></a>
 <script>
 document.getElementById('button-1224').addEventListener('click', function() {
-  // O arquivo entregue muda com o agrupamento, igual ao Summary: com o
-  // segundo nivel marcado vem o export semanal (com a coluna de
-  // semana); sem ele, o mensal consolidado, sem data nenhuma.
-  // Com Group By 1 = Report Date (dias de pico), uma linha por dia.
-  // Com Week + Job Code (horas indiretas), uma linha por atividade.
-  const semanal = document.getElementById('groupinglvl2_check-inputEl').checked;
-  const porDia = document.getElementById('groupBy').value === 'Report Date';
-  const porAtividade = semanal && document.getElementById('groupBy2').value === 'Job Code';
+  // O arquivo entregue muda com o agrupamento, igual ao Summary:
+  //   Week > Supervisor (ou Shift) > User ID   export semanal por gestor/turno
+  //   Week > Job Code                          horas indiretas, por atividade
+  //   Week > User ID                           semanal sem o gestor
+  //   Supervisor (ou Shift) > User ID          mes por gestor/turno
+  //   Report Date                              dias de pico, uma linha por dia
+  //   User ID                                  mes consolidado, sem data
+  const nivel2 = document.getElementById('groupinglvl2_check-inputEl').checked;
+  const nivel3 = nivel2 && document.getElementById('groupinglvl3_check-inputEl').checked;
+  const g1 = document.getElementById('groupBy').value;
+  const g2 = document.getElementById('groupBy2').value;
   const link = document.getElementById('downloadLink');
-  link.href = porAtividade ? 'summary_indiretas.xls'
-    : semanal ? 'summary_3semanas.xlsx' : (porDia ? 'summary_pico.xlsx' : 'summary_mes.xlsx');
+  const turno = (g1 === 'Shift' || g2 === 'Shift');
+  if (nivel3) link.href = turno ? 'summary_turno_semana.xlsx' : 'summary_gestor_semana.xlsx';
+  else if (nivel2 && g2 === 'Job Code') link.href = 'summary_indiretas.xls';
+  else if (nivel2 && g1 === 'Week') link.href = 'summary_3semanas.xlsx';
+  else if (nivel2) link.href = turno ? 'summary_turno_mes.xlsx' : 'summary_gestor_mes.xlsx';
+  else link.href = g1 === 'Report Date' ? 'summary_pico.xlsx' : 'summary_mes.xlsx';
   link.click();
 });
 </script>

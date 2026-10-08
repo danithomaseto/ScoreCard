@@ -17,20 +17,22 @@ import threading
 import webview
 
 from config.operations import (
-    DEFAULT_DATE_RANGE, GROUP_BY_DAS_INDIRETAS, GROUP_BY_OPTIONS, OPERATIONS, PASTAS_DO_PERIODO,
-    escala_espanhola,
+    DEFAULT_DATE_RANGE, GROUP_BY_OPTIONS, OPERATIONS, PASTAS_DO_PERIODO, POR_GRUPO,
+    ROTULOS_DO_PERIODO, agrupamento, e_semanal, escala_espanhola,
 )
 import conexao
 import coverage_store
 import coverage_tela
 import diagnostico
+import grupos_store
+import grupos_tela
 import headcount
 import headcount_store
 import history_store
 import indiretas_store
 import indiretas_tela
 from indicators import faltas as faltas_reader
-from indicators import coverage, indiretas, limits, periodos, pico, reader, weekly
+from indicators import coverage, grupos, indiretas, limits, periodos, pico, reader, weekly
 import indicators_store
 import registro
 import settings_store
@@ -208,6 +210,7 @@ class Api:
             "operation": result.get("operation_label", OPERATIONS[operation_key]["label"]),
             "period_label": result.get("period_label"),
             "group_by": result.get("group_by"),
+            "agrupamento": result.get("agrupamento"),
             "period_type": result.get("period_type"),
             # Tres estados, nao dois: "warning" e a extracao que salvou o
             # arquivo mas nao gerou indicador. Tratar isso como sucesso
@@ -254,7 +257,8 @@ class Api:
             "ate": ate,
         }
 
-        if result.get("period_type") == PASTAS_DO_PERIODO["indiretas"]:
+        tipo = result.get("tipo") or "week"
+        if tipo == "indiretas":
             if not lido["tem_semana"]:
                 result["indicators_message"] = (
                     "Relatório salvo, mas veio sem a coluna de semana: "
@@ -268,7 +272,11 @@ class Api:
             result["indicators"] = len(semanas)
             return
 
-        if result.get("period_type") == "Dias de Pico":
+        if tipo in POR_GRUPO:
+            self._calcular_por_grupo(operation_key, tipo, lido, result)
+            return
+
+        if tipo == "peak":
             chave = result.get("month_key")
             if not chave:
                 result["indicators_message"] = (
@@ -287,7 +295,7 @@ class Api:
             calculado["parcial"] = periodos.mes_parcial(chave, de, ate)
             resultados = {chave: calculado}
             periodo = "peak"
-        elif result.get("period_type") == "Month":
+        elif tipo == "month":
             chave = result.get("month_key")
             if not chave:
                 result["indicators_message"] = (
@@ -307,16 +315,54 @@ class Api:
                     "não deu pra separar por semana."
                 )
                 return
-            resultados = weekly.por_semana(lido["linhas"], nivel_detalhe=nivel_detalhe)
+            # Com o Supervisor no meio, quem teve dois supervisores na
+            # semana vem em duas linhas; a operacao conta a pessoa uma vez.
+            resultados = weekly.por_semana(weekly.juntar_por_pessoa(lido["linhas"]),
+                                           nivel_detalhe=nivel_detalhe)
             for chave, totais in resultados.items():
                 totais["parcial"] = periodos.semana_parcial(chave, de, ate)
             periodo = "week"
-            # Coverage: as horas de cada usuario (segundo nivel do semanal).
+            # Coverage: as horas e o gestor de cada usuario (ultimo nivel do semanal).
             coverage_store.salvar_extracao(
                 operation_key, "week", coverage.por_semana_e_usuario(lido["linhas"]), de, ate)
 
         indicators_store.salvar_extracao(operation_key, periodo, resultados, meta=meta)
         result["indicators"] = len(resultados)
+
+    @staticmethod
+    def _calcular_por_grupo(operation_key, tipo, lido, result):
+        """Resultado Gestor e Resultado Turno: os indicadores de cada gestor
+        (ou turno) por semana, ou do mes."""
+        dimensao, periodo = POR_GRUPO[tipo]
+        de, ate = result.get("date_from"), result.get("date_to")
+        nome = "Supervisor" if dimensao == "gestor" else "Shift"
+        if not lido.get("tem_grupo"):
+            result["indicators_message"] = (
+                f"Relatório salvo, mas veio sem a coluna de {nome}: "
+                f"confira o agrupamento ({result.get('agrupamento')})."
+            )
+            return
+        if periodo == "week":
+            if not lido["tem_semana"]:
+                result["indicators_message"] = (
+                    "Relatório salvo, mas veio sem a coluna de semana: "
+                    "não deu pra separar por semana."
+                )
+                return
+            por_chave = grupos.por_semana_e_grupo(lido["linhas"])
+            parciais = {chave: periodos.semana_parcial(chave, de, ate) for chave in por_chave}
+        else:
+            chave = result.get("month_key")
+            if not chave:
+                result["indicators_message"] = (
+                    "Relatório salvo, mas não deu pra identificar de que mês "
+                    "ele é: informe o período na tela e extraia de novo."
+                )
+                return
+            por_chave = {chave: grupos.por_grupo(lido["linhas"])}
+            parciais = {chave: periodos.mes_parcial(chave, de, ate)}
+        grupos_store.salvar(dimensao, operation_key, periodo, por_chave, de, ate, parciais)
+        result["indicators"] = len(por_chave)
 
     def _check_extraction_params(self, group_by, period):
         """Validacoes comuns as duas abas de extracao. Devolve None quando
@@ -392,17 +438,18 @@ class Api:
                 datetime.date.fromisoformat(date_range[campo]).strftime("%d/%m/%Y")
                 for campo in ("from_date", "to_date"))
         else:
-            rotulo = DEFAULT_DATE_RANGE["week" if tipo in ("week", "indiretas") else "month"]
+            rotulo = DEFAULT_DATE_RANGE["week" if e_semanal(tipo) else "month"]
+        niveis = agrupamento(tipo, group_by, config["group_by_option"])
         mensagem = conexao.mensagem(config["login_url"])
         log.warning("extração %s barrada: %s", operation_key, mensagem)
         return {
             "operation": operation_key,
             "operation_label": config["label"],
             "period_label": rotulo,
-            "period_type": PASTAS_DO_PERIODO[tipo],
-            "group_by": ("Report Date" if tipo == "peak"
-                         else GROUP_BY_DAS_INDIRETAS if tipo == "indiretas"
-                         else (group_by or config["group_by_option"])),
+            "tipo": tipo,
+            "period_type": ROTULOS_DO_PERIODO[tipo],
+            "group_by": niveis[-1],
+            "agrupamento": " › ".join(niveis),
             "success": False,
             "message": mensagem,
             "duration_seconds": 0.0,
@@ -416,43 +463,59 @@ class Api:
         return {"success": True}
 
     def run_multi_extraction(self, operation_keys, date_range=None, group_by=None, period=None):
+        """Varias operacoes, o mesmo tipo de extracao."""
         with self._extraindo():
             return self._executar_fila(operation_keys, date_range, group_by, period)
 
-    def _executar_fila(self, operation_keys, date_range, group_by, period):
-        """Roda a mesma extracao para varias operacoes, uma depois da
-        outra. Uma falha nao interrompe a fila: as demais continuam e o
+    def run_multi_filters(self, operation_key, periods, date_range=None, group_by=None):
+        """Uma operacao, varios tipos de extracao (Week, Month, Gestor...)
+        em sequencia, com as mesmas datas: o "Vários filtros" do Extrair
+        Multiplos."""
+        with self._extraindo():
+            return self._executar_fila([operation_key], date_range, group_by, tipos=periods)
+
+    def _executar_fila(self, operation_keys, date_range, group_by, period=None, tipos=None):
+        """Roda as extracoes da fila, uma depois da outra: varias operacoes
+        com o mesmo tipo (period), ou uma operacao com varios tipos
+        (tipos). Uma falha nao interrompe a fila: as demais continuam e o
         resumo no final diz quantas deram certo."""
         operation_keys = [key for key in (operation_keys or []) if key in OPERATIONS]
-        if not operation_keys:
-            return {"success": False, "message": "Selecione pelo menos uma operação."}
-
-        error = self._check_extraction_params(group_by, period)
+        if tipos is not None:
+            if not operation_keys:
+                return {"success": False, "message": "Escolha a operação."}
+            tipos = [t for t in PASTAS_DO_PERIODO if t in tipos]
+            if not tipos:
+                return {"success": False, "message": "Selecione pelo menos um tipo de extração."}
+            error = self._check_extraction_params(group_by, None)
+            trabalhos = [(operation_keys[0], t, ROTULOS_DO_PERIODO[t]) for t in tipos]
+        else:
+            if not operation_keys:
+                return {"success": False, "message": "Selecione pelo menos uma operação."}
+            error = self._check_extraction_params(group_by, period)
+            trabalhos = [(key, period, OPERATIONS[key]["label"]) for key in operation_keys]
         if error:
             return error
 
         self._cancel_multi.clear()
         headless = os.environ.get("SCORECARD_HEADLESS", "1") != "0"
         base_dir = settings_store.get_sharepoint_folder()
-        total = len(operation_keys)
+        total = len(trabalhos)
         succeeded = 0
         cancelled = 0
         sem_indicador = 0
 
-        # Um navegador so para a fila inteira; cada operacao abre uma
+        # Um navegador so para a fila inteira; cada extracao abre uma
         # sessao propria nele (ver automation.base.Navegador). O login
-        # continua sendo um por operacao: cada uma e um servidor/site
+        # continua sendo um por extracao: cada operacao e um servidor/site
         # diferente do BlueYonder.
         from automation import generic
         from automation.base import Navegador
 
-        log.info("fila de %s operações (%s)", total, period or "week")
+        log.info("fila de %s extrações (%s)", total, ", ".join(sorted({t[1] or "week" for t in trabalhos})))
         navegador = None
         servidores_fora = set()  # sem VPN, nao tenta de novo o mesmo servidor
         try:
-            for index, operation_key in enumerate(operation_keys):
-                label = OPERATIONS[operation_key]["label"]
-
+            for index, (operation_key, period, label) in enumerate(trabalhos):
                 if self._cancel_multi.is_set():
                     cancelled += 1
                     self._emit_js("updateMultiProgress", {
@@ -791,8 +854,26 @@ class Api:
         """A aba Horas Indiretas montada (ver indiretas_tela.py)."""
         return indiretas_tela.montar(operacao, mes, semana_id)
 
-    def get_coverage(self, operacao=None, visualizacao="semanal", mes=None, periodo_id=None):
-        return coverage_tela.montar(operacao or "todas", visualizacao, mes, periodo_id)
+    def get_coverage(self, operacao=None, visualizacao="semanal", mes=None, periodo_id=None, gestor=None):
+        return coverage_tela.montar(operacao or "todas", visualizacao, mes, periodo_id, gestor=gestor)
+
+    # ---------------- Resultado Gestor / Turno ----------------
+
+    def get_resultado_grupo(self, dimensao, operacao=None, mes=None):
+        """A aba Resultado Gestor ("gestor") ou Resultado Turno ("turno")
+        montada (ver grupos_tela.py)."""
+        if dimensao not in grupos_store.DIMENSOES:
+            return {"success": False, "message": "Aba inválida."}
+        return grupos_tela.montar(dimensao, operacao, mes)
+
+    def set_grupos_visiveis(self, dimensao, operacao, da_tela, visiveis):
+        """Quais gestores (ou turnos) aparecem na aba. Os nomes nao vao
+        para o log: sao dados das pessoas."""
+        try:
+            grupos_tela.definir_visiveis(dimensao, operacao, da_tela, visiveis)
+        except ValueError as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True}
 
     def set_coverage(self, operacao, chave_periodo, usuario, campo, valor):
         """Dias, horas ou sinergia (cedida/recebida) de um usuario."""
@@ -814,12 +895,13 @@ class Api:
             return {"success": False, "message": str(exc)}
         return {"success": True}
 
-    def set_coverage_todos(self, operacao, visualizacao, mes, periodo_id, campo, valor):
+    def set_coverage_todos(self, operacao, visualizacao, mes, periodo_id, campo, valor, gestor=None):
         """O mesmo valor de dias ou horas para todos os usuarios da tela
-        (semana de feriado, por exemplo)."""
+        (semana de feriado, por exemplo). Com um gestor no filtro, so os
+        usuarios dele."""
         if campo not in ("dias", "horas"):
             return {"success": False, "message": "Só dias e horas valem para todos."}
-        tela = coverage_tela.montar(operacao or "todas", visualizacao, mes, periodo_id)
+        tela = coverage_tela.montar(operacao or "todas", visualizacao, mes, periodo_id, gestor=gestor)
         grupos = {}
         for linha in tela["linhas"]:
             grupos.setdefault((linha["operacao_key"], linha["chave_periodo"]), []).append(linha["usuario"])
