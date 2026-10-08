@@ -324,8 +324,12 @@ def _is_checked(locator):
 
 
 def _seletores_do_nivel(nivel):
+    """O checkbox no cabecalho do painel "Grouping Level N" (o 2 e o 3
+    tem o mesmo desenho no Summary). O id e o confirmado no site; os
+    outros sao reserva, pelo nome."""
     return [
         lambda f: f.locator(f"#groupinglvl{nivel}_check-inputEl"),
+        lambda f: f.get_by_role("checkbox", name=f"Grouping Level {nivel}", exact=False),
         lambda f: f.get_by_role("checkbox", name=f"Group By {nivel}", exact=False),
     ]
 

@@ -1202,9 +1202,10 @@ Tipos de extracao novos, com agrupamento fixo (`AGRUPAMENTOS` em
 O Month continua com o Group By 1 escolhido na tela; Pico e Indiretas
 como antes. Os niveis que nao entram sao desmarcados antes
 (`disable_grouping_level`): o relatorio guarda o checkbox marcado da
-extracao anterior. O terceiro nivel segue o padrao do segundo
-(`#groupinglvl3_check-inputEl`, combobox "Group By 3") — confirmar na
-primeira extracao real.
+extracao anterior. O terceiro nivel tem o mesmo caminho do segundo no
+Summary (painel "Grouping Level 3" com o checkbox no cabecalho,
+`#groupinglvl3_check-inputEl`, e o combobox "Group By 3"), confirmado
+na tela do relatorio em 08/10/2026.
 
 - **Leitura:** os niveis encostam na direita (`Detail` e sempre o ultimo).
   Com tres niveis, High = semana, Medium = grupo. Com dois, o Medium e a

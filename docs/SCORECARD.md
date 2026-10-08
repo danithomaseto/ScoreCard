@@ -211,6 +211,9 @@ faixa de Var no mês, da extração Month — ver [5.7](#57-distribuição-da-di
    | Turno · Week | Week › Shift › User ID | `Turno\Week` |
    | Turno · Month | Shift › User ID | `Turno\Month` |
 
+   O **Group By 3** usa o mesmo caminho do 2 no Summary: marca o
+   checkbox do painel "Grouping Level 3" e preenche o campo "Group By 3".
+
    A **Week** passou a sair com o Supervisor no meio: é ele que leva o
    gestor de cada usuário para o Coverage. Os números da operação não
    mudam (ver [5.2](#52-efetividade-hora-direta-e-dispersão-vêm-do-summary)).
@@ -816,9 +819,6 @@ python -m pytest -q tests
 - **Validado em ambiente de teste:** a checagem final (janela única,
   aviso ao fechar, tela cheia, detalhes do .exe) é feita no Windows
   após o build.
-- **Group By 3:** o campo e o checkbox do terceiro nível seguem o mesmo
-  padrão do segundo (`#groupinglvl3_check-inputEl`, "Group By 3"); a
-  primeira extração real de Week ou Gestor/Turno confirma no Summary.
 
 **Ideias para próximas versões**
 
