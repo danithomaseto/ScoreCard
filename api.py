@@ -820,13 +820,46 @@ class Api:
     # ---------------- Headcount / presenteismo ----------------
 
     def get_headcount(self, operacao=None, visualizacao="semanal", mes=None, periodo_id=None):
-        """O estado inteiro da tela de Headcount, pronto pra desenhar."""
-        return headcount.montar(
+        """O estado inteiro da tela de Headcount, pronto pra desenhar.
+
+        Cada gestor leva tambem se o nome dele bate com um supervisor do
+        Summary ("summary": "ligado", "sem_par", ou None quando a operacao
+        ainda nao tem extracao com o Supervisor)."""
+        tela = headcount.montar(
             operacao=operacao or headcount.TODAS,
             visualizacao=visualizacao or "semanal",
             mes=mes,
             periodo_id=periodo_id,
         )
+        conhecidos = {}
+        for linha in tela["linhas"]:
+            op = linha["operacao_key"]
+            if op not in conhecidos:
+                conhecidos[op] = {headcount.nome_comparavel(n) for n in grupos_tela.nomes_do_summary(op)}
+            if not conhecidos[op]:
+                linha["summary"] = None
+            else:
+                linha["summary"] = ("ligado" if headcount.nome_comparavel(linha["gestor"]) in conhecidos[op]
+                                    else "sem_par")
+        return tela
+
+    def get_nomes_do_summary(self, operacao):
+        """Supervisores do Summary da operacao, para sugerir no cadastro de
+        gestor do Headcount."""
+        if operacao not in OPERATIONS:
+            return []
+        return grupos_tela.nomes_do_summary(operacao)
+
+    # ---------------- Preferencias de tela ----------------
+
+    def get_preferencias(self):
+        return settings_store.get_preferencias()
+
+    def set_preferencia(self, chave, valor):
+        try:
+            return {"success": True, "preferencias": settings_store.set_preferencia(chave, valor)}
+        except ValueError as exc:
+            return {"success": False, "message": str(exc)}
 
     def add_gestor(self, nome, operacao):
         """A operacao e escolhida na faixa de cadastro. Sem ela, nao

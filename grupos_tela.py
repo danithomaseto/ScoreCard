@@ -196,3 +196,16 @@ def definir_visiveis(dimensao, operacao, da_tela, visiveis):
     visiveis = set(visiveis or []) & da_tela
     ocultos = (set(settings_store.get_grupos_ocultos(dimensao, operacao)) - da_tela) | (da_tela - visiveis)
     settings_store.set_grupos_ocultos(dimensao, operacao, ocultos)
+
+
+def nomes_do_summary(operacao):
+    """Os supervisores que ja vieram do Summary para a operacao (extracoes
+    Gestor e Week), com o nome igual a planilha. E a lista que o
+    Headcount sugere ao cadastrar um gestor: o presenteismo so chega ao
+    Resultado Gestor quando os dois nomes batem."""
+    nomes = set()
+    for entrada in grupos_store.da_operacao("gestor", operacao).values():
+        nomes |= set(entrada.get("grupos", {}))
+    for extracao in coverage_store.extracoes(operacao).get(operacao, {}).values():
+        nomes |= {u.get("gestor") for u in extracao.get("usuarios", {}).values() if u.get("gestor")}
+    return sorted((n for n in nomes if not grupos.sem_nome(n)), key=str.casefold)

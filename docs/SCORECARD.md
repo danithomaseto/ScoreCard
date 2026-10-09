@@ -1,6 +1,6 @@
 # Score Card — documento completo da ferramenta
 
-**Versão:** V.01.1 · **Criado por:** Daniel Thomaseto · **Atualizado em:** 08/10/2026
+**Versão:** V.01.1 · **Criado por:** Daniel Thomaseto · **Atualizado em:** 09/10/2026
 
 Este documento explica o Score Card de ponta a ponta: para que serve,
 como se usa, como cada indicador é calculado, onde ficam os dados, como
@@ -127,6 +127,35 @@ caso, `"escala_espanhola": True`). Nenhuma outra parte do código muda.
   se estiver minimizada). Duas janelas gravando nos mesmos dados
   sobrescreveriam uma à outra.
 
+### 4.1.1 Menu, topo e atalhos
+
+- **Menu em grupos:** *Resultados* (Início, Resultado Gestor, Resultado
+  Turno, Coverage, Horas Indiretas), *Extração* (Extrair Dados, Extrair
+  Múltiplos), *Lançamentos* (Headcount) e *Sistema* (Configurações).
+- **Recolher o menu:** o botão à esquerda do logo, na barra amarela (ou
+  Ctrl+B), deixa o menu só com os ícones e sobra mais largura para as
+  tabelas. Passando o mouse no ícone aparece o nome da aba.
+- **Tema claro ou escuro:** o botão de sol/lua na barra amarela (ou
+  Ctrl+Shift+L). O claro fica melhor no projetor. O login e a abertura
+  continuam escuros (são telas da marca).
+- **Atalhos de teclado** (botão do teclado na barra amarela, ou a tecla
+  `?`):
+
+  | Atalho | O que faz |
+  |---|---|
+  | Ctrl+1 … Ctrl+9 | abre as abas do menu, na ordem (1 = Início, 2 = Resultado Gestor…) |
+  | Ctrl+E | Extrair Dados, já com a operação da tela aberta |
+  | Ctrl+B | recolhe ou abre o menu |
+  | Ctrl+Shift+L | tema claro ou escuro |
+  | ? | mostra a lista de atalhos |
+  | Esc | fecha a lista ou sai do modo apresentação |
+  | ← → | trocam a operação no modo apresentação |
+
+- **Avisos no canto:** ao copiar uma coluna ou tabela aparece um aviso no
+  canto inferior direito dizendo o que foi copiado ("Copiado: 6 valores
+  de Week 37"); erros também aparecem ali.
+- As preferências (tema, densidade e menu) ficam guardadas na máquina.
+
 ### 4.2 Login
 
 - Entre com **o seu** usuário e senha do Summary. Cada pessoa usa a
@@ -150,9 +179,10 @@ caso, `"escala_espanhola": True`). Nenhuma outra parte do código muda.
 
 É a tela principal e a que se apresenta.
 
-- **Filtros:** operação e mês (abre no mês atual). O seletor de mês
-  deixa voltar ao mês anterior — no começo do mês é ali que está o
-  fechamento.
+- **Filtros:** operação e mês (abre no mês atual), e ao lado a última
+  extração da operação. O seletor de mês deixa voltar ao mês anterior —
+  no começo do mês é ali que está o fechamento. Os filtros têm o mesmo
+  desenho em todas as abas.
 - **Colunas:** as semanas extraídas que têm dia no mês (Week 36,
   Week 37…, com as datas), depois o **mês** e, colado nele, o **Pico**.
   Semana que não está completa mostra "semana incompleta"; mês ou pico
@@ -160,8 +190,10 @@ caso, `"escala_espanhola": True`). Nenhuma outra parte do código muda.
 - **Linhas:** os seis indicadores, nesta ordem: CUBO, EFETIVIDADE, HORA
   DIRETA, PRESENTEÍSMO, DISPERSÃO e COVERAGE, cada um com a meta
   escrita embaixo do nome.
-- **Cores:** verde = dentro da meta, vermelho = abaixo, azul = acima do
-  teto, traço (—) = ainda sem número. Traço nunca é zero: zero seria um
+- **Cores:** verde (✓) = dentro da meta, vermelho (▼) = abaixo, azul
+  (▲) = acima do teto, traço (—) = ainda sem número. O símbolo vai junto
+  da cor para funcionar no projetor, no print em preto e branco e para
+  quem não distingue verde de vermelho; a cópia leva só o número. Traço nunca é zero: zero seria um
   resultado ruim; traço é "ainda não temos".
 - **Percentuais** sempre com duas casas decimais (96,38%, 100,00%).
 - **Copiar:** cada coluna tem um botão que copia os seis valores, na
@@ -236,7 +268,9 @@ extração em andamento…"), porque fechar no meio deixa o download pela
 metade. Fora de extração, fecha direto.
 
 O **histórico** embaixo da tela lista as últimas extrações (operação,
-período, agrupamento, tipo, duração, resultado).
+período, agrupamento, tipo, duração, resultado), com filtros por
+operação, tipo e resultado (Concluída, Sem indicador, Falha) e a
+contagem do que está na tela.
 
 ### 4.5 Extrair Múltiplos (fila)
 
@@ -279,6 +313,12 @@ Onde se lança o quadro de cada gestor para o presenteísmo.
   [5.4](#54-presenteísmo)). A linha **TOTAL CONSOLIDADO** soma tudo.
 - **Gestores:** "+ Adicionar Gestor" (nome e operação). Cada gestor tem
   os ícones de **editar** (mudar nome e/ou operação) e **excluir**.
+- **Nome igual ao do Summary:** ao cadastrar ou editar, o campo do nome
+  sugere os supervisores que já vieram do Summary para a operação
+  (extrações Week e Gestor · Week). Na tabela, cada gestor mostra
+  **✓ no Summary** quando o nome bate (o presenteísmo dele vai para o
+  Resultado Gestor) ou **sem par no Summary** quando não bate. Sem
+  extração com o Supervisor ainda, não aparece nenhum dos dois.
 - **Ver no Início:** vai para a aba Início da operação.
 - **Como o número foi calculado:** a fórmula e a memória de cálculo
   (horas disponíveis, perdidas, efetivas, resultado e meta).
@@ -372,6 +412,17 @@ nas linhas, as semanas do mês nas colunas e o mês no fim, com o botão
   puxa nada. O gestor ligado ganha a marca **HC** na lista e "presenteísmo
   do Headcount" no canto da tabela; o não ligado, "sem o mesmo nome no
   Headcount".
+- **Visualização:** **Por gestor** (uma tabela por gestor) ou **Resumo**
+  (uma tabela só: os gestores nas linhas e os seis indicadores de um
+  período nas colunas, com o período escolhido no seletor; cada coluna
+  tem Copiar e há "Copiar tabela" com nomes e valores). Clicar no nome no
+  Resumo abre a tabela daquele gestor.
+- **Barra de nomes:** em Por gestor, uma barra fixa no topo com o nome de
+  cada um leva direto à tabela dele, e tem "Abrir todas" / "Recolher
+  todas".
+- **Recolher:** cada tabela tem uma seta no canto; recolhida, vira uma
+  linha com o nome e os seis indicadores da última coluna (o mês, se já
+  foi extraído).
 - Ver o cálculo em [5.9](#59-indicadores-por-gestor-e-por-turno).
 
 ### 4.10 Resultado Turno
@@ -388,6 +439,10 @@ mudarem de linha.
 ### 4.11 Configurações
 
 - **Pasta do SharePoint:** mostra a pasta atual e permite trocar.
+- **Aparência:** tema (escuro ou claro), densidade (confortável ou
+  compacta — a compacta mostra mais linhas numa tela de notebook) e menu
+  lateral (aberto ou recolhido). Só muda a tela, nunca um número.
+- **Atalhos de teclado:** a mesma lista da tecla `?`.
 - **Gerar diagnóstico:** cria um zip para mandar ao suporte (ver
   [Suporte](#10-suporte-e-diagnóstico)).
 
@@ -645,7 +700,7 @@ Tudo fica **no próprio computador**, em `%APPDATA%\ScoreCard\`:
 
 | Arquivo | O que guarda |
 |---|---|
-| `settings.json` | o caminho da pasta do SharePoint e os gestores/turnos escondidos nas abas de resultado |
+| `settings.json` | o caminho da pasta do SharePoint, os gestores/turnos escondidos nas abas de resultado e as preferências de tela (tema, densidade, menu) |
 | `history.json` | histórico das extrações (últimas 200) |
 | `indicators.json` | indicadores calculados, por operação e período |
 | `headcount.json` | gestores e o quadro de cada período (HC, dias, horas, faltas) |
@@ -848,6 +903,7 @@ python -m pytest -q tests
 | 30/09/2026 | **V.01.0 fechada para apresentação** e este documento |
 | 05/10/2026 | Gráfico de distribuição da dispersão do mês na aba Início; aba **Horas Indiretas** (extração Week + Job Code, pasta Indiretas, quadros por semana, Barras e Pareto) |
 | 05/10/2026 | **V.01.1:** correção do erro ao digitar dias úteis no Resultado do Mês; o ciclo da folha passa a ir para o mês em que fecha (e para o Pico); ciclo em aberto conta até ontem; cópia para o PowerPoint numa linha só por célula |
+| 09/10/2026 | Menu em grupos e recolhível; Resumo, barra de nomes e tabelas recolhíveis no Resultado Gestor/Turno; nomes do Summary sugeridos no Headcount; **tema claro**; símbolos junto das cores; filtros iguais em todas as abas; avisos de "copiado"; atalhos de teclado; densidade compacta; filtro no histórico |
 | 08/10/2026 | Abas **Resultado Gestor** e **Resultado Turno** (extrações Gestor e Turno, Week e Month, com Group By 3); Week com o Supervisor no meio e **Coverage por gestor**; **Vários filtros** no Extrair Múltiplos; cópia das Horas Indiretas para o PowerPoint; animações de abertura, login, entrada no app e transições |
 
 ---

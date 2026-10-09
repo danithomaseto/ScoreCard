@@ -57,24 +57,38 @@
 <div id="app-view" hidden>
   <div class="apresentacao-barra" id="apresentacao-barra" hidden>
     <span class="apresentacao-dica"><kbd>&larr;</kbd><kbd>&rarr;</kbd> troca a operação</span>
+    <button type="button" class="secondary acao" id="apresentacao-tema" title="Tema claro ou escuro">Tema claro</button>
     <button type="button" class="secondary acao" id="apresentacao-sair">Sair da apresentação <kbd>Esc</kbd></button>
   </div>
   <div class="topbar-dhl">
+    <button type="button" class="topbar-botao topbar-menu" id="nav-recolher" title="Recolher o menu (Ctrl+B)" aria-label="Recolher o menu" aria-expanded="true">
+      <svg class="topbar-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path class="seta-menu" d="m16 15-3-3 3-3"/></svg>
+    </button>
     <span class="dhl-logo">DHL</span>
     <span class="topbar-title">Score Card</span>
+    <div class="topbar-acoes">
+      <button type="button" class="topbar-botao" id="tema-alternar" title="Tema claro ou escuro (Ctrl+Shift+L)" aria-label="Alternar entre tema claro e escuro">
+        <svg class="topbar-icone icone-lua" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="topbar-icone icone-sol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      </button>
+      <button type="button" class="topbar-botao" id="atalhos-abrir" title="Atalhos de teclado (?)" aria-label="Ver os atalhos de teclado">
+        <svg class="topbar-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
+      </button>
+    </div>
   </div>
 
   <div class="app-shell">
-    <nav class="sidebar">
+    <nav class="sidebar" id="sidebar">
       <span class="nav-indicador" id="nav-indicador" aria-hidden="true"></span>
-      <button class="nav-item" data-page="home">
+      <div class="nav-secao" aria-hidden="true"><span>Resultados</span></div>
+      <button class="nav-item" data-page="home" title="Início (Ctrl+1)" data-atalho="1">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>
           <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
         </svg>
         <span>Início</span>
       </button>
-      <button class="nav-item" data-page="gestor">
+      <button class="nav-item" data-page="gestor" title="Resultado Gestor (Ctrl+2)" data-atalho="2">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
@@ -82,7 +96,7 @@
         </svg>
         <span>Resultado Gestor</span>
       </button>
-      <button class="nav-item" data-page="turno">
+      <button class="nav-item" data-page="turno" title="Resultado Turno (Ctrl+3)" data-atalho="3">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 8a2.83 2.83 0 0 0 4 4 4 4 0 1 1-4-4"/>
           <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/>
@@ -90,7 +104,22 @@
         </svg>
         <span>Resultado Turno</span>
       </button>
-      <button class="nav-item" data-page="extract">
+      <button class="nav-item" data-page="coverage" title="Coverage (Ctrl+4)" data-atalho="4">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+          <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+        </svg>
+        <span>Coverage</span>
+      </button>
+      <button class="nav-item" data-page="indiretas" title="Horas Indiretas (Ctrl+5)" data-atalho="5">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <polyline points="12 7 12 12 15 14"/>
+        </svg>
+        <span>Horas Indiretas</span>
+      </button>
+      <div class="nav-secao" aria-hidden="true"><span>Extração</span></div>
+      <button class="nav-item" data-page="extract" title="Extrair Dados (Ctrl+6)" data-atalho="6">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
@@ -98,7 +127,7 @@
         </svg>
         <span>Extrair Dados</span>
       </button>
-      <button class="nav-item" data-page="multi">
+      <button class="nav-item" data-page="multi" title="Extrair Múltiplos (Ctrl+7)" data-atalho="7">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/>
           <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/>
@@ -106,7 +135,8 @@
         </svg>
         <span>Extrair Múltiplos</span>
       </button>
-      <button class="nav-item" data-page="headcount">
+      <div class="nav-secao" aria-hidden="true"><span>Lançamentos</span></div>
+      <button class="nav-item" data-page="headcount" title="Headcount (Ctrl+8)" data-atalho="8">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
@@ -115,21 +145,8 @@
         </svg>
         <span>Headcount</span>
       </button>
-      <button class="nav-item" data-page="coverage">
-        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
-          <path d="M22 12A10 10 0 0 0 12 2v10z"/>
-        </svg>
-        <span>Coverage</span>
-      </button>
-      <button class="nav-item" data-page="indiretas">
-        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="9"/>
-          <polyline points="12 7 12 12 15 14"/>
-        </svg>
-        <span>Horas Indiretas</span>
-      </button>
-      <button class="nav-item" data-page="settings">
+      <div class="nav-secao" aria-hidden="true"><span>Sistema</span></div>
+      <button class="nav-item" data-page="settings" title="Configurações (Ctrl+9)" data-atalho="9">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
           <circle cx="12" cy="12" r="3"/>
@@ -173,16 +190,21 @@
             </button>
           </div>
 
-          <div class="card filter-card">
-            <div class="filter-field">
-              <label for="home-operation">Operação</label>
-              <select id="home-operation"></select>
+          <div class="card filtros-card">
+            <div class="filtros-linha">
+              <div class="filtro-campo">
+                <label for="home-operation">Operação</label>
+                <select id="home-operation"></select>
+              </div>
+              <div class="filtro-campo">
+                <label for="home-mes">Mês</label>
+                <select id="home-mes" class="filtro-mes"></select>
+              </div>
+              <div class="filtro-campo filtro-info">
+                <label>Última extração</label>
+                <p class="filtro-nota" id="home-last-run">Nenhuma extração ainda</p>
+              </div>
             </div>
-            <div class="filter-field">
-              <label for="home-mes">Mês</label>
-              <select id="home-mes" class="filtro-mes"></select>
-            </div>
-            <p class="filter-note" id="home-last-run">Nenhuma extração ainda</p>
           </div>
 
           <div class="card indicators-card">
@@ -248,16 +270,28 @@
             </button>
           </div>
 
-          <div class="card filter-card">
-            <div class="filter-field">
-              <label for="rg-operacao">Operação</label>
-              <select id="rg-operacao"></select>
+          <div class="card filtros-card">
+            <div class="filtros-linha">
+              <div class="filtro-campo">
+                <label for="rg-operacao">Operação</label>
+                <select id="rg-operacao"></select>
+              </div>
+              <div class="filtro-campo">
+                <label for="rg-mes">Mês</label>
+                <select id="rg-mes" class="filtro-mes"></select>
+              </div>
+              <div class="filtro-campo">
+                <label>Visualização</label>
+                <div class="segmentado" id="rg-visualizacao" role="group" aria-label="Visualização">
+                  <button type="button" class="seg-opcao active" data-vis="tabelas">Por gestor</button>
+                  <button type="button" class="seg-opcao" data-vis="resumo">Resumo</button>
+                </div>
+              </div>
+              <div class="filtro-campo filtro-info">
+                <label>Última extração</label>
+                <p class="filtro-nota" id="rg-ultima">Nenhuma extração ainda</p>
+              </div>
             </div>
-            <div class="filter-field">
-              <label for="rg-mes">Mês</label>
-              <select id="rg-mes" class="filtro-mes"></select>
-            </div>
-            <p class="filter-note" id="rg-ultima">Nenhuma extração ainda</p>
           </div>
 
           <div class="card grupos-card" id="rg-grupos-card" hidden>
@@ -281,6 +315,35 @@
                 <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Extrair agora
               </button>
+            </div>
+          </div>
+
+          <!-- Barra com os nomes: pula ate a tabela e abre/fecha todas. -->
+          <div class="grupos-navegacao" id="rg-navegacao" hidden>
+            <div class="grupos-atalhos" id="rg-atalhos"></div>
+            <div class="grupos-navegacao-acoes">
+              <button type="button" class="link-btn" id="rg-abrir-todas">Abrir todas</button>
+              <button type="button" class="link-btn" id="rg-fechar-todas">Recolher todas</button>
+            </div>
+          </div>
+
+          <!-- Resumo: os gestores nas linhas, os seis indicadores de um periodo nas colunas. -->
+          <div class="card indicators-card grupos-resumo" id="rg-resumo" hidden>
+            <div class="grupos-resumo-topo">
+              <div>
+                <div class="section-title">Resumo por gestor</div>
+                <p class="grupos-resumo-sub" id="rg-resumo-sub"></p>
+              </div>
+              <div class="filtro-campo grupos-resumo-periodo">
+                <label for="rg-resumo-periodo">Período</label>
+                <select id="rg-resumo-periodo"></select>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="indicators-table resumo-table">
+                <thead><tr id="rg-resumo-cabecalho"></tr></thead>
+                <tbody id="rg-resumo-corpo"></tbody>
+              </table>
             </div>
           </div>
 
@@ -309,16 +372,28 @@
             </button>
           </div>
 
-          <div class="card filter-card">
-            <div class="filter-field">
-              <label for="rt-operacao">Operação</label>
-              <select id="rt-operacao"></select>
+          <div class="card filtros-card">
+            <div class="filtros-linha">
+              <div class="filtro-campo">
+                <label for="rt-operacao">Operação</label>
+                <select id="rt-operacao"></select>
+              </div>
+              <div class="filtro-campo">
+                <label for="rt-mes">Mês</label>
+                <select id="rt-mes" class="filtro-mes"></select>
+              </div>
+              <div class="filtro-campo">
+                <label>Visualização</label>
+                <div class="segmentado" id="rt-visualizacao" role="group" aria-label="Visualização">
+                  <button type="button" class="seg-opcao active" data-vis="tabelas">Por turno</button>
+                  <button type="button" class="seg-opcao" data-vis="resumo">Resumo</button>
+                </div>
+              </div>
+              <div class="filtro-campo filtro-info">
+                <label>Última extração</label>
+                <p class="filtro-nota" id="rt-ultima">Nenhuma extração ainda</p>
+              </div>
             </div>
-            <div class="filter-field">
-              <label for="rt-mes">Mês</label>
-              <select id="rt-mes" class="filtro-mes"></select>
-            </div>
-            <p class="filter-note" id="rt-ultima">Nenhuma extração ainda</p>
           </div>
 
           <div class="card grupos-card" id="rt-grupos-card" hidden>
@@ -342,6 +417,35 @@
                 <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Extrair agora
               </button>
+            </div>
+          </div>
+
+          <!-- Barra com os nomes: pula ate a tabela e abre/fecha todas. -->
+          <div class="grupos-navegacao" id="rt-navegacao" hidden>
+            <div class="grupos-atalhos" id="rt-atalhos"></div>
+            <div class="grupos-navegacao-acoes">
+              <button type="button" class="link-btn" id="rt-abrir-todas">Abrir todas</button>
+              <button type="button" class="link-btn" id="rt-fechar-todas">Recolher todas</button>
+            </div>
+          </div>
+
+          <!-- Resumo: os turnos nas linhas, os seis indicadores de um periodo nas colunas. -->
+          <div class="card indicators-card grupos-resumo" id="rt-resumo" hidden>
+            <div class="grupos-resumo-topo">
+              <div>
+                <div class="section-title">Resumo por turno</div>
+                <p class="grupos-resumo-sub" id="rt-resumo-sub"></p>
+              </div>
+              <div class="filtro-campo grupos-resumo-periodo">
+                <label for="rt-resumo-periodo">Período</label>
+                <select id="rt-resumo-periodo"></select>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="indicators-table resumo-table">
+                <thead><tr id="rt-resumo-cabecalho"></tr></thead>
+                <tbody id="rt-resumo-corpo"></tbody>
+              </table>
             </div>
           </div>
 
@@ -571,7 +675,19 @@
           </div>
 
           <div class="card history-card">
-            <div class="section-title">Histórico de extrações</div>
+            <div class="historico-topo">
+              <div class="section-title">Histórico de extrações <span class="hc-contador" id="hist-contador"></span></div>
+              <div class="historico-filtros" data-historico="history-table-body">
+                <select id="hist-operacao" data-filtro="operacao" aria-label="Filtrar por operação"><option value="">Todas as operações</option></select>
+                <select id="hist-tipo" data-filtro="tipo" aria-label="Filtrar por tipo"><option value="">Todos os tipos</option></select>
+                <select id="hist-status" data-filtro="status" aria-label="Filtrar por resultado">
+                  <option value="">Todos os resultados</option>
+                  <option value="success">Concluída</option>
+                  <option value="warning">Sem indicador</option>
+                  <option value="error">Falha</option>
+                </select>
+              </div>
+            </div>
             <div class="table-wrap">
               <table class="history-table">
                 <thead>
@@ -751,7 +867,19 @@
           </div>
 
           <div class="card history-card">
-            <div class="section-title">Histórico de extrações</div>
+            <div class="historico-topo">
+              <div class="section-title">Histórico de extrações <span class="hc-contador" id="mhist-contador"></span></div>
+              <div class="historico-filtros" data-historico="multi-history-table-body">
+                <select id="mhist-operacao" data-filtro="operacao" aria-label="Filtrar por operação"><option value="">Todas as operações</option></select>
+                <select id="mhist-tipo" data-filtro="tipo" aria-label="Filtrar por tipo"><option value="">Todos os tipos</option></select>
+                <select id="mhist-status" data-filtro="status" aria-label="Filtrar por resultado">
+                  <option value="">Todos os resultados</option>
+                  <option value="success">Concluída</option>
+                  <option value="warning">Sem indicador</option>
+                  <option value="error">Falha</option>
+                </select>
+              </div>
+            </div>
             <div class="table-wrap">
               <table class="history-table">
                 <thead>
@@ -848,17 +976,18 @@
 
             <div class="hc-inline" id="hc-inline-gestor" hidden>
               <label for="hc-novo-gestor">Nome do gestor</label>
-              <input type="text" id="hc-novo-gestor" placeholder="Nome do gestor">
+              <input type="text" id="hc-novo-gestor" placeholder="Nome igual ao do Summary" list="hc-nomes-summary" autocomplete="off">
               <label for="hc-novo-gestor-op">Operação</label>
               <select id="hc-novo-gestor-op"></select>
-              <span class="hc-inline-nota">HC e faltas começam zerados; preencha na tabela.</span>
+              <span class="hc-inline-nota" id="hc-nomes-nota">HC e faltas começam zerados; preencha na tabela.</span>
+              <datalist id="hc-nomes-summary"></datalist>
               <button type="button" id="hc-confirmar-gestor">Adicionar</button>
               <button type="button" class="secondary" data-cancelar="gestor">Cancelar</button>
             </div>
 
             <div class="hc-inline" id="hc-inline-editar" hidden>
               <label for="hc-editar-nome">Nome do gestor</label>
-              <input type="text" id="hc-editar-nome" placeholder="Nome do gestor">
+              <input type="text" id="hc-editar-nome" placeholder="Nome igual ao do Summary" list="hc-nomes-summary" autocomplete="off">
               <label for="hc-editar-op">Operação</label>
               <select id="hc-editar-op"></select>
               <span class="hc-inline-nota">HC, dias úteis, horas/dia e faltas digitadas continuam como estão.</span>
@@ -1227,6 +1356,49 @@
           </div>
 
           <div class="card settings-card">
+            <h3 class="card-title">Aparência</h3>
+            <p class="settings-texto">Como a tela aparece nesta máquina. Não muda nenhum número.</p>
+            <div class="aparencia-linhas">
+              <div class="aparencia-linha">
+                <div>
+                  <strong>Tema</strong>
+                  <span>O claro fica melhor no projetor. Atalho: Ctrl+Shift+L.</span>
+                </div>
+                <div class="segmentado aparencia-opcoes" id="pref-tema" role="group" aria-label="Tema">
+                  <button type="button" class="seg-opcao active" data-valor="escuro">Escuro</button>
+                  <button type="button" class="seg-opcao" data-valor="claro">Claro</button>
+                </div>
+              </div>
+              <div class="aparencia-linha">
+                <div>
+                  <strong>Densidade</strong>
+                  <span>Compacta mostra mais linhas na tela do notebook.</span>
+                </div>
+                <div class="segmentado aparencia-opcoes" id="pref-densidade" role="group" aria-label="Densidade">
+                  <button type="button" class="seg-opcao active" data-valor="confortavel">Confortável</button>
+                  <button type="button" class="seg-opcao" data-valor="compacta">Compacta</button>
+                </div>
+              </div>
+              <div class="aparencia-linha">
+                <div>
+                  <strong>Menu lateral</strong>
+                  <span>Recolhido, só com os ícones, sobra mais largura para as tabelas. Atalho: Ctrl+B.</span>
+                </div>
+                <div class="segmentado aparencia-opcoes" id="pref-menu" role="group" aria-label="Menu lateral">
+                  <button type="button" class="seg-opcao active" data-valor="aberto">Aberto</button>
+                  <button type="button" class="seg-opcao" data-valor="recolhido">Recolhido</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card settings-card">
+            <h3 class="card-title">Atalhos de teclado</h3>
+            <p class="settings-texto">Também aparecem com a tecla <kbd>?</kbd> em qualquer tela.</p>
+            <div class="atalhos-lista" data-atalhos-lista></div>
+          </div>
+
+          <div class="card settings-card">
             <h3 class="card-title">Diagnóstico</h3>
             <p class="settings-texto">
               Quando algo der errado, gere o diagnóstico e mande o arquivo para quem
@@ -1241,6 +1413,20 @@
         </div>
       </section>
     </div>
+  </div>
+</div>
+
+<!-- Avisos rapidos no canto (copiado, salvo, erro). -->
+<div class="avisos" id="avisos" aria-live="polite"></div>
+
+<!-- Atalhos de teclado (tecla ?). -->
+<div class="atalhos-fundo" id="atalhos" hidden>
+  <div class="atalhos-caixa" role="dialog" aria-modal="true" aria-labelledby="atalhos-titulo">
+    <div class="atalhos-topo">
+      <h3 id="atalhos-titulo">Atalhos de teclado</h3>
+      <button type="button" class="secondary atalhos-fechar" id="atalhos-fechar" aria-label="Fechar">Fechar <kbd>Esc</kbd></button>
+    </div>
+    <div class="atalhos-lista" data-atalhos-lista></div>
   </div>
 </div>
 

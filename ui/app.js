@@ -240,17 +240,42 @@ function preCarregar() {
 // para o "Gerar diagnostico").
 
 function avisarErro(texto) {
-  let caixa = document.getElementById('aviso-erro');
-  if (!caixa) {
-    caixa = document.createElement('div');
-    caixa.id = 'aviso-erro';
-    caixa.setAttribute('role', 'alert');
-    document.body.appendChild(caixa);
+  avisar(texto, 'erro');
+}
+
+// Avisos rapidos no canto inferior direito: copiado, erro... Somem
+// sozinhos; no maximo quatro na tela.
+const ICONES_DO_AVISO = {
+  ok: '<polyline points="20 6 9 17 4 12"></polyline>',
+  erro: '<circle cx="12" cy="12" r="9"></circle><line x1="12" y1="8" x2="12" y2="12.5"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>',
+  info: '<circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11" x2="12" y2="16"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>',
+};
+
+function avisar(texto, tipo = 'info', detalhe = '') {
+  const area = document.getElementById('avisos');
+  if (!area) return;
+  const aviso = document.createElement('div');
+  aviso.className = `aviso ${tipo}`;
+  aviso.setAttribute('role', tipo === 'erro' ? 'alert' : 'status');
+  aviso.innerHTML = `<svg class="aviso-icone" viewBox="0 0 24 24" aria-hidden="true">${ICONES_DO_AVISO[tipo] || ICONES_DO_AVISO.info}</svg>`;
+  const corpo = document.createElement('div');
+  corpo.textContent = texto;
+  if (detalhe) {
+    const pequeno = document.createElement('span');
+    pequeno.className = 'aviso-detalhe';
+    pequeno.textContent = detalhe;
+    corpo.appendChild(pequeno);
   }
-  caixa.textContent = texto;
-  caixa.classList.add('visivel');
-  clearTimeout(avisarErro.timer);
-  avisarErro.timer = setTimeout(() => caixa.classList.remove('visivel'), 6000);
+  aviso.appendChild(corpo);
+  area.appendChild(aviso);
+  while (area.children.length > 4) area.firstElementChild.remove();
+  const sair = () => {
+    if (!aviso.isConnected || aviso.classList.contains('saindo')) return;
+    aviso.classList.add('saindo');
+    setTimeout(() => aviso.remove(), SEM_ANIMACAO ? 0 : 260);
+  };
+  aviso.addEventListener('click', sair);
+  setTimeout(sair, tipo === 'erro' ? 6000 : 2800);
 }
 
 function registrarErro(origem, erro) {
@@ -477,7 +502,7 @@ document.addEventListener('pointerdown', (evento) => {
   if (SEM_ANIMACAO) return;
   const botao = evento.target.closest('button');
   if (!botao || botao.disabled) return;
-  if (botao.matches('.nav-item, .seg-opcao, .link-btn, .copy-btn, .period-option, .hc-ajuda, .hc-icone-btn')) return;
+  if (botao.matches('.nav-item, .seg-opcao, .link-btn, .copy-btn, .period-option, .hc-ajuda, .hc-icone, .grupo-chip, .resumo-nome button')) return;
   const caixa = botao.getBoundingClientRect();
   const tamanho = Math.max(caixa.width, caixa.height);
   const onda = document.createElement('span');
@@ -485,7 +510,9 @@ document.addEventListener('pointerdown', (evento) => {
   onda.style.width = onda.style.height = `${tamanho}px`;
   onda.style.left = `${evento.clientX - caixa.left - tamanho / 2}px`;
   onda.style.top = `${evento.clientY - caixa.top - tamanho / 2}px`;
-  botao.classList.add('com-onda');
+  // Botao posicionado (absoluto, fixo) nao pode virar "relative": ele
+  // mudaria de lugar entre o apertar e o soltar, e o clique se perderia.
+  botao.classList.add(getComputedStyle(botao).position === 'static' ? 'com-onda' : 'com-onda-livre');
   botao.appendChild(onda);
   setTimeout(() => onda.remove(), 560);
 });
@@ -509,6 +536,7 @@ async function showPage(pageName) {
   } else if (pageName === 'turno') {
     await abaTurno.carregar();
   } else if (pageName === 'settings') {
+    requestAnimationFrame(() => document.querySelectorAll('.aparencia-opcoes').forEach(moverDestaque));
     const check = await pywebview.api.validate_sharepoint_folder();
     folderPathEl.textContent = check.valid ? check.folder : 'Nenhuma pasta configurada ainda.';
   }
@@ -534,7 +562,7 @@ async function loadLastRun() {
   const desfecho = desfechoDe(last);
   const quando = new Date(last.timestamp).toLocaleString('pt-BR');
   const sufixo = desfecho.classe === 'success' ? '' : ` (${desfecho.rotulo.toLowerCase()})`;
-  homeLastRunEl.textContent = `Última extração: ${last.operation}, ${quando}${sufixo}`;
+  homeLastRunEl.textContent = `${last.operation} · ${quando}${sufixo}`;
 }
 
 // O texto e a cor de cada celula vem prontos do Python: as faixas sao
@@ -822,7 +850,7 @@ function botaoCopiar(indice, titulo, corpo = indicatorsBody) {
   btn.className = 'copy-btn';
   btn.setAttribute('aria-label', `Copiar os números de ${titulo}`);
   btn.textContent = 'Copiar';
-  btn.addEventListener('click', () => copiarColuna(indice, btn, corpo));
+  btn.addEventListener('click', () => copiarColuna(indice, btn, corpo, titulo));
   return btn;
 }
 
@@ -895,13 +923,17 @@ function tabelaDaColuna(indice, corpo = indicatorsBody) {
   return tabelaParaColar(valoresDaColuna(indice, corpo).map((valor) => [valor]));
 }
 
-async function copiarColuna(indice, btn, corpo = indicatorsBody) {
-  await copiarComAviso(btn, textoDaColuna(indice, corpo), tabelaDaColuna(indice, corpo));
+async function copiarColuna(indice, btn, corpo = indicatorsBody, titulo = '') {
+  const quantos = valoresDaColuna(indice, corpo).length;
+  await copiarComAviso(btn, textoDaColuna(indice, corpo), tabelaDaColuna(indice, corpo),
+    `${plural(quantos, 'valor', 'valores')}${titulo ? ` de ${titulo}` : ''}`);
 }
 
-// Copia e mostra no proprio botao se deu certo.
-async function copiarComAviso(btn, texto, html) {
+// Copia, mostra no proprio botao se deu certo e avisa no canto o que foi.
+async function copiarComAviso(btn, texto, html, descricao) {
   const copiado = await copiarTexto(texto, html);
+  if (copiado) avisar(`Copiado: ${descricao || 'tabela'}`, 'ok', 'Cole no PowerPoint ou no Excel com Ctrl+V.');
+  else avisar('Não deu para copiar', 'erro', 'Tente de novo; se continuar, gere o diagnóstico em Configurações.');
   const original = btn.dataset.rotulo || btn.textContent;
   btn.dataset.rotulo = original;
   btn.textContent = copiado ? 'Copiado' : 'Não deu';
@@ -1035,15 +1067,67 @@ navItems.forEach((btn) => {
 
 // As duas abas de extracao mostram o mesmo historico, cada uma com o
 // seu <tbody>.
+// O historico vem uma vez do Python e os filtros (operacao, tipo e
+// resultado) so escolhem o que aparece.
+let historicoCompleto = [];
+
 async function loadHistoryTable(tbody = historyTableBody) {
-  const history = await comEsqueleto(tbody, 7, () => pywebview.api.get_report_history());
+  historicoCompleto = await comEsqueleto(tbody, 7, () => pywebview.api.get_report_history());
+  desenharHistorico(tbody);
+}
+
+function filtrosDoHistorico(tbody) {
+  return document.querySelector(`.historico-filtros[data-historico="${tbody.id}"]`);
+}
+
+function preencherFiltrosDoHistorico(caixa) {
+  const unicos = (campo) => [...new Set(historicoCompleto.map((h) => h[campo]).filter(Boolean))];
+  const ordemDoTipo = (rotulo) => {
+    const i = Object.values(ROTULO_DO_TIPO).indexOf(rotulo === 'Indiretas' ? 'Horas Indiretas' : rotulo);
+    return i < 0 ? 99 : i;
+  };
+  const listas = {
+    operacao: unicos('operation').sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    tipo: unicos('period_type').sort((a, b) => ordemDoTipo(a) - ordemDoTipo(b)),
+  };
+  for (const [filtro, valores] of Object.entries(listas)) {
+    const select = caixa.querySelector(`[data-filtro="${filtro}"]`);
+    const escolhido = select.value;
+    const primeiro = select.options[0];
+    select.replaceChildren(primeiro);
+    for (const valor of valores) {
+      const opcao = document.createElement('option');
+      opcao.value = valor;
+      opcao.textContent = valor;
+      select.appendChild(opcao);
+    }
+    select.value = valores.includes(escolhido) ? escolhido : '';
+  }
+}
+
+function desenharHistorico(tbody) {
+  const caixa = filtrosDoHistorico(tbody);
+  if (caixa) preencherFiltrosDoHistorico(caixa);
+  const filtro = (nome) => (caixa ? caixa.querySelector(`[data-filtro="${nome}"]`).value : '');
+  const history = historicoCompleto.filter((h) =>
+    (!filtro('operacao') || h.operation === filtro('operacao'))
+    && (!filtro('tipo') || h.period_type === filtro('tipo'))
+    && (!filtro('status') || (h.status || 'success') === filtro('status')));
+  const contador = caixa && caixa.parentElement.querySelector('.hc-contador');
+  if (contador) {
+    contador.textContent = history.length === historicoCompleto.length
+      ? plural(historicoCompleto.length, 'extração', 'extrações')
+      : `${history.length} de ${historicoCompleto.length}`;
+  }
   tbody.innerHTML = '';
   if (!history.length) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
     cell.colSpan = 7;
     cell.className = 'empty-history-msg';
-    cell.textContent = 'Nenhuma extração registrada ainda.';
+    cell.textContent = historicoCompleto.length
+      ? 'Nenhuma extração com esses filtros.'
+      : 'Nenhuma extração registrada ainda.';
     row.appendChild(cell);
     tbody.appendChild(row);
     return;
@@ -1071,6 +1155,10 @@ async function loadHistoryTable(tbody = historyTableBody) {
     tbody.appendChild(row);
   }
 }
+
+document.querySelectorAll('.historico-filtros').forEach((caixa) => {
+  caixa.addEventListener('change', () => desenharHistorico(document.getElementById(caixa.dataset.historico)));
+});
 
 function makeCell(text) {
   const td = document.createElement('td');
@@ -1735,8 +1823,9 @@ logoutBtn.addEventListener('click', async () => {
   showLogin();
 });
 
-window.addEventListener('pywebviewready', () => {
+window.addEventListener('pywebviewready', async () => {
   carregarVersao();
+  await carregarPreferencias();
   showLogin();
   encerrarAbertura();
 });
@@ -2002,6 +2091,7 @@ function abrirEdicao(tipo, linha) {
   if (tipo === 'editar') {
     const operacoes = (hcTela ? hcTela.operacoes : []).filter((o) => o.key !== 'todas');
     preencherSelect(document.getElementById('hc-editar-op'), operacoes, linha.operacao_key, 'key', 'label');
+    sugerirNomesDoSummary(linha.operacao_key);
     const campo = document.getElementById('hc-editar-nome');
     campo.value = linha.gestor;
     campo.focus();
@@ -2090,6 +2180,17 @@ function desenharTabelaHc(tela) {
     nota.hidden = tela.faltas_manuais;
     nomes.appendChild(nome);
     nomes.appendChild(nota);
+    // O nome bate com um supervisor do Summary? So assim o presenteismo
+    // dele aparece no Resultado Gestor.
+    if (linha.summary) {
+      const selo = document.createElement('span');
+      selo.className = `hc-summary ${linha.summary}`;
+      selo.textContent = linha.summary === 'ligado' ? '✓ no Summary' : 'sem par no Summary';
+      selo.title = linha.summary === 'ligado'
+        ? 'O nome é igual ao de um supervisor do Summary: o presenteísmo vai para o Resultado Gestor.'
+        : 'Nenhum supervisor do Summary desta operação tem este nome. Edite o nome para ficar igual ao da planilha.';
+      nomes.appendChild(selo);
+    }
     caixa.appendChild(avatar);
     caixa.appendChild(nomes);
     caixa.appendChild(acoesDoGestor(linha));
@@ -2363,9 +2464,39 @@ function abrirFaixa(qual) {
     campo.value = '';
     campo.focus();
   }
+  if (qual === 'gestor') sugerirNomesDoSummary(hcNovoGestorOp.value);
+}
+
+// O nome do gestor precisa ser igual ao do Summary para o presenteismo
+// chegar ao Resultado Gestor: o campo sugere os supervisores que ja
+// vieram nas extracoes da operacao (Gestor · Week, Week).
+async function sugerirNomesDoSummary(operacao) {
+  const lista = document.getElementById('hc-nomes-summary');
+  const nota = document.getElementById('hc-nomes-nota');
+  lista.innerHTML = '';
+  if (!operacao) {
+    nota.textContent = 'Escolha a operação para ver os nomes que vieram do Summary.';
+    return;
+  }
+  let nomes = [];
+  try {
+    nomes = await pywebview.api.get_nomes_do_summary(operacao);
+  } catch (erro) {
+    registrarErro('nomes do Summary', erro);
+  }
+  for (const nome of nomes) {
+    const opcao = document.createElement('option');
+    opcao.value = nome;
+    lista.appendChild(opcao);
+  }
+  nota.textContent = nomes.length
+    ? `${plural(nomes.length, 'nome', 'nomes')} do Summary para escolher: use o nome igual ao da planilha para o presenteísmo ir para o Resultado Gestor.`
+    : 'Ainda sem extração com o Supervisor desta operação: digite o nome igual ao do Summary (ex.: SOBRENOME,NOME).';
 }
 
 document.getElementById('hc-add-gestor').addEventListener('click', () => abrirFaixa('gestor'));
+document.getElementById('hc-novo-gestor-op').addEventListener('change', (evento) => sugerirNomesDoSummary(evento.target.value));
+document.getElementById('hc-editar-op').addEventListener('change', (evento) => sugerirNomesDoSummary(evento.target.value));
 document.getElementById('hc-add-funcao').addEventListener('click', () => abrirFaixa('funcao'));
 for (const botao of document.querySelectorAll('[data-cancelar]')) {
   botao.addEventListener('click', () => abrirFaixa(null));
@@ -3030,7 +3161,8 @@ function desenharSemanasIndiretas(t) {
     copiar.addEventListener('click', (evento) => {
       evento.stopPropagation(); // o topo do quadro escolhe a semana
       const linhas = linhasDoQuadroIndiretas(semana);
-      copiarComAviso(copiar, textoParaColar(linhas), tabelaParaColar(linhas));
+      copiarComAviso(copiar, textoParaColar(linhas), tabelaParaColar(linhas),
+        `quadro da ${semana.rotulo} (${plural(semana.atividades.length, 'atividade', 'atividades')})`);
     });
     const cabecaTopo = document.createElement('div');
     cabecaTopo.className = 'ind-quadro-titulo';
@@ -3107,7 +3239,8 @@ function tabelaIndiretasComCopia(t) {
   copiar.title = 'Copia a tabela inteira para colar no PowerPoint ou no Excel.';
   copiar.addEventListener('click', () => {
     const linhas = linhasDaTabelaIndiretas(t);
-    copiarComAviso(copiar, textoParaColar(linhas), tabelaParaColar(linhas));
+    copiarComAviso(copiar, textoParaColar(linhas), tabelaParaColar(linhas),
+      `tabela de ${plural(t.semanas.length, 'semana', 'semanas')} de ${t.mes_rotulo}`);
   });
   barra.append(titulo, copiar);
   // So a tabela rola; a barra com o Copiar fica parada em cima.
@@ -3375,7 +3508,9 @@ indExtrairBtn.addEventListener('click', async () => {
 
 function criarAbaDeGrupo(dimensao, pre) {
   const el = (id) => document.getElementById(`${pre}-${id}`);
-  const estado = { operacao: null, mes: null };
+  const estado = { operacao: null, mes: null, vis: 'tabelas', periodoResumo: null };
+  // Tabelas recolhidas nesta sessao (por nome do grupo).
+  const recolhidos = new Set();
   const nomes = dimensao === 'gestor'
     ? { singular: 'Gestor', plural: 'gestores', tipo: 'Gestor · Week', mes: 'Gestor · Month', nivel: 'Supervisor' }
     : { singular: 'Turno', plural: 'turnos', tipo: 'Turno · Week', mes: 'Turno · Month', nivel: 'Shift' };
@@ -3400,6 +3535,12 @@ function criarAbaDeGrupo(dimensao, pre) {
     el('grupos-card').hidden = !temDados;
     el('vazio').hidden = temDados;
     el('legenda').hidden = !temDados || !tela.tabelas.length;
+    const porGrupo = estado.vis === 'tabelas';
+    el('navegacao').hidden = !temDados || !porGrupo || tela.tabelas.length < 2;
+    el('resumo').hidden = !temDados || porGrupo || !tela.tabelas.length;
+    el('tabelas').hidden = !porGrupo;
+    el('visualizacao').querySelectorAll('.seg-opcao').forEach((b) => b.classList.toggle('active', b.dataset.vis === estado.vis));
+    moverDestaque(el('visualizacao'));
     if (!temDados) {
       el('tabelas').innerHTML = '';
       el('vazio-titulo').textContent =
@@ -3409,7 +3550,16 @@ function criarAbaDeGrupo(dimensao, pre) {
       return;
     }
     desenharLista();
-    desenharTabelas();
+    if (porGrupo) {
+      desenharNavegacao();
+      desenharTabelas();
+    } else {
+      desenharResumo();
+      if (!tela.tabelas.length) {
+        el('tabelas').hidden = false;
+        desenharTabelas(); // mostra o "nenhum marcado"
+      }
+    }
     el('legenda-nota').textContent = dimensao === 'gestor'
       ? 'Presenteísmo e cubo só para gestor com o mesmo nome no Headcount.'
       : 'Turno não tem presenteísmo: presenteísmo e cubo não se aplicam.';
@@ -3484,6 +3634,25 @@ function criarAbaDeGrupo(dimensao, pre) {
         card.classList.add('grupo-entrando');
         card.style.animationDelay = `${Math.min(indice, 6) * 50}ms`;
       }
+      card.id = `${pre}-grupo-${indice}`;
+      if (recolhidos.has(tabela.id)) card.classList.add('recolhido');
+      const alternar = document.createElement('button');
+      alternar.type = 'button';
+      alternar.className = 'grupo-alternar';
+      alternar.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+      const atualizarRotulo = () => {
+        const fechado = card.classList.contains('recolhido');
+        alternar.title = fechado ? 'Abrir a tabela' : 'Recolher a tabela';
+        alternar.setAttribute('aria-expanded', String(!fechado));
+      };
+      atualizarRotulo();
+      alternar.addEventListener('click', () => {
+        card.classList.toggle('recolhido');
+        if (card.classList.contains('recolhido')) recolhidos.add(tabela.id); else recolhidos.delete(tabela.id);
+        atualizarRotulo();
+      });
+      card.appendChild(alternar);
+      card.appendChild(linhaCompacta(tabela, () => alternar.click()));
       const wrap = document.createElement('div');
       wrap.className = 'table-wrap';
       const t = document.createElement('table');
@@ -3501,7 +3670,7 @@ function criarAbaDeGrupo(dimensao, pre) {
       if (dimensao === 'gestor') {
         nota = tabela.vinculado
           ? { texto: 'presenteísmo do Headcount', classe: 'ok' }
-          : { texto: 'sem o mesmo nome no Headcount', classe: 'aviso',
+          : { texto: 'sem o mesmo nome no Headcount', classe: 'alerta',
             dica: 'Cadastre no Headcount um gestor com exatamente este nome para o presenteísmo e o cubo aparecerem.' };
       }
       desenharCabecalhoEm(linhaCabecalho, corpo, tela.colunas, nomes.singular, tabela.rotulo, nota);
@@ -3509,6 +3678,180 @@ function criarAbaDeGrupo(dimensao, pre) {
       wrap.scrollLeft = wrap.scrollWidth;
     });
   }
+
+  // Recolhida, a tabela vira uma linha: o nome e os seis indicadores da
+  // ultima coluna (o mes, se ja foi extraido).
+  function linhaCompacta(tabela, abrir) {
+    const linha = document.createElement('div');
+    linha.className = 'grupo-compacto';
+    const ultima = tela.colunas.length - 1;
+    const nome = document.createElement('div');
+    nome.className = 'grupo-compacto-nome';
+    nome.title = 'Abrir a tabela';
+    const rotuloDaColuna = tela.colunas[ultima] ? tela.colunas[ultima].titulo : '';
+    nome.innerHTML = `<small>${nomes.singular} · ${escaparHtml(rotuloDaColuna)}</small>`;
+    nome.appendChild(document.createTextNode(tabela.rotulo));
+    nome.addEventListener('click', abrir);
+    const valores = document.createElement('div');
+    valores.className = 'grupo-compacto-valores';
+    for (const indicador of tabela.linhas) {
+      const celula = indicador.celulas[ultima] || {};
+      const item = document.createElement('div');
+      item.className = 'grupo-compacto-valor';
+      const rotulo = document.createElement('span');
+      rotulo.textContent = indicador.rotulo;
+      item.appendChild(rotulo);
+      const valor = document.createElement('span');
+      if (celula.texto) {
+        valor.className = `indicator-value ${celula.cor || ''}`;
+        valor.textContent = celula.texto;
+      } else {
+        valor.className = 'vazio';
+        valor.textContent = celula.nao_se_aplica ? '' : '\u2014';
+      }
+      item.appendChild(valor);
+      valores.appendChild(item);
+    }
+    linha.append(nome, valores);
+    return linha;
+  }
+
+  // Barra com o nome de cada um: pula ate a tabela dele.
+  function desenharNavegacao() {
+    const atalhos = el('atalhos');
+    atalhos.innerHTML = '';
+    tela.tabelas.forEach((tabela, indice) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'grupo-chip';
+      chip.textContent = tabela.rotulo;
+      chip.title = `Ir para ${tabela.rotulo}`;
+      chip.addEventListener('click', () => irParaGrupo(indice));
+      atalhos.appendChild(chip);
+    });
+  }
+
+  function irParaGrupo(indice) {
+    const card = document.getElementById(`${pre}-grupo-${indice}`);
+    if (!card) return;
+    if (card.classList.contains('recolhido')) card.querySelector('.grupo-alternar').click();
+    card.scrollIntoView({ block: 'start', behavior: SEM_ANIMACAO ? 'auto' : 'smooth' });
+    reiniciarAnimacao(card, 'grupo-destacado');
+  }
+
+  function recolherTodas(recolher) {
+    for (const tabela of tela.tabelas) {
+      if (recolher) recolhidos.add(tabela.id); else recolhidos.delete(tabela.id);
+    }
+    el('tabelas').querySelectorAll('.grupo-tabela').forEach((card) => {
+      card.classList.toggle('recolhido', recolher);
+      const botao = card.querySelector('.grupo-alternar');
+      botao.title = recolher ? 'Abrir a tabela' : 'Recolher a tabela';
+      botao.setAttribute('aria-expanded', String(!recolher));
+    });
+  }
+
+  // Resumo: uma tabela so, com os grupos nas linhas e os seis indicadores
+  // de um periodo nas colunas. Mesmos textos e cores das tabelas.
+  function desenharResumo() {
+    const periodos = tela.colunas.map((c, i) => ({ id: String(i), rotulo: `${c.titulo} · ${c.subtitulo}` }));
+    const ultima = String(tela.colunas.length - 1);
+    if (!periodos.some((p) => p.id === estado.periodoResumo)) estado.periodoResumo = ultima;
+    preencherSelect(el('resumo-periodo'), periodos, estado.periodoResumo);
+    const indice = Number(estado.periodoResumo);
+    const coluna = tela.colunas[indice];
+    el('resumo-sub').textContent = `${coluna.titulo} (${coluna.subtitulo}) · ${plural(tela.tabelas.length, nomes.singular.toLowerCase(), nomes.plural)} marcados. Clique no nome para abrir a tabela.`;
+
+    const indicadores = tela.tabelas[0].linhas;
+    const cabecalho = el('resumo-cabecalho');
+    const corpo = el('resumo-corpo');
+    cabecalho.innerHTML = '';
+    const canto = document.createElement('th');
+    canto.className = 'resumo-canto';
+    canto.innerHTML = `<div class="corner-label">${nomes.singular}</div>`;
+    const copiarTudo = document.createElement('button');
+    copiarTudo.type = 'button';
+    copiarTudo.className = 'copy-btn resumo-copiar-tudo';
+    copiarTudo.textContent = 'Copiar tabela';
+    copiarTudo.title = 'Copia nomes e valores para colar no PowerPoint ou no Excel.';
+    copiarTudo.addEventListener('click', () => {
+      const linhas = [[{ texto: nomes.singular, alinhamento: 'left', negrito: true },
+        ...indicadores.map((i) => ({ texto: i.rotulo, negrito: true }))]];
+      corpo.querySelectorAll('tr').forEach((tr, r) => {
+        linhas.push([{ texto: tela.tabelas[r].rotulo, alinhamento: 'left' },
+          ...indicadores.map((_, c) => valoresDaColuna(c, corpo)[r])]);
+      });
+      copiarComAviso(copiarTudo, textoParaColar(linhas), tabelaParaColar(linhas),
+        `resumo de ${plural(tela.tabelas.length, nomes.singular.toLowerCase(), nomes.plural)} · ${coluna.titulo}`);
+    });
+    canto.appendChild(copiarTudo);
+    cabecalho.appendChild(canto);
+    indicadores.forEach((indicador, c) => {
+      const th = document.createElement('th');
+      th.className = 'resumo-col';
+      th.innerHTML = `<div class="col-title">${escaparHtml(indicador.rotulo)}</div><div class="col-subtitle">${escaparHtml(indicador.meta)}</div>`;
+      th.appendChild(botaoCopiar(c, `${indicador.rotulo} (${coluna.titulo})`, corpo));
+      cabecalho.appendChild(th);
+    });
+
+    corpo.innerHTML = '';
+    tela.tabelas.forEach((tabela, r) => {
+      const tr = document.createElement('tr');
+      const nome = document.createElement('th');
+      nome.scope = 'row';
+      nome.className = 'resumo-nome';
+      const botao = document.createElement('button');
+      botao.type = 'button';
+      botao.textContent = tabela.rotulo;
+      botao.title = 'Abrir a tabela deste ' + nomes.singular.toLowerCase();
+      botao.addEventListener('click', async () => {
+        estado.vis = 'tabelas';
+        desenhar();
+        requestAnimationFrame(() => irParaGrupo(r));
+      });
+      nome.appendChild(botao);
+      if (dimensao === 'gestor' && !tabela.vinculado) {
+        const nota = document.createElement('small');
+        nota.textContent = 'sem o mesmo nome no Headcount';
+        nome.appendChild(nota);
+      }
+      tr.appendChild(nome);
+      for (const indicador of tabela.linhas) {
+        const celula = indicador.celulas[indice] || {};
+        const td = document.createElement('td');
+        td.className = 'indicator-cell';
+        if (celula.nao_se_aplica) {
+          td.classList.add('nao-se-aplica');
+          if (celula.copia_vazia) td.dataset.copiaVazia = '1';
+        } else if (celula.texto) {
+          const valor = document.createElement('span');
+          valor.className = `indicator-value ${celula.cor || ''}`;
+          valor.textContent = celula.texto;
+          td.appendChild(valor);
+        } else {
+          td.classList.add('sem-numero');
+          td.textContent = '\u2014';
+        }
+        tr.appendChild(td);
+      }
+      corpo.appendChild(tr);
+    });
+    entrarEmSequencia(corpo);
+  }
+
+  el('visualizacao').addEventListener('click', (evento) => {
+    const botao = evento.target.closest('.seg-opcao');
+    if (!botao || botao.dataset.vis === estado.vis) return;
+    estado.vis = botao.dataset.vis;
+    if (tela) desenhar();
+  });
+  window.addEventListener('resize', () => moverDestaque(el('visualizacao')));
+  el('resumo-periodo').addEventListener('change', () => {
+    estado.periodoResumo = el('resumo-periodo').value;
+    desenharResumo();
+  });
+  el('abrir-todas').addEventListener('click', () => recolherTodas(false));
+  el('fechar-todas').addEventListener('click', () => recolherTodas(true));
 
   el('operacao').addEventListener('change', async () => {
     estado.operacao = el('operacao').value;
@@ -3529,3 +3872,192 @@ function criarAbaDeGrupo(dimensao, pre) {
 
 const abaGestor = criarAbaDeGrupo('gestor', 'rg');
 const abaTurno = criarAbaDeGrupo('turno', 'rt');
+
+// ---------------------------------------------------------------
+// Preferencias de tela: tema, densidade e menu recolhido
+// ---------------------------------------------------------------
+// Guardadas pelo Python (settings.json): a janela do app nao guarda o
+// localStorage de uma abertura para a outra. So aparencia.
+
+let preferencias = { tema: 'escuro', densidade: 'confortavel', menu_recolhido: false };
+const navRecolher = document.getElementById('nav-recolher');
+
+async function carregarPreferencias() {
+  try {
+    preferencias = { ...preferencias, ...(await pywebview.api.get_preferencias()) };
+  } catch (erro) {
+    // sem a ponte, fica o padrao
+  }
+  aplicarPreferencias(false);
+}
+
+function aplicarPreferencias(comTransicao = true) {
+  const raiz = document.documentElement;
+  const trocouTema = raiz.dataset.tema !== preferencias.tema;
+  if (comTransicao && trocouTema && !SEM_ANIMACAO) {
+    // As cores trocam suavemente em vez de piscar.
+    raiz.classList.add('trocando-tema');
+    clearTimeout(aplicarPreferencias.timer);
+    aplicarPreferencias.timer = setTimeout(() => raiz.classList.remove('trocando-tema'), 400);
+  }
+  raiz.dataset.tema = preferencias.tema;
+  raiz.dataset.densidade = preferencias.densidade;
+  document.body.classList.toggle('menu-recolhido', Boolean(preferencias.menu_recolhido));
+  navRecolher.setAttribute('aria-expanded', String(!preferencias.menu_recolhido));
+  navRecolher.title = preferencias.menu_recolhido ? 'Abrir o menu (Ctrl+B)' : 'Recolher o menu (Ctrl+B)';
+  document.getElementById('apresentacao-tema').textContent =
+    preferencias.tema === 'claro' ? 'Tema escuro' : 'Tema claro';
+  const marcar = (id, valor) => {
+    const grupo = document.getElementById(id);
+    grupo.querySelectorAll('.seg-opcao').forEach((b) => b.classList.toggle('active', b.dataset.valor === valor));
+    moverDestaque(grupo);
+  };
+  marcar('pref-tema', preferencias.tema);
+  marcar('pref-densidade', preferencias.densidade);
+  marcar('pref-menu', preferencias.menu_recolhido ? 'recolhido' : 'aberto');
+  // Larguras e alturas mudaram: o destaque do menu e dos seletores
+  // acompanha, e a lista do Coverage recalcula a altura.
+  moverIndicadorDoMenu();
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 240);
+}
+
+async function mudarPreferencia(chave, valor) {
+  if (preferencias[chave] === valor) return;
+  preferencias = { ...preferencias, [chave]: valor };
+  aplicarPreferencias();
+  try {
+    const resposta = await pywebview.api.set_preferencia(chave, valor);
+    if (resposta && resposta.success === false) avisar(resposta.message, 'erro');
+  } catch (erro) {
+    registrarErro('preferência', erro);
+  }
+}
+
+const alternarTema = () => mudarPreferencia('tema', preferencias.tema === 'claro' ? 'escuro' : 'claro');
+const alternarMenu = () => mudarPreferencia('menu_recolhido', !preferencias.menu_recolhido);
+
+document.getElementById('tema-alternar').addEventListener('click', alternarTema);
+document.getElementById('apresentacao-tema').addEventListener('click', alternarTema);
+navRecolher.addEventListener('click', alternarMenu);
+document.getElementById('pref-tema').addEventListener('click', (evento) => {
+  const botao = evento.target.closest('.seg-opcao');
+  if (botao) mudarPreferencia('tema', botao.dataset.valor);
+});
+document.getElementById('pref-densidade').addEventListener('click', (evento) => {
+  const botao = evento.target.closest('.seg-opcao');
+  if (botao) mudarPreferencia('densidade', botao.dataset.valor);
+});
+document.getElementById('pref-menu').addEventListener('click', (evento) => {
+  const botao = evento.target.closest('.seg-opcao');
+  if (botao) mudarPreferencia('menu_recolhido', botao.dataset.valor === 'recolhido');
+});
+window.addEventListener('resize', () => document.querySelectorAll('.aparencia-opcoes').forEach(moverDestaque));
+
+// ---------------------------------------------------------------
+// Atalhos de teclado
+// ---------------------------------------------------------------
+
+const ATALHOS = [
+  { teclas: ['Ctrl', '1 … 9'], texto: 'Abre as abas do menu, na ordem (1 = Início, 2 = Resultado Gestor…)' },
+  { teclas: ['Ctrl', 'E'], texto: 'Extrair Dados, já com a operação da tela' },
+  { teclas: ['Ctrl', 'B'], texto: 'Recolhe ou abre o menu' },
+  { teclas: ['Ctrl', 'Shift', 'L'], texto: 'Tema claro ou escuro' },
+  { teclas: ['?'], texto: 'Mostra esta lista' },
+  { teclas: ['Esc'], texto: 'Fecha esta lista ou sai do modo apresentação' },
+  { teclas: ['←', '→'], texto: 'Trocam a operação no modo apresentação' },
+];
+
+document.querySelectorAll('[data-atalhos-lista]').forEach((lista) => {
+  for (const atalho of ATALHOS) {
+    const teclas = document.createElement('span');
+    teclas.className = 'teclas';
+    atalho.teclas.forEach((tecla) => {
+      const kbd = document.createElement('kbd');
+      kbd.textContent = tecla;
+      teclas.appendChild(kbd);
+    });
+    const texto = document.createElement('span');
+    texto.textContent = atalho.texto;
+    lista.append(teclas, texto);
+  }
+});
+
+const janelaAtalhos = document.getElementById('atalhos');
+let focoAntesDosAtalhos = null;
+
+function abrirAtalhos() {
+  focoAntesDosAtalhos = document.activeElement;
+  janelaAtalhos.hidden = false;
+  document.getElementById('atalhos-fechar').focus();
+}
+
+function fecharAtalhos() {
+  janelaAtalhos.hidden = true;
+  if (focoAntesDosAtalhos && focoAntesDosAtalhos.focus) focoAntesDosAtalhos.focus();
+}
+
+document.getElementById('atalhos-abrir').addEventListener('click', abrirAtalhos);
+document.getElementById('atalhos-fechar').addEventListener('click', fecharAtalhos);
+janelaAtalhos.addEventListener('click', (evento) => { if (evento.target === janelaAtalhos) fecharAtalhos(); });
+
+// A operacao da tela aberta, para o Ctrl+E ja levar ela para a extracao.
+function operacaoDaTela() {
+  const pagina = document.querySelector('.page:not([hidden])')?.id;
+  const valor = {
+    'page-home': homeOperationSelect.value,
+    'page-gestor': document.getElementById('rg-operacao').value,
+    'page-turno': document.getElementById('rt-operacao').value,
+    'page-coverage': cvEstado.operacao,
+    'page-indiretas': indOperacao.value,
+    'page-headcount': hcEstado.operacao,
+  }[pagina];
+  const tipo = { 'page-gestor': 'gestor_week', 'page-turno': 'turno_week', 'page-indiretas': 'indiretas' }[pagina];
+  return { operacao: valor && valor !== 'todas' ? valor : null, tipo: tipo || null };
+}
+
+// Em captura, para fechar a lista de atalhos antes do Esc do modo
+// apresentacao.
+document.addEventListener('keydown', (evento) => {
+  if (appView.hidden) return; // na tela de login nao ha atalho
+  if (!janelaAtalhos.hidden) {
+    if (evento.key === 'Escape') {
+      evento.preventDefault();
+      evento.stopImmediatePropagation();
+      fecharAtalhos();
+    }
+    return;
+  }
+  const digitando = evento.target.closest && evento.target.closest('input, textarea, select, [contenteditable="true"]');
+  if (evento.key === '?' && !digitando && !evento.ctrlKey && !evento.altKey) {
+    evento.preventDefault();
+    abrirAtalhos();
+    return;
+  }
+  if (!evento.ctrlKey || evento.altKey || evento.metaKey) return;
+  const tecla = evento.key.toLowerCase();
+  if (evento.shiftKey && tecla === 'l') {
+    evento.preventDefault();
+    alternarTema();
+    return;
+  }
+  if (evento.shiftKey) return;
+  // Trocar de aba no meio da apresentacao bagunçaria a tela cheia.
+  if (emApresentacao) return;
+  const numero = /^Digit([1-9])$/.exec(evento.code) || /^Numpad([1-9])$/.exec(evento.code);
+  if (numero) {
+    const botao = document.querySelector(`.nav-item[data-atalho="${numero[1]}"]`);
+    if (botao) {
+      evento.preventDefault();
+      showPage(botao.dataset.page);
+    }
+    return;
+  }
+  if (tecla === 'b') {
+    evento.preventDefault();
+    alternarMenu();
+  } else if (tecla === 'e') {
+    evento.preventDefault();
+    const { operacao, tipo } = operacaoDaTela();
+    irParaExtracao(operacao, tipo);
+  }
+}, true);

@@ -284,3 +284,50 @@ def test_varios_filtros_sem_tipo_avisa(api_real, operations):
     operations("mock", "Mock Co", "MockCo")
     assert not api_real.run_multi_filters("mock", [])["success"]
     assert not api_real.run_multi_filters("nao_existe", ["week"])["success"]
+
+
+# ---------------- Nomes do Summary no Headcount ----------------
+
+def test_headcount_sugere_os_supervisores_do_summary(api_real, operations):
+    operations("mock", "Mock Co", "MockCo")
+    api_real.run_extraction("mock", date_range=SETEMBRO, period="gestor_week")
+
+    nomes = api_real.get_nomes_do_summary("mock")
+    assert nomes == ["SILVA,ANA", "SOUZA,BRUNO"], "sem o grupo vazio (sem supervisor)"
+    assert api_real.get_nomes_do_summary("nao_existe") == []
+
+
+def test_headcount_marca_quem_bate_com_o_summary(api_real, operations):
+    operations("mock", "Mock Co", "MockCo")
+    headcount_store.adicionar_gestor("silva, ana", "mock")
+    headcount_store.adicionar_gestor("Bruno Souza", "mock")
+
+    antes = {l["gestor"]: l["summary"] for l in api_real.get_headcount("mock")["linhas"]}
+    assert antes == {"silva, ana": None, "Bruno Souza": None}, "sem extracao ainda: nao da para dizer"
+
+    api_real.run_extraction("mock", date_range=SETEMBRO, period="week")
+    depois = {l["gestor"]: l["summary"] for l in api_real.get_headcount("mock")["linhas"]}
+    assert depois == {"silva, ana": "ligado", "Bruno Souza": "sem_par"}
+
+
+# ---------------- Preferencias de tela ----------------
+
+def test_preferencias_de_tela_ficam_guardadas():
+    import settings_store
+
+    assert settings_store.get_preferencias() == {
+        "tema": "escuro", "densidade": "confortavel", "menu_recolhido": False}
+    settings_store.set_preferencia("tema", "claro")
+    settings_store.set_preferencia("menu_recolhido", True)
+    assert settings_store.get_preferencias()["tema"] == "claro"
+    assert settings_store.get_preferencias()["menu_recolhido"] is True
+    assert settings_store.get_sharepoint_folder() is None, "nao mexe no resto das configuracoes"
+
+
+def test_preferencia_invalida_e_recusada():
+    from api import Api
+
+    api = Api()
+    assert not api.set_preferencia("tema", "roxo")["success"]
+    assert not api.set_preferencia("fonte", "grande")["success"]
+    assert api.get_preferencias()["tema"] == "escuro"

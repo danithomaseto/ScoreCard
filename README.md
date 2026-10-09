@@ -42,6 +42,9 @@ Detalhes de uso:
   sai Week > Supervisor > User ID e leva o gestor para o Coverage.
 - **Extrair Multiplos > Varios filtros:** uma operacao e varios tipos de
   extracao (Week, Month, Gestor...) em sequencia.
+- **Aparencia:** tema claro ou escuro (botao na barra amarela ou
+  Ctrl+Shift+L), densidade compacta e menu recolhido (Ctrl+B), em
+  Configuracoes. A tecla `?` mostra os atalhos de teclado.
 
 Toda a logica de automacao (login no Summary, navegacao pelo iframe de
 relatorios, filtros, exportacao) e a mesma ja validada — o empacotamento

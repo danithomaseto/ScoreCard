@@ -1,6 +1,7 @@
 """Configuracoes persistidas localmente (fora do codigo-fonte): o caminho
-da pasta do SharePoint/OneDrive onde os relatorios sao salvos e os
-gestores/turnos escondidos nas abas de resultado.
+da pasta do SharePoint/OneDrive onde os relatorios sao salvos, os
+gestores/turnos escondidos nas abas de resultado e as preferencias de
+tela (tema, densidade, menu recolhido).
 Cada usuario que roda o aplicativo tem o seu proprio arquivo, guardado
 na pasta de dados do Windows (%APPDATA%).
 """
@@ -62,3 +63,30 @@ def set_grupos_ocultos(dimensao, operacao, nomes):
     por_dimensao = settings.setdefault("grupos_ocultos", {}).setdefault(dimensao, {})
     por_dimensao[operacao] = sorted(set(nomes))
     save_settings(settings)
+
+
+# Preferencias de tela: tema, densidade e menu recolhido. Ficam aqui, e
+# nao no localStorage da pagina, porque a janela do app nao guarda o
+# localStorage de uma abertura para a outra.
+PREFERENCIAS = {
+    "tema": ("escuro", ("escuro", "claro")),
+    "densidade": ("confortavel", ("confortavel", "compacta")),
+    "menu_recolhido": (False, (False, True)),
+}
+
+
+def get_preferencias():
+    guardadas = get_settings().get("preferencias") or {}
+    return {chave: guardadas.get(chave, padrao) if guardadas.get(chave) in validos else padrao
+            for chave, (padrao, validos) in PREFERENCIAS.items()}
+
+
+def set_preferencia(chave, valor):
+    if chave not in PREFERENCIAS:
+        raise ValueError("Preferência inválida.")
+    if valor not in PREFERENCIAS[chave][1]:
+        raise ValueError("Valor inválido para a preferência.")
+    settings = get_settings()
+    settings.setdefault("preferencias", {})[chave] = valor
+    save_settings(settings)
+    return get_preferencias()
