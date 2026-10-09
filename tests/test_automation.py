@@ -45,7 +45,7 @@ def test_week_tem_agrupamento_fixo_com_o_supervisor(operations, sharepoint_dir):
     assert result["group_by"] == "User ID"
     assert result["agrupamento"] == "Week › Supervisor › User ID"
     texto = " | ".join(passos).lower()
-    for esperado in ("group by 1 (week)", "group by 2 (supervisor)", "terceiro nivel", "group by 3 (user id)"):
+    for esperado in ("group by 1 (week)", "group by 2 (supervisor)", "terceiro nível", "group by 3 (user id)"):
         assert esperado in texto, f"etapa ausente no progresso: {esperado}"
 
 
@@ -124,13 +124,13 @@ def test_progresso_informa_todas_as_etapas(operations, sharepoint_dir):
         "fazendo login",
         "abrindo menu",
         "localizando o iframe",
-        "abrindo o relatorio",
-        "periodo especifico",
+        "abrindo o relatório",
+        "período específico",
         "group by 1 (week)",
-        "segundo nivel",
+        "segundo nível",
         "group by 2",
         "exportando e baixando",
-        "concluido",
+        "concluído",
     ]:
         assert esperado in texto, f"etapa ausente no progresso: {esperado}"
 

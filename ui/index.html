@@ -67,6 +67,11 @@
     <span class="dhl-logo">DHL</span>
     <span class="topbar-title">Score Card</span>
     <div class="topbar-acoes">
+      <button type="button" class="topbar-extracao" id="topbar-extracao" hidden>
+        <span class="topbar-extracao-icone" aria-hidden="true"></span>
+        <span class="topbar-extracao-texto" id="topbar-extracao-texto"></span>
+        <span class="topbar-extracao-barra" aria-hidden="true"><span id="topbar-extracao-progresso"></span></span>
+      </button>
       <button type="button" class="topbar-botao" id="tema-alternar" title="Tema claro ou escuro (Ctrl+Shift+L)" aria-label="Alternar entre tema claro e escuro">
         <svg class="topbar-icone icone-lua" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
         <svg class="topbar-icone icone-sol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
@@ -162,11 +167,11 @@
         <span>Sair</span>
       </button>
       <div class="sidebar-footer">
-        <div class="sidebar-status">
-          <span class="status-dot"></span>
+        <div class="sidebar-status" id="sidebar-status">
+          <span class="status-dot" id="status-dot"></span>
           <div>
-            <div class="status-title">Sistema Online</div>
-            <div class="status-sub">Pronto para extração</div>
+            <div class="status-title" id="status-titulo">Pronto para extrair</div>
+            <div class="status-sub" id="status-sub">Nenhuma extração ainda</div>
           </div>
         </div>
         <div class="sidebar-brand-footer">DHL &mdash; Excellence. Simply delivered.</div>
@@ -211,11 +216,14 @@
             <div class="estado-vazio" id="indicators-empty" hidden>
               <svg class="estado-vazio-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg>
               <strong id="indicators-empty-titulo">Nenhuma extração neste mês ainda</strong>
-              <p>Cada semana extraída do mês vira uma coluna, e o mês e o pico entram no final.</p>
-              <button type="button" class="acao" id="indicators-extrair">
-                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Extrair agora
-              </button>
+              <p>Extraia a Week (e o Month e os Dias de Pico): cada semana do mês vira uma coluna, e o mês e o pico entram no final.</p>
+              <div class="estado-vazio-acoes">
+                <button type="button" class="acao" id="indicators-extrair">
+                  <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Extrair agora
+                </button>
+                <button type="button" class="secondary acao" id="indicators-anterior" hidden></button>
+              </div>
             </div>
 
             <div class="table-wrap" id="indicators-wrap">
@@ -311,10 +319,13 @@
               <svg class="estado-vazio-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
               <strong id="rg-vazio-titulo"></strong>
               <p id="rg-vazio-texto"></p>
-              <button type="button" class="acao" id="rg-vazio-extrair">
-                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Extrair agora
-              </button>
+              <div class="estado-vazio-acoes">
+                <button type="button" class="acao" id="rg-vazio-extrair">
+                  <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Extrair agora
+                </button>
+                <button type="button" class="secondary acao" id="rg-vazio-anterior" hidden></button>
+              </div>
             </div>
           </div>
 
@@ -413,10 +424,13 @@
               <svg class="estado-vazio-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a2.83 2.83 0 0 0 4 4 4 4 0 1 1-4-4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>
               <strong id="rt-vazio-titulo"></strong>
               <p id="rt-vazio-texto"></p>
-              <button type="button" class="acao" id="rt-vazio-extrair">
-                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Extrair agora
-              </button>
+              <div class="estado-vazio-acoes">
+                <button type="button" class="acao" id="rt-vazio-extrair">
+                  <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Extrair agora
+                </button>
+                <button type="button" class="secondary acao" id="rt-vazio-anterior" hidden></button>
+              </div>
             </div>
           </div>
 
@@ -844,7 +858,7 @@
 
               <div class="multi-run-row">
                 <button id="multi-run-btn"><svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg><span class="btn-texto">Iniciar extração</span></button>
-                <button id="multi-stop-btn" class="secondary" hidden>Parar apos a atual</button>
+                <button id="multi-stop-btn" class="secondary" hidden>Parar após a atual</button>
               </div>
 
               <div id="multi-run-status" class="status" hidden></div>
@@ -1035,10 +1049,14 @@
               </table>
             </div>
 
-            <p class="hc-vazio" id="hc-vazio" hidden>
-              Nenhum gestor cadastrado nesta operação. Use "+ Adicionar Gestor" e
-              depois preencha o HC e as faltas de cada semana.
-            </p>
+            <div class="estado-vazio" id="hc-vazio" hidden>
+              <svg class="estado-vazio-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <strong id="hc-vazio-titulo">Nenhum gestor cadastrado ainda</strong>
+              <p>Cadastre os gestores com o nome igual ao do Summary e preencha o HC e as faltas de cada semana: o presenteísmo vai para o Início e para o Resultado Gestor.</p>
+              <div class="estado-vazio-acoes">
+                <button type="button" class="acao" id="hc-vazio-adicionar">+ Adicionar Gestor</button>
+              </div>
+            </div>
 
             <div class="hc-status" id="hc-status">Escolha uma semana (ou um ciclo em Resultado do Mês) e digite as faltas de cada gestor, em dias.</div>
           </div>
@@ -1164,6 +1182,9 @@
               <div class="hc-tabela-titulo">
                 <strong id="cv-titulo">Coverage por usuário</strong>
                 <span class="hc-contador" id="cv-contador">0 usuários</span>
+                <label class="cv-agrupar" title="Junta os usuários de cada gestor, com o nome do gestor em cima. Só muda a ordem da lista.">
+                  <input type="checkbox" id="cv-agrupar"> Agrupar por gestor
+                </label>
               </div>
               <div class="cv-todos" id="cv-todos">
                 <span class="cv-todos-rotulo">Para todos:</span>
@@ -1201,10 +1222,13 @@
               <svg class="estado-vazio-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
               <strong id="cv-vazio-titulo"></strong>
               <p id="cv-vazio-texto"></p>
-              <button type="button" class="acao" id="cv-extrair">
-                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Extrair agora
-              </button>
+              <div class="estado-vazio-acoes">
+                <button type="button" class="acao" id="cv-extrair">
+                  <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Extrair agora
+                </button>
+                <button type="button" class="secondary acao" id="cv-vazio-anterior" hidden></button>
+              </div>
             </div>
 
             <p class="cv-formula"><code>Coverage = (Horas LMS &minus; Diretas sem meta) &divide; (Horas Metrics + Sinergia recebida &minus; Sinergia cedida)</code></p>
@@ -1314,8 +1338,11 @@
               <svg class="estado-vazio-icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
               <strong id="ind-vazio-titulo"></strong>
               <p>Extraia as semanas do mês na faixa acima: cada semana vira um quadro, com as atividades indiretas da maior para a menor.</p>
-              <div class="ind-vazio-acoes">
-                <button type="button" class="acao" id="ind-vazio-extrair">Extrair agora</button>
+              <div class="estado-vazio-acoes">
+                <button type="button" class="acao" id="ind-vazio-extrair">
+                  <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Extrair agora
+                </button>
                 <button type="button" class="secondary acao" id="ind-vazio-anterior" hidden></button>
               </div>
             </div>
@@ -1413,6 +1440,16 @@
         </div>
       </section>
     </div>
+  </div>
+</div>
+
+<!-- Pergunta no visual do app (no lugar das caixas do Windows). -->
+<div class="dialogo-fundo" id="dialogo" hidden>
+  <div class="dialogo-caixa" role="alertdialog" aria-modal="true" aria-labelledby="dialogo-titulo" aria-describedby="dialogo-texto">
+    <div class="dialogo-icone" id="dialogo-icone" aria-hidden="true"></div>
+    <h3 id="dialogo-titulo"></h3>
+    <p id="dialogo-texto"></p>
+    <div class="dialogo-botoes" id="dialogo-botoes"></div>
   </div>
 </div>
 

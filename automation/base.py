@@ -160,7 +160,7 @@ def login(page, login_url, username, password):
     page.goto(login_url, wait_until="load", timeout=30000)
 
     if not _fill_first_match(page, username_selectors, username):
-        raise RuntimeError("Nao foi possivel localizar o campo Username na pagina de login.")
+        raise RuntimeError("Não foi possível localizar o campo Username na página de login.")
 
     try:
         page.keyboard.press("Tab")
@@ -168,10 +168,10 @@ def login(page, login_url, username, password):
         pass
 
     if not _fill_first_match(page, password_selectors, password):
-        raise RuntimeError("Nao foi possivel localizar o campo Password na pagina de login.")
+        raise RuntimeError("Não foi possível localizar o campo Password na página de login.")
 
     if not _click_first_match(page, sign_in_selectors):
-        raise RuntimeError("Nao foi possivel localizar o botao Sign In na pagina de login.")
+        raise RuntimeError("Não foi possível localizar o botão Sign In na página de login.")
 
     try:
         page.wait_for_load_state("networkidle", timeout=15000)
@@ -199,7 +199,7 @@ def open_reports_menu(page):
     reports_items = page.get_by_text("Reports", exact=True)
 
     if reports_items.count() == 0:
-        raise RuntimeError("Nao foi possivel localizar a aba Reports no menu superior.")
+        raise RuntimeError("Não foi possível localizar a aba Reports no menu superior.")
 
     reports_items.first.click()
     page.wait_for_timeout(500)
@@ -231,7 +231,7 @@ def open_report(frame, report_name):
         lambda f: f.locator(f"a:has-text('{report_name}')"),
     ]
     if not _click_first_match(frame, link_selectors, timeout=8000):
-        raise RuntimeError(f"Nao foi possivel localizar o relatorio '{report_name}' na lista.")
+        raise RuntimeError(f"Não foi possível localizar o relatório '{report_name}' na lista.")
 
 
 def select_combobox(frame, label, type_text, option_text=None):
@@ -249,7 +249,7 @@ def select_combobox(frame, label, type_text, option_text=None):
         lambda f: f.get_by_role("combobox", name=label, exact=False),
     ]
     if not _click_first_match(frame, combo_selectors, timeout=5000):
-        raise RuntimeError(f"Nao foi possivel abrir o campo '{label}'.")
+        raise RuntimeError(f"Não foi possível abrir o campo '{label}'.")
 
     combo = frame.get_by_role("combobox", name=label, exact=False)
 
@@ -264,7 +264,7 @@ def select_combobox(frame, label, type_text, option_text=None):
         else:
             combo.type(type_text, delay=120)
     except Exception as exc:
-        raise RuntimeError(f"Nao foi possivel digitar em '{label}': {exc}")
+        raise RuntimeError(f"Não foi possível digitar em '{label}': {exc}")
 
     if option_text:
         try:
@@ -275,12 +275,12 @@ def select_combobox(frame, label, type_text, option_text=None):
             lambda f: f.get_by_role("option", name=option_text, exact=True),
         ]
         if not _click_first_match(frame, option_selectors, timeout=6000):
-            raise RuntimeError(f"Nao foi possivel selecionar a opcao '{option_text}' em '{label}'.")
+            raise RuntimeError(f"Não foi possível selecionar a opção '{option_text}' em '{label}'.")
     else:
         try:
             combo.press("Enter")
         except Exception as exc:
-            raise RuntimeError(f"Nao foi possivel confirmar '{label}' com Enter: {exc}")
+            raise RuntimeError(f"Não foi possível confirmar '{label}' com Enter: {exc}")
 
 
 def select_default_date_range(frame, option_text):
@@ -301,7 +301,7 @@ def select_default_date_range(frame, option_text):
         lambda f: f.get_by_label("Default Date Range", exact=False),
     ]
     if not _click_first_match(frame, radio_selectors, timeout=5000):
-        raise RuntimeError("Nao foi possivel selecionar 'Default Date Range'.")
+        raise RuntimeError("Não foi possível selecionar 'Default Date Range'.")
 
     select_combobox(frame, "Date Range", option_text, option_text=option_text)
 
@@ -357,7 +357,7 @@ def enable_grouping_level(frame, nivel):
             continue
         return True
 
-    raise RuntimeError(f"Nao foi possivel habilitar o nivel {nivel} de agrupamento.")
+    raise RuntimeError(f"Não foi possível habilitar o nível {nivel} de agrupamento.")
 
 
 def enable_second_grouping(frame):
@@ -365,7 +365,7 @@ def enable_second_grouping(frame):
     try:
         return enable_grouping_level(frame, 2)
     except RuntimeError:
-        raise RuntimeError("Nao foi possivel habilitar o segundo nivel de agrupamento.") from None
+        raise RuntimeError("Não foi possível habilitar o segundo nível de agrupamento.") from None
 
 
 def disable_grouping_level(frame, nivel):
@@ -414,7 +414,7 @@ def select_custom_date_range(frame, from_date, to_date, from_time=None, to_time=
         lambda f: f.get_by_label("Custom Date Range", exact=False),
     ]
     if not _click_first_match(frame, radio_selectors, timeout=5000):
-        raise RuntimeError("Nao foi possivel selecionar 'Custom Date Range'.")
+        raise RuntimeError("Não foi possível selecionar 'Custom Date Range'.")
 
     def fill_field(field_id, label_fallback, value, field_desc):
         selectors = [lambda f, fid=field_id: f.locator(fid)]
@@ -424,7 +424,7 @@ def select_custom_date_range(frame, from_date, to_date, from_time=None, to_time=
                 .first.locator("xpath=following::input[1]")
             )
         if not _fill_first_match(frame, selectors, value):
-            raise RuntimeError(f"Nao foi possivel preencher {field_desc}.")
+            raise RuntimeError(f"Não foi possível preencher {field_desc}.")
         try:
             frame.locator(field_id).press("Tab", timeout=2000)
         except Exception:
@@ -445,7 +445,7 @@ def export_report(page, frame, download_dir, operation_key, export_format="EXCEL
         lambda f: f.locator("#button-1128"),
     ]
     if not _click_first_match(frame, export_button_selectors, timeout=8000):
-        raise RuntimeError("Nao foi possivel localizar o botao Export na pagina do relatorio.")
+        raise RuntimeError("Não foi possível localizar o botão Export na página do relatório.")
 
     format_selectors = [
         lambda f: f.get_by_label(export_format, exact=False),
@@ -453,7 +453,7 @@ def export_report(page, frame, download_dir, operation_key, export_format="EXCEL
         lambda f: f.get_by_text(export_format, exact=True),
     ]
     if not _click_first_match(frame, format_selectors, timeout=5000):
-        raise RuntimeError(f"Nao foi possivel selecionar o formato {export_format} na tela de exportacao.")
+        raise RuntimeError(f"Não foi possível selecionar o formato {export_format} na tela de exportação.")
 
     ok_selectors = [
         lambda f: f.get_by_role("button", name="Ok", exact=True),
@@ -463,7 +463,7 @@ def export_report(page, frame, download_dir, operation_key, export_format="EXCEL
 
     with page.expect_download(timeout=60000) as download_info:
         if not _click_first_match(frame, ok_selectors, timeout=5000):
-            raise RuntimeError("Nao foi possivel localizar o botao Ok na tela de exportacao.")
+            raise RuntimeError("Não foi possível localizar o botão Ok na tela de exportação.")
 
     download = download_info.value
 

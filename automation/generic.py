@@ -90,14 +90,14 @@ def run(
         return {
             "operation": operation_key,
             "success": False,
-            "message": "Credenciais nao informadas. Faca login novamente.",
+            "message": "Credenciais não informadas. Faça login novamente.",
         }
 
     if not base_dir or not os.path.isdir(base_dir):
         return {
             "operation": operation_key,
             "success": False,
-            "message": f"A pasta configurada nao existe ou nao foi definida: {base_dir}",
+            "message": f"A pasta configurada não existe ou não foi definida: {base_dir}",
         }
 
     tipo = (period or "week").lower()
@@ -140,7 +140,7 @@ def run(
         log("abrindo o navegador...")
         navegador = Navegador(headless=headless)
     else:
-        log("abrindo uma sessao nova no navegador...")
+        log("abrindo uma sessão nova no navegador...")
     page = navegador.nova_pagina()
     result = {
         "operation": operation_key,
@@ -165,14 +165,14 @@ def run(
         log("login OK, abrindo menu Reports...")
         open_reports_menu(page)
 
-        log("localizando o iframe de relatorios...")
+        log("localizando o iframe de relatórios...")
         frame = get_report_frame(page)
 
-        log(f"abrindo o relatorio '{config['report_name']}'...")
+        log(f"abrindo o relatório '{config['report_name']}'...")
         open_report(frame, config["report_name"])
 
         if date_range:
-            log(f"selecionando periodo especifico ({date_range['from_date']} a {date_range['to_date']})...")
+            log(f"selecionando período específico ({date_range['from_date']} a {date_range['to_date']})...")
             select_custom_date_range(
                 frame,
                 from_date=_to_site_date_format(date_range["from_date"]),
@@ -189,7 +189,7 @@ def run(
             disable_grouping_level(frame, nivel)
         for nivel, campo in enumerate(niveis, start=1):
             if nivel > 1:
-                log(f"marcando o {'segundo' if nivel == 2 else 'terceiro'} nivel de agrupamento...")
+                log(f"marcando o {'segundo' if nivel == 2 else 'terceiro'} nível de agrupamento...")
                 enable_grouping_level(frame, nivel)
             log(f"preenchendo Group By {nivel} ({campo})...")
             select_combobox(frame, f"Group By {nivel}", campo, option_text=campo)
@@ -203,9 +203,9 @@ def run(
             export_format=config["export_format"],
         )
 
-        log(f"concluido: {saved_path}")
+        log(f"concluído: {saved_path}")
         result["success"] = True
-        result["message"] = f"Relatorio salvo em {saved_path}"
+        result["message"] = f"Relatório salvo em {saved_path}"
         result["file_path"] = saved_path
     except Exception as exc:  # noqa: BLE001 - queremos capturar qualquer falha da automacao
         log(f"falhou: {exc}")

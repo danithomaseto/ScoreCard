@@ -97,7 +97,7 @@ def _linhas_do_csv(caminho):
                 return [linha for linha in csv.reader(fh, dialeto)]
         except UnicodeDecodeError:
             continue
-    raise ValueError("Nao consegui ler o arquivo de faltas como texto.")
+    raise ValueError("Não consegui ler o arquivo de faltas como texto.")
 
 
 def _cruas(caminho):

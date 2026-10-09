@@ -103,6 +103,12 @@ async function comEsqueleto(tbody, colunas, carregar, antesDeMostrar) {
 const navItems = document.querySelectorAll('.nav-item[data-page]');
 const pages = document.querySelectorAll('.page');
 
+// O texto do andamento sem acento e em minusculas, para comparar com as
+// etapas abaixo ("relatório" e "relatorio" sao a mesma etapa).
+function semAcento(texto) {
+  return String(texto).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 // Uma etapa pra cada mensagem que automation/generic.py emite via
 // on_progress, na mesma ordem em que acontecem.
 const PROGRESS_STEPS = [
@@ -128,7 +134,7 @@ const PROGRESS_STEPS = [
 // indicador (o arquivo salvou mas o calculo nao rodou) e falha. Tratar
 // o do meio como sucesso foi o que escondeu o problema do .xls.
 const DESFECHOS = {
-  success: { rotulo: 'Concluida', classe: 'success' },
+  success: { rotulo: 'Concluída', classe: 'success' },
   warning: { rotulo: 'Sem indicador', classe: 'warning' },
   error: { rotulo: 'Falha', classe: 'error' },
 };
@@ -173,7 +179,7 @@ function showRunActions(container, { houveSucesso, houveFalha }) {
     btn.addEventListener('click', async () => {
       const result = await acao();
       if (result && !result.success) {
-        alert(result.message || 'Não foi possível abrir.');
+        avisar(result.message || 'Não foi possível abrir.', 'erro');
       }
     });
     container.appendChild(btn);
@@ -213,6 +219,7 @@ async function showApp() {
   await loadOperations();
   await loadGroupByOptions();
   await showPage('home');
+  atualizarRodape();
   preCarregar();
 }
 
@@ -255,14 +262,14 @@ function avisar(texto, tipo = 'info', detalhe = '') {
   const area = document.getElementById('avisos');
   if (!area) return;
   const aviso = document.createElement('div');
-  aviso.className = `aviso ${tipo}`;
+  aviso.className = `toast ${tipo}`;
   aviso.setAttribute('role', tipo === 'erro' ? 'alert' : 'status');
-  aviso.innerHTML = `<svg class="aviso-icone" viewBox="0 0 24 24" aria-hidden="true">${ICONES_DO_AVISO[tipo] || ICONES_DO_AVISO.info}</svg>`;
+  aviso.innerHTML = `<svg class="toast-icone" viewBox="0 0 24 24" aria-hidden="true">${ICONES_DO_AVISO[tipo] || ICONES_DO_AVISO.info}</svg>`;
   const corpo = document.createElement('div');
   corpo.textContent = texto;
   if (detalhe) {
     const pequeno = document.createElement('span');
-    pequeno.className = 'aviso-detalhe';
+    pequeno.className = 'toast-detalhe';
     pequeno.textContent = detalhe;
     corpo.appendChild(pequeno);
   }
@@ -335,6 +342,7 @@ function trocarPagina(pageName) {
   contentArea.scrollTop = 0;
   moverIndicadorDoMenu();
   animarEntradaDaPagina(pageName);
+  desenharSelo(); // o selo da extracao some na tela de onde ela saiu
 }
 
 // Com a View Transitions API do navegador, a pagina antiga esmaece
@@ -588,6 +596,7 @@ async function loadIndicators() {
     const nomeDoMes = homeMes.selectedOptions[0]?.text || 'neste mês';
     document.getElementById('indicators-empty-titulo').textContent =
       `Nenhuma extração de ${homeOperationSelect.selectedOptions[0]?.text || 'esta operação'} em ${nomeDoMes} ainda`;
+    botaoMesAnterior(document.getElementById('indicators-anterior'), tabela.meses, tabela.mes);
     return;
   }
 
@@ -1012,6 +1021,21 @@ function irParaExtracao(operacao, periodo, groupBy) {
 document.getElementById('indicators-extrair').addEventListener('click', () => {
   irParaExtracao(homeOperationSelect.value, 'week');
 });
+document.getElementById('indicators-anterior').addEventListener('click', (evento) => {
+  homeMes.value = evento.currentTarget.dataset.mes;
+  loadIndicators();
+});
+
+// Tela vazia: o botao "Ver <mes>" leva ao mes anterior mais recente que
+// tem dados (a lista de meses so tem meses com extracao, mais o atual).
+function botaoMesAnterior(botao, meses, mesAtual) {
+  const anterior = (meses || []).find((m) => m.id < mesAtual);
+  botao.hidden = !anterior;
+  if (anterior) {
+    botao.textContent = `Ver ${anterior.rotulo}`;
+    botao.dataset.mes = anterior.id;
+  }
+}
 
 // ---------------------------------------------------------------
 // Modo apresentacao (aba Inicio)
@@ -1074,6 +1098,7 @@ let historicoCompleto = [];
 async function loadHistoryTable(tbody = historyTableBody) {
   historicoCompleto = await comEsqueleto(tbody, 7, () => pywebview.api.get_report_history());
   desenharHistorico(tbody);
+  desenharRodape();
 }
 
 function filtrosDoHistorico(tbody) {
@@ -1509,11 +1534,13 @@ window.updateMultiProgress = function (data) {
     step.classList.add(classePorStatus[data.status] || 'error');
     // Numa fila, "Concluida" nao pode mascarar a operacao que salvou o
     // arquivo sem gerar indicador: ali o motivo e que importa.
-    subtitle.textContent = data.status === 'success' ? 'Concluida' : data.step;
+    subtitle.textContent = data.status === 'success' ? 'Concluída' : data.step;
     multiProgressPercentEl.textContent = `${Math.round(((data.index + 1) / data.total) * 100)}%`;
   }
 
   multiProgressDetailEl.textContent = `${data.index + 1} de ${data.total} - ${data.operation_label}`;
+  const feitas = data.status === 'running' ? data.index : data.index + 1;
+  extracaoAndou(`${data.index + 1} de ${data.total} · ${data.operation_label}`, feitas / data.total);
 };
 
 // yyyy-mm-dd no fuso local. Nao da pra usar toISOString() aqui: ele
@@ -1590,10 +1617,14 @@ async function ensureFolderConfigured() {
     return true;
   }
 
-  alert(
-    'Antes de comecar, selecione a pasta do SharePoint/OneDrive onde os ' +
-    'relatórios extraídos serão salvos.'
-  );
+  const escolha = await perguntar({
+    icone: 'pasta',
+    titulo: 'Escolha a pasta do SharePoint',
+    texto: 'Antes de extrair, escolha a pasta do SharePoint/OneDrive onde os relatórios vão ser salvos.\n'
+      + 'Cada operação usa a sua subpasta dentro dela. Dá para trocar depois em Configurações.',
+    botoes: [{ rotulo: 'Agora não', valor: false }, { rotulo: 'Escolher pasta', valor: true, principal: true }],
+  });
+  if (!escolha) return false;
   const result = await pywebview.api.choose_sharepoint_folder();
   if (result.success) {
     folderPathEl.textContent = result.folder;
@@ -1643,7 +1674,7 @@ window.updateProgress = function (text) {
   // Extracao disparada da aba Horas Indiretas: o andamento aparece la.
   if (indExtraindo) progressoIndiretas(text);
   progressDetailEl.textContent = text;
-  const lower = text.toLowerCase();
+  const lower = semAcento(text);
 
   if (lower.startsWith('falhou')) {
     markStepsError();
@@ -1653,6 +1684,8 @@ window.updateProgress = function (text) {
 
   const stepIndex = PROGRESS_STEPS.findIndex((def) => def.match(lower));
   if (stepIndex === -1) return;
+  extracaoAndou(stepEls[stepIndex].querySelector('.step-title').textContent,
+    (stepIndex + 1) / PROGRESS_STEPS.length);
 
   setBadge('running', 'Em andamento');
   updateSteps(stepIndex);
@@ -1676,12 +1709,14 @@ runBtn.addEventListener('click', async () => {
   // perto de onde o campo de verdade e preenchido.
   const dateRange = { from_date: fromDateInput.value, to_date: toDateInput.value };
 
+  if (outraExtracaoRodando()) return;
   const folderOk = await ensureFolderConfigured();
   if (!folderOk) {
     showStatus(runStatus, 'É necessário selecionar a pasta do SharePoint antes de executar.', 'error');
     return;
   }
 
+  extracaoComecou('extract', `${operationSelect.selectedOptions[0]?.text || ''} · ${ROTULO_DO_TIPO[getSelectedPeriod()] || ''}`);
   runBtn.disabled = true;
   runBtn.querySelector('.btn-texto').textContent = 'Executando...';
   resetSteps();
@@ -1706,11 +1741,13 @@ runBtn.addEventListener('click', async () => {
     progressDetailEl.textContent = texto;
     showStatus(runStatus, texto, desfecho.classe);
     showRunActions(runActions, { houveSucesso: result.success, houveFalha: !result.success });
+    extracaoTerminou(desfecho.classe, desfecho.rotulo);
     await loadHistoryTable();
   } catch (err) {
     markStepsError();
     setBadge('error', 'Falha');
     showStatus(runStatus, 'Erro inesperado: ' + err.message, 'error');
+    extracaoTerminou('error', 'Falha');
   } finally {
     runBtn.disabled = false;
     runBtn.querySelector('.btn-texto').textContent = 'Iniciar extração';
@@ -1737,12 +1774,14 @@ multiRunBtn.addEventListener('click', async () => {
   }
   const dateRange = { from_date: multiFromDateInput.value, to_date: multiToDateInput.value };
 
+  if (outraExtracaoRodando()) return;
   const folderOk = await ensureFolderConfigured();
   if (!folderOk) {
     showStatus(multiRunStatus, 'É necessário selecionar a pasta do SharePoint antes de executar.', 'error');
     return;
   }
 
+  extracaoComecou('multi', filtros ? selected[0].label : 'Fila');
   refreshMultiQueue();
   setMultiBadge('running', 'Em andamento');
   multiProgressDetailEl.textContent = 'Iniciando a fila...';
@@ -1751,7 +1790,7 @@ multiRunBtn.addEventListener('click', async () => {
   multiRunBtn.querySelector('.btn-texto').textContent = 'Executando...';
   multiStopBtn.hidden = false;
   multiStopBtn.disabled = false;
-  multiStopBtn.textContent = 'Parar apos a atual';
+  multiStopBtn.textContent = 'Parar após a atual';
   try {
     const result = filtros
       ? await pywebview.api.run_multi_filters(selected[0].key, tiposEscolhidosNoMulti(), dateRange, multiGroupBySelect.value)
@@ -1761,13 +1800,25 @@ multiRunBtn.addEventListener('click', async () => {
         multiGroupBySelect.value,
         getSelectedMultiPeriod(),
       );
-    let badgeTexto = 'Concluida';
-    if (result.cancelled) badgeTexto = 'Interrompida';
-    else if (!result.success) badgeTexto = 'Com falhas';
-    setMultiBadge(result.success ? 'success' : 'error', badgeTexto);
+    // Tres desfechos, como na extracao unica: falha em vermelho; parada a
+    // pedido ou arquivo salvo sem indicador em amarelo; o resto em verde.
+    let badgeTexto = 'Concluída';
+    let classe = 'success';
+    if ((result.failed || 0) > 0 || (!result.success && !result.cancelled)) {
+      badgeTexto = 'Com falhas';
+      classe = 'error';
+    } else if (result.cancelled) {
+      badgeTexto = 'Interrompida';
+      classe = 'warning';
+    } else if ((result.sem_indicador || 0) > 0) {
+      badgeTexto = 'Sem indicador';
+      classe = 'warning';
+    }
+    setMultiBadge(classe, badgeTexto);
     multiProgressPercentEl.textContent = '100%';
     multiProgressDetailEl.textContent = result.message;
-    showStatus(multiRunStatus, result.message, result.success ? 'success' : 'error');
+    showStatus(multiRunStatus, result.message, classe);
+    extracaoTerminou(classe, badgeTexto);
     showRunActions(multiRunActions, {
       houveSucesso: (result.succeeded || 0) > 0,
       houveFalha: (result.failed || 0) > 0,
@@ -1776,6 +1827,7 @@ multiRunBtn.addEventListener('click', async () => {
   } catch (err) {
     setMultiBadge('error', 'Falha');
     showStatus(multiRunStatus, 'Erro inesperado: ' + err.message, 'error');
+    extracaoTerminou('error', 'Falha');
   } finally {
     multiRunBtn.disabled = false;
     multiRunBtn.querySelector('.btn-texto').textContent = 'Iniciar extração';
@@ -2130,7 +2182,7 @@ async function salvarEdicao() {
   hcStatus.textContent = saiDaLista
     ? `${nome} foi para ${novaOperacao} e sai desta lista. O HC digitado foi junto.`
     : mudouOperacao
-      ? `${nome} agora esta em ${novaOperacao}. O HC digitado foi junto.`
+      ? `${nome} agora está em ${novaOperacao}. O HC digitado foi junto.`
       : `${nome} atualizado. As faltas da planilha já são ligadas pelo nome novo.`;
 }
 
@@ -2154,6 +2206,8 @@ function desenharTabelaHc(tela) {
   hcContador.textContent = plural(tela.linhas.length, 'linha', 'linhas');
   // Sem gestor, a tabela so teria cabecalhos soltos: fica so a mensagem.
   hcVazio.hidden = tela.linhas.length > 0;
+  document.getElementById('hc-vazio-titulo').textContent = tela.operacao === 'todas'
+    ? 'Nenhum gestor cadastrado ainda' : `Nenhum gestor cadastrado em ${tela.cards.operacao}`;
   document.getElementById('hc-tabela-wrap').hidden = tela.linhas.length === 0;
 
   hcCorpo.innerHTML = '';
@@ -2176,7 +2230,7 @@ function desenharTabelaHc(tela) {
     // Com faltas digitadas nao ha "usuarios na planilha" para mostrar.
     nota.textContent = tela.faltas_manuais
       ? ''
-      : `${plural(linha.usuarios, 'usuario', 'usuarios')} na planilha`;
+      : `${plural(linha.usuarios, 'usuário', 'usuários')} na planilha`;
     nota.hidden = tela.faltas_manuais;
     nomes.appendChild(nome);
     nomes.appendChild(nota);
@@ -2495,6 +2549,7 @@ async function sugerirNomesDoSummary(operacao) {
 }
 
 document.getElementById('hc-add-gestor').addEventListener('click', () => abrirFaixa('gestor'));
+document.getElementById('hc-vazio-adicionar').addEventListener('click', () => abrirFaixa('gestor'));
 document.getElementById('hc-novo-gestor-op').addEventListener('change', (evento) => sugerirNomesDoSummary(evento.target.value));
 document.getElementById('hc-editar-op').addEventListener('change', (evento) => sugerirNomesDoSummary(evento.target.value));
 document.getElementById('hc-add-funcao').addEventListener('click', () => abrirFaixa('funcao'));
@@ -2683,6 +2738,7 @@ const cvTotal = document.getElementById('cv-total');
 const cvStatus = document.getElementById('cv-status');
 const cvVazio = document.getElementById('cv-vazio');
 const cvGestor = document.getElementById('cv-gestor');
+const cvAgrupar = document.getElementById('cv-agrupar');
 
 let cvEstado = { operacao: 'todas', visualizacao: 'semanal', mes: null, periodo_id: null, gestor: '' };
 let cvTela = null;
@@ -2887,10 +2943,39 @@ function desenharTabelaCv(tela) {
     document.getElementById('cv-vazio-texto').textContent = noMes
       ? 'Extraia o mês (Month) para ver o coverage de cada usuário.'
       : 'Extraia a semana (Week) para ver o coverage de cada usuário e de cada gestor.';
+    botaoMesAnterior(document.getElementById('cv-vazio-anterior'), tela.meses, tela.mes);
   }
 
   cvCorpo.innerHTML = '';
-  for (const linha of tela.linhas) {
+  // Agrupado: os usuarios de cada gestor juntos, com o nome dele em cima.
+  // So muda a ordem e poe os titulos; os numeros sao os mesmos.
+  const podeAgrupar = !tela.gestor && tela.gestores.length > 1;
+  cvAgrupar.disabled = !podeAgrupar;
+  cvAgrupar.closest('.cv-agrupar').classList.toggle('desligado', !podeAgrupar);
+  const agrupar = podeAgrupar && cvAgrupar.checked;
+  const linhas = agrupar
+    ? [...tela.linhas].sort((a, b) => a.gestor_rotulo.localeCompare(b.gestor_rotulo, 'pt-BR')
+      || a.operacao.localeCompare(b.operacao, 'pt-BR') || a.usuario.localeCompare(b.usuario, 'pt-BR'))
+    : tela.linhas;
+  let grupoAtual = null;
+  for (const linha of linhas) {
+    if (agrupar && linha.gestor_rotulo !== grupoAtual) {
+      grupoAtual = linha.gestor_rotulo;
+      const titulo = document.createElement('tr');
+      titulo.className = 'cv-grupo';
+      const td = document.createElement('td');
+      td.colSpan = 11;
+      // O nome fica parado a esquerda mesmo com a tabela rolada de lado.
+      const rotulo = document.createElement('div');
+      rotulo.className = 'cv-grupo-rotulo';
+      rotulo.textContent = grupoAtual === '—' ? 'Sem gestor na extração' : grupoAtual;
+      const quantos = document.createElement('span');
+      quantos.textContent = plural(linhas.filter((l) => l.gestor_rotulo === grupoAtual).length, 'usuário', 'usuários');
+      rotulo.appendChild(quantos);
+      td.appendChild(rotulo);
+      titulo.appendChild(td);
+      cvCorpo.appendChild(titulo);
+    }
     const tr = document.createElement('tr');
     if (linha.cor === 'vermelho') tr.classList.add('abaixo');
     const usuario = document.createElement('strong');
@@ -2934,6 +3019,16 @@ cvOperacao.addEventListener('change', async () => {
   cvEstado.gestor = '';
   await carregarCoverage();
 });
+document.getElementById('cv-vazio-anterior').addEventListener('click', async (evento) => {
+  cvEstado.mes = evento.currentTarget.dataset.mes;
+  cvEstado.periodo_id = null;
+  await carregarCoverage();
+});
+cvAgrupar.addEventListener('change', () => { if (cvTela) desenharTabelaCv(cvTela); });
+// Rolando a tabela para o lado, a coluna do usuario (parada) ganha sombra.
+document.getElementById('cv-tabela-wrap').addEventListener('scroll', (evento) => {
+  evento.currentTarget.classList.toggle('rolado-lado', evento.currentTarget.scrollLeft > 0);
+}, { passive: true });
 cvGestor.addEventListener('change', async () => {
   cvEstado.gestor = cvGestor.value;
   await carregarCoverage();
@@ -3449,7 +3544,7 @@ document.getElementById('ind-vazio-anterior').addEventListener('click', async (e
 
 // Etapas da automacao na faixa de extracao (as mesmas do Extrair Dados).
 function progressoIndiretas(texto) {
-  const lower = texto.toLowerCase();
+  const lower = semAcento(texto);
   const indice = PROGRESS_STEPS.findIndex((def) => def.match(lower));
   document.getElementById('ind-progresso-texto').textContent = texto;
   if (indice >= 0) {
@@ -3468,10 +3563,12 @@ indExtrairBtn.addEventListener('click', async () => {
     showStatus(indStatus, 'A data "De" não pode ser depois da data "Até".', 'error');
     return;
   }
+  if (outraExtracaoRodando()) return;
   if (!(await ensureFolderConfigured())) {
     showStatus(indStatus, 'É necessário selecionar a pasta do SharePoint antes de extrair.', 'error');
     return;
   }
+  extracaoComecou('indiretas', `${indExtOperacao.selectedOptions[0]?.text || ''} · Horas Indiretas`);
   const progresso = document.getElementById('ind-progresso');
   progresso.hidden = false;
   document.getElementById('ind-progresso-preenchido').style.width = '0%';
@@ -3483,6 +3580,7 @@ indExtrairBtn.addEventListener('click', async () => {
         indExtOperacao.value, { from_date: indExtDe.value, to_date: indExtAte.value }, 'Job Code', 'indiretas');
       const desfecho = desfechoDe(resultado);
       showStatus(indStatus, resultado.indicators_message || resultado.message, desfecho.classe);
+      extracaoTerminou(desfecho.classe, desfecho.rotulo);
       if (resultado.success) {
         document.getElementById('ind-progresso-preenchido').style.width = '100%';
         indEstado.operacao = indExtOperacao.value;
@@ -3491,6 +3589,7 @@ indExtrairBtn.addEventListener('click', async () => {
     } catch (erro) {
       registrarErro('extração de horas indiretas', erro);
       showStatus(indStatus, 'Não deu para extrair. Veja o log em Configurações > Gerar diagnóstico.', 'error');
+      extracaoTerminou('error', 'Falha');
     } finally {
       indExtraindo = false;
       progresso.hidden = true;
@@ -3547,6 +3646,7 @@ function criarAbaDeGrupo(dimensao, pre) {
         `Nenhuma extração ${nomes.tipo} de ${tela.operacao_rotulo} em ${tela.mes_rotulo} ainda`;
       el('vazio-texto').textContent = `Extraia ${nomes.tipo} (Week › ${nomes.nivel} › User ID) e ${nomes.mes} `
         + `(${nomes.nivel} › User ID): cada semana vira uma coluna, o mês entra no final e cada ${nomes.singular.toLowerCase()} ganha a sua tabela.`;
+      botaoMesAnterior(el('vazio-anterior'), tela.meses, tela.mes);
       return;
     }
     desenharLista();
@@ -3620,8 +3720,13 @@ function criarAbaDeGrupo(dimensao, pre) {
     area.innerHTML = '';
     if (!tela.tabelas.length) {
       const vazio = document.createElement('div');
-      vazio.className = 'card indicators-card grupos-nenhum';
-      vazio.textContent = `Nenhum ${nomes.singular.toLowerCase()} marcado. Marque acima quais ${nomes.plural} aparecem.`;
+      vazio.className = 'card indicators-card';
+      vazio.innerHTML = '<div class="estado-vazio"><svg class="estado-vazio-icone" viewBox="0 0 24 24" aria-hidden="true">'
+        + '<rect x="3" y="3" width="18" height="18" rx="2"></rect><polyline points="8 12 11 15 16 9"></polyline></svg>'
+        + `<strong>Nenhum ${nomes.singular.toLowerCase()} marcado</strong>`
+        + `<p>Marque na lista acima quais ${nomes.plural} aparecem. A escolha fica guardada para esta operação.</p>`
+        + '<div class="estado-vazio-acoes"><button type="button" class="acao">Selecionar todos</button></div></div>';
+      vazio.querySelector('button').addEventListener('click', () => salvarVisiveis(true));
       area.appendChild(vazio);
       return;
     }
@@ -3866,6 +3971,10 @@ function criarAbaDeGrupo(dimensao, pre) {
   const extrair = () => irParaExtracao(estado.operacao, tipoWeek);
   el('ir-extrair').addEventListener('click', extrair);
   el('vazio-extrair').addEventListener('click', extrair);
+  el('vazio-anterior').addEventListener('click', async (evento) => {
+    estado.mes = evento.currentTarget.dataset.mes;
+    await carregar();
+  });
 
   return { carregar };
 }
@@ -4061,3 +4170,186 @@ document.addEventListener('keydown', (evento) => {
     irParaExtracao(operacao, tipo);
   }
 }, true);
+
+// ---------------------------------------------------------------
+// Perguntas no visual do app (no lugar das caixas do Windows)
+// ---------------------------------------------------------------
+
+const ICONES_DO_DIALOGO = {
+  pasta: '<svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>',
+  aviso: '<svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+};
+
+// Resolve com o "valor" do botao escolhido; Esc ou clique fora, com null.
+function perguntar({ titulo, texto, icone = 'aviso', botoes }) {
+  const fundo = document.getElementById('dialogo');
+  const area = document.getElementById('dialogo-botoes');
+  const focoAntes = document.activeElement;
+  document.getElementById('dialogo-titulo').textContent = titulo;
+  document.getElementById('dialogo-texto').textContent = texto;
+  const caixaDoIcone = document.getElementById('dialogo-icone');
+  caixaDoIcone.innerHTML = ICONES_DO_DIALOGO[icone] || ICONES_DO_DIALOGO.aviso;
+  caixaDoIcone.className = `dialogo-icone ${icone === 'erro' ? 'erro' : ''}`;
+  area.innerHTML = '';
+  return new Promise((resolver) => {
+    const fechar = (valor) => {
+      fundo.hidden = true;
+      document.removeEventListener('keydown', teclas, true);
+      if (focoAntes && focoAntes.focus) focoAntes.focus();
+      resolver(valor);
+    };
+    const teclas = (evento) => {
+      if (evento.key === 'Escape') {
+        evento.preventDefault();
+        evento.stopImmediatePropagation();
+        fechar(null);
+      } else if (evento.key === 'Tab') {
+        // O foco fica dentro da janela.
+        const focaveis = [...area.querySelectorAll('button')];
+        const i = focaveis.indexOf(document.activeElement);
+        evento.preventDefault();
+        const proximo = evento.shiftKey ? (i <= 0 ? focaveis.length - 1 : i - 1) : (i + 1) % focaveis.length;
+        focaveis[proximo].focus();
+      }
+    };
+    let principal = null;
+    for (const botao of botoes) {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.textContent = botao.rotulo;
+      if (!botao.principal) el.className = 'secondary';
+      el.addEventListener('click', () => fechar(botao.valor));
+      area.appendChild(el);
+      if (botao.principal) principal = el;
+    }
+    fundo.onclick = (evento) => { if (evento.target === fundo) fechar(null); };
+    document.addEventListener('keydown', teclas, true);
+    fundo.hidden = false;
+    (principal || area.lastElementChild).focus();
+  });
+}
+
+// ---------------------------------------------------------------
+// Extracao em andamento, vista de qualquer aba
+// ---------------------------------------------------------------
+// Um selo na barra amarela mostra a extracao que esta rodando (unica,
+// fila ou horas indiretas) quando se esta em outra aba; clicar nele volta
+// para a tela de onde ela saiu. So uma extracao roda por vez.
+
+const seloExtracao = document.getElementById('topbar-extracao');
+const ROTULO_DA_ORIGEM = { extract: 'Extrair Dados', multi: 'Extrair Múltiplos', indiretas: 'Horas Indiretas' };
+const extracaoAtual = { ativa: false, origem: null, rotulo: '', texto: '', fracao: 0, desfecho: null, timer: null };
+
+function paginaAberta() {
+  return (document.querySelector('.page:not([hidden])')?.id || '').replace('page-', '');
+}
+
+function outraExtracaoRodando() {
+  if (!extracaoAtual.ativa) return false;
+  avisar('Já tem uma extração rodando', 'erro',
+    `${extracaoAtual.rotulo} (${ROTULO_DA_ORIGEM[extracaoAtual.origem]}). Espere ela terminar para começar outra.`);
+  return true;
+}
+
+function desenharSelo() {
+  const e = extracaoAtual;
+  const visivel = (e.ativa || e.desfecho) && paginaAberta() !== e.origem;
+  seloExtracao.hidden = !visivel;
+  if (!visivel) return;
+  seloExtracao.classList.remove('ok', 'aviso', 'erro');
+  if (e.desfecho) seloExtracao.classList.add({ success: 'ok', warning: 'aviso', error: 'erro' }[e.desfecho.classe] || 'ok');
+  document.getElementById('topbar-extracao-texto').textContent = e.ativa
+    ? `Extraindo · ${e.texto || e.rotulo}`
+    : `${e.desfecho.rotulo} · ${e.rotulo}`;
+  document.getElementById('topbar-extracao-progresso').style.width = `${Math.round(e.fracao * 100)}%`;
+  seloExtracao.title = `${e.ativa ? 'Extração em andamento' : 'Última extração'}: ${e.rotulo}. Clique para abrir ${ROTULO_DA_ORIGEM[e.origem]}.`;
+}
+
+function extracaoComecou(origem, rotulo) {
+  clearTimeout(extracaoAtual.timer);
+  Object.assign(extracaoAtual, { ativa: true, origem, rotulo, texto: '', fracao: 0, desfecho: null });
+  desenharSelo();
+  desenharRodape();
+}
+
+function extracaoAndou(texto, fracao) {
+  if (!extracaoAtual.ativa) return;
+  extracaoAtual.texto = extracaoAtual.origem === 'multi' ? texto : `${extracaoAtual.rotulo} · ${texto}`;
+  extracaoAtual.fracao = Math.max(0, Math.min(1, fracao));
+  desenharSelo();
+  desenharRodape();
+}
+
+function extracaoTerminou(classe, rotulo) {
+  const e = extracaoAtual;
+  if (!e.ativa) return;
+  e.ativa = false;
+  e.fracao = 1;
+  e.desfecho = { classe, rotulo };
+  // Quem esta em outra aba fica sabendo pelo aviso no canto.
+  if (paginaAberta() !== e.origem) {
+    avisar(`${rotulo}: ${e.rotulo}`, classe === 'error' ? 'erro' : 'ok',
+      `Clique no selo da barra amarela para abrir ${ROTULO_DA_ORIGEM[e.origem]}.`);
+  }
+  desenharSelo();
+  e.timer = setTimeout(() => { e.desfecho = null; desenharSelo(); }, 10000);
+  atualizarRodape();
+}
+
+seloExtracao.addEventListener('click', () => {
+  if (extracaoAtual.origem) showPage(extracaoAtual.origem);
+});
+
+// ---------------------------------------------------------------
+// Rodape do menu: a ultima extracao, ha quanto tempo
+// ---------------------------------------------------------------
+
+function haQuanto(iso) {
+  const minutos = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (!Number.isFinite(minutos)) return '';
+  if (minutos < 1) return 'agora há pouco';
+  if (minutos < 60) return `há ${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return `há ${horas} h`;
+  const dias = Math.floor(horas / 24);
+  if (dias === 1) return 'ontem';
+  if (dias < 7) return `há ${dias} dias`;
+  return `em ${new Date(iso).toLocaleDateString('pt-BR')}`;
+}
+
+async function atualizarRodape() {
+  try {
+    historicoCompleto = await pywebview.api.get_report_history();
+  } catch (erro) {
+    return;
+  }
+  desenharRodape();
+}
+
+function desenharRodape() {
+  const ponto = document.getElementById('status-dot');
+  const titulo = document.getElementById('status-titulo');
+  const sub = document.getElementById('status-sub');
+  ponto.classList.remove('extraindo', 'aviso', 'erro');
+  if (extracaoAtual.ativa) {
+    ponto.classList.add('extraindo');
+    titulo.textContent = 'Extraindo…';
+    sub.textContent = extracaoAtual.texto || extracaoAtual.rotulo;
+  } else {
+    const ultima = historicoCompleto[0];
+    titulo.textContent = 'Pronto para extrair';
+    if (!ultima) {
+      sub.textContent = 'Nenhuma extração ainda';
+    } else {
+      const desfecho = desfechoDe(ultima);
+      if (desfecho.classe === 'warning') ponto.classList.add('aviso');
+      if (desfecho.classe === 'error') ponto.classList.add('erro');
+      const resultado = desfecho.classe === 'success' ? '' : ` · ${desfecho.rotulo.toLowerCase()}`;
+      sub.textContent = `Última extração ${haQuanto(ultima.timestamp)} · ${ultima.operation}${resultado}`;
+    }
+  }
+  // Com o menu recolhido so o ponto aparece: o texto vai no "title".
+  document.getElementById('sidebar-status').title = `${titulo.textContent} — ${sub.textContent}`;
+}
+// O "há 5 min" anda sozinho.
+setInterval(() => { if (!appView.hidden) desenharRodape(); }, 60000);

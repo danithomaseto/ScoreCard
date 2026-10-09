@@ -154,6 +154,26 @@ caso, `"escala_espanhola": True`). Nenhuma outra parte do código muda.
 - **Avisos no canto:** ao copiar uma coluna ou tabela aparece um aviso no
   canto inferior direito dizendo o que foi copiado ("Copiado: 6 valores
   de Week 37"); erros também aparecem ali.
+- **Extração vista de qualquer aba:** enquanto uma extração roda (Extrair
+  Dados, Extrair Múltiplos ou Horas Indiretas), um selo na barra amarela
+  mostra a etapa ("Extraindo · Swa · Week · Fazendo login" ou "3 de 7 ·
+  Hugo Boss") e uma barrinha de progresso. Clicar nele volta para a tela
+  da extração. No fim, o selo mostra o resultado por alguns segundos e
+  aparece um aviso no canto. **Uma extração por vez:** com uma rodando, o
+  app não deixa começar outra (evita dois navegadores no BlueYonder ao
+  mesmo tempo).
+- **Rodapé do menu:** mostra a última extração e há quanto tempo ("Última
+  extração há 2 h · Swa"), com o ponto em verde (concluída), amarelo
+  (sem indicador ou extraindo agora) ou vermelho (falha).
+- **Perguntas no visual do app:** a pergunta da pasta do SharePoint (e os
+  erros ao abrir pasta ou print) aparecem numa janela do próprio app, e
+  não mais na caixa do Windows.
+- **Teclado:** navegando com Tab, o item em foco ganha um contorno
+  amarelo.
+- **Telas vazias:** todas com o mesmo desenho — o que falta, como
+  resolver e o botão **Extrair agora** (no Headcount, **+ Adicionar
+  Gestor**); quando há um mês anterior com dados, aparece também **Ver
+  <mês>**.
 - As preferências (tema, densidade e menu) ficam guardadas na máquina.
 
 ### 4.2 Login
@@ -339,6 +359,10 @@ Quanto das horas que cada pessoa deveria trabalhar aparece no LMS.
   operação não entra (ela é da operação inteira). Week extraída antes
   dessa mudança não tem gestor: aparece "Sem gestor na extração".
 - **Coluna Gestor** na tabela, ao lado da operação.
+- **Agrupar por gestor:** junta os usuários de cada gestor, com o nome do
+  gestor e a quantidade em cima de cada grupo. Só muda a ordem da lista.
+- **User ID parado:** rolando a tabela para o lado (janela estreita), a
+  coluna do usuário fica fixa.
 - **Cards:** operação, período, Horas LMS (com o número de usuários),
   Horas Metrics e o Coverage do total.
 - **Tabela por usuário:** User ID, operação, Horas LMS, Diretas sem
@@ -903,6 +927,7 @@ python -m pytest -q tests
 | 30/09/2026 | **V.01.0 fechada para apresentação** e este documento |
 | 05/10/2026 | Gráfico de distribuição da dispersão do mês na aba Início; aba **Horas Indiretas** (extração Week + Job Code, pasta Indiretas, quadros por semana, Barras e Pareto) |
 | 05/10/2026 | **V.01.1:** correção do erro ao digitar dias úteis no Resultado do Mês; o ciclo da folha passa a ir para o mês em que fecha (e para o Pico); ciclo em aberto conta até ontem; cópia para o PowerPoint numa linha só por célula |
+| 09/10/2026 | Selo da extração em qualquer aba (uma extração por vez); rodapé com a última extração; perguntas no visual do app; foco do teclado; telas vazias padronizadas; Coverage com User ID fixo e agrupado por gestor; pente fino (acentos nas mensagens, cores do resultado da fila) |
 | 09/10/2026 | Menu em grupos e recolhível; Resumo, barra de nomes e tabelas recolhíveis no Resultado Gestor/Turno; nomes do Summary sugeridos no Headcount; **tema claro**; símbolos junto das cores; filtros iguais em todas as abas; avisos de "copiado"; atalhos de teclado; densidade compacta; filtro no histórico |
 | 08/10/2026 | Abas **Resultado Gestor** e **Resultado Turno** (extrações Gestor e Turno, Week e Month, com Group By 3); Week com o Supervisor no meio e **Coverage por gestor**; **Vários filtros** no Extrair Múltiplos; cópia das Horas Indiretas para o PowerPoint; animações de abertura, login, entrada no app e transições |
 

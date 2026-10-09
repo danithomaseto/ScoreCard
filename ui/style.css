@@ -848,7 +848,6 @@ th.peak-col .col-title { color: var(--amarelo-tx); }
 .filtro-campo.largo { flex-grow: 1.35; }
 .filtro-campo select { margin-bottom: 0; }
 .filtro-campo select:disabled { opacity: 0.45; cursor: not-allowed; }
-.filtro-hint { margin: 8px 0 0; font-size: 11px; color: var(--text-faint); line-height: 1.5; }
 
 /* Mesma altura dos selects ao lado (46px) e opcoes dividindo a largura
    toda: o estilo global de botao dava 46px a cada opcao e o conjunto
@@ -1089,7 +1088,6 @@ th.peak-col .col-title { color: var(--amarelo-tx); }
   cursor: pointer;
 }
 
-.hc-vazio { margin: 24px 0 0; text-align: center; font-size: 13px; color: var(--text-muted); line-height: 1.7; }
 
 .hc-status {
   margin-top: 18px; padding-top: 14px;
@@ -1567,26 +1565,6 @@ button.excluir-definitivo:hover { background: #b42318; }
 }
 
 
-/* Aviso de erro da tela (canto inferior direito, some sozinho). */
-#aviso-erro {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 50;
-  max-width: 420px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(249, 112, 102, 0.5);
-  background: #2a1618;
-  color: #fecdca;
-  font-size: 13px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  opacity: 0;
-  transform: translateY(8px);
-  pointer-events: none;
-  transition: opacity 200ms ease, transform 200ms ease;
-}
-#aviso-erro.visivel { opacity: 1; transform: none; pointer-events: auto; }
 
 /* ---------- Telas vazias com atalho para extrair ---------- */
 
@@ -1816,8 +1794,6 @@ body.apresentacao #distribuicao-card { display: none; }
 
 .ind-conteudo { width: 100%; max-width: none; }
 .ind-vis[hidden] { display: none; }
-.ind-vazio-acoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.ind-vazio-acoes [hidden] { display: none; }
 .ind-rodape { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--text-faint); }
 .ind-rodape[hidden] { display: none; }
 .ind-rodape strong { color: var(--text-muted); font-variant-numeric: tabular-nums; }
@@ -2040,7 +2016,6 @@ body.apresentacao #distribuicao-card { display: none; }
 
 .grupos-tabelas { display: flex; flex-direction: column; gap: 16px; }
 .grupos-tabelas .indicators-card { padding-top: 18px; padding-bottom: 12px; }
-.grupos-nenhum { color: var(--text-muted); font-size: 13px; text-align: center; padding: 28px; }
 .grupos-esqueleto { height: 240px; }
 .grupos-legenda { margin-top: 16px; padding: 14px 4px 0; border-top: none; }
 .estado-vazio-card { margin-bottom: 20px; }
@@ -2535,7 +2510,8 @@ button.secondary .onda { background: rgba(255, 204, 0, 0.25); }
 #app-view { background: var(--bg); color: var(--text); color-scheme: dark; }
 
 :root[data-tema="claro"] #app-view,
-:root[data-tema="claro"] .atalhos-fundo {
+:root[data-tema="claro"] .atalhos-fundo,
+:root[data-tema="claro"] .dialogo-fundo {
   color-scheme: light;
   --bg: #f2f4f8;
   --card-bg: #ffffff;
@@ -2693,7 +2669,7 @@ body.menu-recolhido .sidebar-versao { padding: 0 0 10px; text-align: center; }
   gap: 8px;
   pointer-events: none;
 }
-.aviso {
+.toast {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2710,13 +2686,13 @@ body.menu-recolhido .sidebar-versao { padding: 0 0 10px; text-align: center; }
   pointer-events: auto;
   animation: aviso-entra 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
-.aviso.ok { border-left-color: #22c55e; }
-.aviso.erro { border-left-color: #ef4444; }
-.aviso-icone { flex-shrink: 0; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.aviso.ok .aviso-icone { color: #4ade80; }
-.aviso.erro .aviso-icone { color: #f87171; }
-.aviso .aviso-detalhe { display: block; font-size: 11px; color: #94a3b8; }
-.aviso.saindo { animation: aviso-sai 260ms ease-in forwards; }
+.toast.ok { border-left-color: #22c55e; }
+.toast.erro { border-left-color: #ef4444; }
+.toast-icone { flex-shrink: 0; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.toast.ok .toast-icone { color: #4ade80; }
+.toast.erro .toast-icone { color: #f87171; }
+.toast .toast-detalhe { display: block; font-size: 11px; color: #94a3b8; }
+.toast.saindo { animation: aviso-sai 260ms ease-in forwards; }
 @keyframes aviso-entra { from { opacity: 0; transform: translateY(14px) scale(0.97); } }
 @keyframes aviso-sai { to { opacity: 0; transform: translateX(30px); } }
 
@@ -2906,7 +2882,7 @@ kbd {
 :root[data-densidade="compacta"] .grupos-tabelas { gap: 10px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .aviso, .aviso.saindo, .atalhos-fundo, .atalhos-caixa { animation: none; }
+  .toast, .toast.saindo, .atalhos-fundo, .atalhos-caixa { animation: none; }
   .sidebar, .topbar-icone .seta-menu, .grupo-alternar svg { transition: none; }
 }
 
@@ -2934,3 +2910,188 @@ kbd {
 /* Botao com posicao propria (absoluta) recebe a ondinha sem mudar de
    lugar. */
 button.com-onda-livre { overflow: hidden; }
+
+
+/* ================================================================
+   Selo da extracao, dialogos, rodape, telas vazias, foco e Coverage
+   ================================================================ */
+
+/* ---------- 1: extracao em andamento, em qualquer aba ---------- */
+.topbar-extracao {
+  position: relative;
+  height: 34px;
+  max-width: 420px;
+  padding: 0 14px 0 12px;
+  gap: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #1d1300;
+  color: #ffe680;
+  font-size: 12px;
+  font-weight: 700;
+  animation: selo-entra 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+.topbar-extracao:hover { background: #2e2200; }
+.topbar-extracao-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-extracao-icone {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 230, 128, 0.3);
+  border-top-color: #ffe680;
+  animation: girar 800ms linear infinite;
+}
+.topbar-extracao-barra { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 230, 128, 0.15); }
+.topbar-extracao-barra span { display: block; height: 100%; width: 0; background: #ffe680; transition: width 400ms ease; }
+.topbar-extracao.ok { background: #14532d; color: #bbf7d0; }
+.topbar-extracao.aviso { background: #713f12; color: #fde68a; }
+.topbar-extracao.erro { background: #7f1d1d; color: #fecaca; }
+.topbar-extracao.ok .topbar-extracao-icone,
+.topbar-extracao.aviso .topbar-extracao-icone,
+.topbar-extracao.erro .topbar-extracao-icone { animation: none; border: none; width: auto; height: auto; }
+.topbar-extracao.ok .topbar-extracao-icone::before { content: "✓"; }
+.topbar-extracao.aviso .topbar-extracao-icone::before { content: "!"; }
+.topbar-extracao.erro .topbar-extracao-icone::before { content: "✕"; }
+.topbar-extracao.ok .topbar-extracao-barra,
+.topbar-extracao.aviso .topbar-extracao-barra,
+.topbar-extracao.erro .topbar-extracao-barra { display: none; }
+@keyframes selo-entra { from { opacity: 0; transform: translateY(-6px) scale(0.96); } }
+
+/* ---------- 4: dialogos no visual do app ---------- */
+.dialogo-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 9600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(5, 8, 16, 0.55);
+  backdrop-filter: blur(3px);
+  animation: surgir 160ms ease-out;
+}
+.dialogo-fundo[hidden] { display: none; }
+.dialogo-caixa {
+  width: min(460px, 100%);
+  padding: 26px 26px 22px;
+  border-radius: 14px;
+  border: 1px solid var(--card-border);
+  border-top: 3px solid var(--yellow);
+  background: var(--card-bg);
+  color: var(--text);
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  animation: card-entra 300ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+.dialogo-icone {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 204, 0, 0.14);
+  color: var(--amarelo-tx);
+}
+.dialogo-icone svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dialogo-icone.erro { background: rgba(239, 68, 68, 0.14); color: var(--erro-tx); }
+.dialogo-caixa h3 { margin: 0 0 8px; font-size: 18px; }
+.dialogo-caixa p { margin: 0 0 20px; font-size: 13px; line-height: 1.6; color: var(--text-muted); white-space: pre-line; }
+.dialogo-botoes { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- 11: rodape do menu ---------- */
+.status-dot.extraindo { background: var(--yellow); animation: ponto-extraindo 1s ease-in-out infinite; }
+.status-dot.aviso { background: #f59e0b; }
+.status-dot.erro { background: #ef4444; }
+@keyframes ponto-extraindo { 50% { box-shadow: 0 0 0 5px rgba(255, 204, 0, 0.18); } }
+.status-sub { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* ---------- 13: telas vazias no mesmo padrao ---------- */
+.estado-vazio-icone {
+  box-sizing: content-box;
+  padding: 14px;
+  border-radius: 50%;
+  background: rgba(255, 204, 0, 0.1);
+  stroke: var(--amarelo-tx);
+  opacity: 1;
+}
+.estado-vazio-acoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.estado-vazio-acoes [hidden] { display: none; }
+
+/* ---------- 9: foco visivel no teclado ---------- */
+/* So aparece navegando pelo teclado (Tab), nao no clique do mouse. */
+#app-view :is(button, select, input, a, [tabindex]):focus-visible,
+.dialogo-fundo button:focus-visible,
+.atalhos-fundo button:focus-visible,
+#login-view button:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+.topbar-dhl button:focus-visible,
+#app-view .nav-item.active:focus-visible,
+#app-view button.acao:not(.secondary):focus-visible,
+#app-view .params-card > button:focus-visible { outline-color: #1d1300; }
+#app-view .ops-item:has(input:focus-visible),
+#app-view .period-option:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+#app-view .seg-opcao:focus-visible { outline-offset: -2px; }
+
+/* ---------- 7: Coverage com o User ID parado e agrupado ---------- */
+/* Rolando para o lado, o usuario continua a vista. */
+.cv-tabela th:first-child,
+.cv-tabela td:first-child { position: sticky; left: 0; z-index: 1; background: var(--card-bg); }
+.cv-tabela thead th:first-child,
+.cv-tabela tfoot td:first-child { z-index: 3; }
+.cv-tabela tr.abaixo td:first-child { background: linear-gradient(rgba(244, 63, 94, 0.07), rgba(244, 63, 94, 0.07)), var(--card-bg); }
+.cv-tabela td:first-child::after,
+.cv-tabela th:first-child::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -10px;
+  bottom: 0;
+  width: 10px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+#cv-tabela-wrap.rolado-lado .cv-tabela td:first-child::after,
+#cv-tabela-wrap.rolado-lado .cv-tabela th:first-child::after { opacity: 1; }
+.cv-agrupar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.cv-agrupar input { width: 15px; height: 15px; margin: 0; accent-color: var(--yellow); }
+.cv-agrupar.desligado { opacity: 0.45; cursor: not-allowed; }
+.cv-tabela tr.cv-grupo td {
+  padding: 14px 12px 6px;
+  border-bottom: 1px solid var(--card-border);
+  background: var(--card-bg);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--amarelo-tx);
+}
+.cv-tabela tr.cv-grupo td:first-child { position: static; }
+.cv-tabela tr.cv-grupo td:first-child::after { display: none; }
+.cv-grupo-rotulo { position: sticky; left: 12px; display: inline-block; }
+.cv-tabela tr.cv-grupo td span { font-weight: 600; color: var(--text-faint); text-transform: none; letter-spacing: 0; margin-left: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar-extracao, .topbar-extracao-icone, .dialogo-fundo, .dialogo-caixa, .status-dot.extraindo { animation: none; }
+}
+
+/* Simbolo e numero sempre na mesma linha, mesmo em coluna estreita. */
+.indicator-value,
+.cv-coverage,
+.ind-pct,
+.hc-resultado { white-space: nowrap; }

@@ -280,14 +280,14 @@ def main():
     try:
         pasta = preparar(
             caminho_exe,
-            avisar=lambda pct: _splash(f"Preparando a primeira abertura desta versao... {pct}%"),
+            avisar=lambda pct: _splash(f"Preparando a primeira abertura desta versão... {pct}%"),
         )
         processo, sinal = abrir_app(pasta, sys.argv[1:])
     except Exception as exc:  # noqa: BLE001 - qualquer falha vira mensagem
         log.exception("o lancador nao conseguiu abrir o app")
         _splash(fechar=True)
         _mensagem(
-            "Nao foi possivel abrir o Score Card.\n\n"
+            "Não foi possível abrir o Score Card.\n\n"
             f"{exc}\n\n"
             f"Detalhes em {os.path.join(registro.pasta(), 'scorecard.log')}"
         )
