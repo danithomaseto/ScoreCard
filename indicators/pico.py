@@ -21,27 +21,9 @@ Efetividade, dispersao e presenteismo do pico sao os do mes; so a hora
 direta muda, e com ela o cubo.
 """
 
-import datetime
-
-from . import presenteismo
+from . import datas, presenteismo
 
 QUANTIDADE = 5
-
-
-def _data(valor):
-    if isinstance(valor, datetime.datetime):
-        return valor.date()
-    if isinstance(valor, datetime.date):
-        return valor
-    texto = str(valor or "").strip()
-    # O portal exporta dd/mm/aaaa (e o formato da semana no export
-    # semanal); os outros ficam de reserva.
-    for formato in ("%d/%m/%Y", "%Y-%m-%d", "%d/%m/%y"):
-        try:
-            return datetime.datetime.strptime(texto[:10], formato).date()
-        except ValueError:
-            continue
-    return None
 
 
 def calcular(linhas, mes, escala_espanhola=False, quantidade=QUANTIDADE):
@@ -51,10 +33,14 @@ def calcular(linhas, mes, escala_espanhola=False, quantidade=QUANTIDADE):
     Devolve {"hora_direta", "dias", "dias_validos", "ignorados"}, com
     hora_direta None se nenhum dia valido tiver horas.
     """
+    # O dia vem dd/mm/aaaa ou, em servidor americano, m/d/aa: a ordem e
+    # a que poe os dias no mes extraido (indicators/datas.py).
+    dias_lidos = datas.dias_do_mes((linha.get("detalhe") for linha in linhas
+                                    if linha.get("detalhe") not in (None, "")), mes)
     por_dia = {}
     ignorados = []
     for linha in linhas:
-        dia = _data(linha.get("detalhe"))
+        dia = dias_lidos.get(datas.chave(linha.get("detalhe")))
         if dia is None:
             continue
         motivo = None

@@ -261,11 +261,13 @@ indiretas_store.py    # horas indiretas por operacao e semana
 indiretas_tela.py     # monta a aba Horas Indiretas (semanas, cards, tabela)
 grupos_store.py       # resultados por gestor e por turno
 grupos_tela.py        # monta as abas Resultado Gestor e Resultado Turno
+reparo_semanas.py     # acerta semanas gravadas com dia e mes trocados
 automation/
   base.py              # login, iframe, comboboxes, export (Playwright)
   generic.py            # orquestra o fluxo por operacao
 indicators/
   reader.py             # le o xlsx baixado pelo titulo das colunas
+  datas.py              # datas dia/mes ou mes/dia (servidor americano)
   weekly.py             # o calculo em si, sem I/O
   limits.py             # metas, faixas de cor e tolerancia
   periodos.py           # numero da semana e rotulos de periodo
@@ -291,6 +293,7 @@ tests/
   test_coverage.py       # coverage conferido com a planilha
   test_indiretas.py      # horas indiretas conferidas com a planilha
   test_grupos.py         # gestor, turno, Supervisor na Week e varios filtros
+  test_datas.py          # semana e Report Date em dia/mes e mes/dia
   test_api.py            # extracao unica, fila multipla e validacoes
   test_lancador.py       # app dentro do .exe, descompactado uma vez
   test_infra.py          # gravacao segura e log sem credenciais

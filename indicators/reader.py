@@ -20,6 +20,8 @@ import datetime
 import functools
 import unicodedata
 
+from . import datas
+
 # openpyxl e xlrd sao importados dentro das funcoes que leem: juntos
 # custam uma fracao de segundo que a abertura do app pagaria sem
 # precisar, ja que so sao usados quando chega um arquivo.
@@ -102,25 +104,6 @@ def _para_numero(valor):
         return float(texto)
     except ValueError:
         return None
-
-
-def _para_data(valor):
-    """Devolve a data no formato ISO (2026-08-30), que e a chave da
-    semana no arquivo guardado."""
-    if valor is None or valor == "":
-        return None
-    if isinstance(valor, datetime.datetime):
-        return valor.date().isoformat()
-    if isinstance(valor, datetime.date):
-        return valor.isoformat()
-
-    texto = str(valor).strip()
-    for formato in ("%d/%m/%Y", "%Y-%m-%d", "%d/%m/%y", "%m/%d/%Y"):
-        try:
-            return datetime.datetime.strptime(texto, formato).date().isoformat()
-        except ValueError:
-            continue
-    return None
 
 
 def _achar_cabecalho(linhas):
@@ -217,7 +200,7 @@ def _papel_do_medio(cruas, coluna, tem_alto):
     if tem_alto:
         return "grupo"
     valores = [c[coluna] for c in cruas if coluna < len(c) and c[coluna] not in (None, "")]
-    if valores and all(_para_data(v) for v in valores):
+    if valores and all(datas.e_data(v) for v in valores):
         return "semana"
     return "grupo" if valores else "semana"
 
@@ -263,13 +246,21 @@ def ler(caminho):
             f"colunas {', '.join(faltando)}."
         )
 
+    # A data da semana pode vir dia/mes ou mes/dia (servidor americano):
+    # a ordem e decidida olhando a coluna inteira (indicators/datas.py).
+    semanas = {}
+    if "semana" in posicoes:
+        coluna = posicoes["semana"]
+        semanas = datas.semanas(c[coluna] for c in cruas[indice + 1:]
+                                if coluna < len(c) and c[coluna] not in (None, ""))
+
     linhas = []
     for crua in cruas[indice + 1:]:
         registro = {}
         for nome, coluna in posicoes.items():
             valor = crua[coluna] if coluna < len(crua) else None
             if nome == "semana":
-                registro[nome] = _para_data(valor)
+                registro[nome] = semanas.get(datas.chave(valor)) if valor not in (None, "") else None
             elif nome == "detalhe":
                 registro[nome] = None if valor is None else str(valor).strip()
             elif nome == "grupo":

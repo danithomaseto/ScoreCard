@@ -710,6 +710,7 @@ vezes.
 | Regra | Como funciona |
 |---|---|
 | **Semana do Summary** | a data que vem no export (algumas operações começam no domingo, outras na segunda). O número (Week 36, 37…) é só rótulo, igual ao `WEEKNUM` do Excel |
+| **Data brasileira ou americana** | a semana e o Report Date podem vir dia/mês ("06/09/2026") ou mês/dia ("9/6/26", servidor americano, como na Hughes). O app decide pela coluna inteira: data que só existe numa ordem ("9/13/26") define o arquivo; sem ela, vale a ordem que põe as semanas no dia em que elas começam (domingo/segunda) ou os dias de pico dentro do mês. Semanas gravadas trocadas por versões antigas (Junho e Abril no filtro) são consertadas sozinhas ao abrir o app |
 | **Semana do Headcount** | segunda a domingo, cortada na virada do mês (S1, S2…) |
 | **Ciclo da folha** | do dia 13 de um mês ao dia 12 do seguinte; pertence ao mês em que fecha (13/09 → 12/10 = Outubro). Em aberto, conta até ontem |
 | **Dia útil** | segunda a sexta |
@@ -843,6 +844,7 @@ ScoreCard.exe (lancador.py)
 | `automation/base.py` | login, menu Reports, filtros, exportação |
 | `automation/generic.py` | orquestra o fluxo de uma operação |
 | `indicators/reader.py` | lê o export pelo título das colunas |
+| `indicators/datas.py` | datas em dia/mês ou mês/dia (servidor americano) |
 | `indicators/weekly.py` | Efetividade, Hora Direta e Dispersão |
 | `indicators/limits.py` | metas, faixas de cor e formato dos percentuais |
 | `indicators/presenteismo.py` | calendário, escala espanhola e a fórmula |
@@ -859,6 +861,7 @@ ScoreCard.exe (lancador.py)
 | `arquivo_seguro.py` | gravação dos JSON sem corromper |
 | `registro.py` | log com filtro de credenciais |
 | `conexao.py` | checagem da VPN antes de extrair |
+| `reparo_semanas.py` | acerta, ao abrir, semanas gravadas com dia e mês trocados |
 | `diagnostico.py` | zip de diagnóstico |
 | `versao.py` / `VERSAO` | número da versão e detalhes do .exe |
 | `config/operations.py` | cadastro das 12 operações |

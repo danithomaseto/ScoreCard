@@ -26,6 +26,7 @@ log = logging.getLogger("scorecard")
 import webview  # noqa: E402 - depois do log, para registrar erro de import
 
 from api import Api  # noqa: E402
+import reparo_semanas  # noqa: E402
 
 
 def resource_path(relative_path):
@@ -143,6 +144,9 @@ def main():
         instancia_unica.trazer_para_frente()
         return
     ensure_browser_installed()
+    # Semanas gravadas com dia e mes trocados (data americana lida como
+    # brasileira ate a V.01.1): ver reparo_semanas.py.
+    reparo_semanas.reparar()
 
     api = Api()
     index_path = resource_path(os.path.join("ui", "index.html"))

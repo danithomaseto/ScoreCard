@@ -1234,3 +1234,34 @@ na tela do relatorio em 08/10/2026.
   um gestor no filtro, a sinergia da operacao nao entra.
 - **Gestores escondidos:** guardados em `settings.json` por operacao
   (os escondidos, nao os escolhidos: gestor novo aparece marcado).
+
+## 28. Data americana na semana e no pico (13/10/2026)
+
+Na Hughes o filtro de mes mostrava Junho e Abril. O Summary dessa
+operacao entrega a data no formato americano (mes/dia): a semana
+"9/6/26" (6 de setembro) era lida como dia/mes e virava 09/06 (junho),
+a "10/4/26" virava 10/04 (abril), e a "9/13/26" nao virava data nenhuma
+— a semana sumia do calculo. No arquivo de 13/10 a semana veio como
+celula de data (exibida m/d/yy), que ja era lida certo; o problema e o
+texto.
+
+- **Leitura nas duas ordens** (`indicators/datas.py`): a ordem e
+  decidida pela coluna inteira, que vem toda do mesmo servidor.
+  1. Uma data que so existe numa ordem ("9/13/26": nao ha mes 13) define
+     a ordem do arquivo.
+  2. Sem nenhuma assim, vale a ordem em que as datas fazem sentido: na
+     semana, no mesmo dia da semana das datas ja certas da coluna
+     (domingo ou segunda, onde o Summary comeca a semana) e nunca no
+     futuro; nos dias de pico (Report Date), dentro do mes extraido.
+  3. Empate: ano com 4 digitos e o formato do portal brasileiro
+     ("06/09/2026"); com 2, o americano ("9/6/26").
+  Celula de data e data ISO entram como vieram. Usada no leitor (coluna
+  da semana e a decisao de o Medium ser semana ou grupo) e no pico.
+- **O que ja estava gravado** (`reparo_semanas.py`, roda na abertura do
+  app): chave de semana que nao cai em domingo/segunda e que, com dia e
+  mes trocados, cai no dia em que as outras semanas da operacao comecam
+  e movida para a data certa — em `indicators.json`, `grupos.json`,
+  `coverage.json` (extracoes, digitados e sinergia) e `indiretas.json`.
+  Se a semana certa ja foi extraida de novo, fica a certa. So grava
+  quando acha algo. As semanas que sumiram (dia > 12) nao foram
+  gravadas na epoca: para elas, extrair o periodo de novo.
