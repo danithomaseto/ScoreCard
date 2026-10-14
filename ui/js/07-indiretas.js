@@ -206,8 +206,8 @@ function desenharSemanasIndiretas(t) {
     for (const atividade of semana.atividades) {
       const item = document.createElement('div');
       item.className = 'ind-atividade' + (atividade.maior ? ' maior' : '');
-      item.title = `${atividade.atividade}: ${horas(atividade.horas)} · ${pct(atividade.percentual)} do total · `
-        + `${pct(atividade.percentual_indiretas)} das indiretas`;
+      marcarDica(item, atividade.atividade, `${horas(atividade.horas)} · ${pct(atividade.percentual)} do total`,
+        `${pct(atividade.percentual_indiretas)} das indiretas${atividade.maior ? ' · maior ofensor' : ''}`);
       item.append(linhaIndireta([atividade.atividade, num(atividade.horas), pct(atividade.percentual)]),
         trilho(maior ? atividade.horas / maior : 0));
       lista.appendChild(item);
@@ -297,6 +297,8 @@ function desenharBarrasIndiretas(t) {
       linha.appendChild(celula);
     }
     item.append(linha, trilho(maior ? atividade.horas / maior : 0));
+    marcarDica(item, atividade.atividade, `${horas(atividade.horas)} · ${pct(atividade.percentual)} do total`,
+      `${pct(atividade.percentual_indiretas)} das indiretas${atividade.maior ? ' · maior ofensor' : ''}`);
     area.appendChild(item);
   }
   const total = document.createElement('div');
@@ -343,8 +345,9 @@ function desenharParetoIndiretas(t) {
     acumulado += atividade.percentual_indiretas || 0;
     pontos.push({ x: centro(i), y: yPct(Math.min(1, acumulado)), valor: acumulado });
     const grupo = elementoSvg('g', { class: 'ind-pareto-faixa' });
-    grupo.appendChild(elementoSvg('title', {}, `${atividade.atividade}: ${horas(atividade.horas)} · `
-      + `${pct(atividade.percentual)} do total · acumulado ${pct(Math.min(1, acumulado))} das indiretas`));
+    grupo.setAttribute('tabindex', '0');
+    marcarDica(grupo, atividade.atividade, `${horas(atividade.horas)} · ${pct(atividade.percentual)} do total`,
+      `acumulado ${pct(Math.min(1, acumulado))} das indiretas`);
     grupo.appendChild(elementoSvg('rect', { x: centro(i) - passo / 2, y: topo, width: passo, height: base - topo + 40, fill: 'transparent' }));
     const altura = Math.max(1, base - y(atividade.horas));
     const x = centro(i) - largura / 2;

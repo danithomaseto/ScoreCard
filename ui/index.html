@@ -19,10 +19,12 @@
 <link rel="stylesheet" href="css/11-grupos.css">
 <link rel="stylesheet" href="css/12-configuracoes.css">
 <link rel="stylesheet" href="css/13-sharepoint.css">
-<link rel="stylesheet" href="css/14-animacoes.css">
-<link rel="stylesheet" href="css/15-tema-claro.css">
-<link rel="stylesheet" href="css/16-densidade.css">
-<link rel="stylesheet" href="css/17-movimento.css">
+<link rel="stylesheet" href="css/14-novidades.css">
+<link rel="stylesheet" href="css/15-paleta.css">
+<link rel="stylesheet" href="css/16-animacoes.css">
+<link rel="stylesheet" href="css/17-tema-claro.css">
+<link rel="stylesheet" href="css/18-densidade.css">
+<link rel="stylesheet" href="css/19-movimento.css">
 </head>
 <body>
 
@@ -130,6 +132,11 @@
         <span class="topbar-extracao-icone" aria-hidden="true"></span>
         <span class="topbar-extracao-texto" id="topbar-extracao-texto"></span>
         <span class="topbar-extracao-barra" aria-hidden="true"><span id="topbar-extracao-progresso"></span></span>
+      </button>
+      <button type="button" class="topbar-procurar" id="paleta-abrir" title="Procurar telas, operações e ações (Ctrl+K)" aria-label="Procurar telas, operações e ações" aria-keyshortcuts="Control+K">
+        <svg class="topbar-icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span class="topbar-procurar-texto">Procurar</span>
+        <kbd>Ctrl K</kbd>
       </button>
       <button type="button" class="topbar-botao" id="tema-alternar" title="Tema claro ou escuro (Ctrl+Shift+L)" aria-label="Alternar entre tema claro e escuro">
         <svg class="topbar-icone icone-lua" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
@@ -258,11 +265,18 @@
               <h2 class="page-heading">Início</h2>
               <p class="subtitle">Indicadores por semana, com o mês no final. Atualiza a cada extração.</p>
             </div>
-            <button type="button" class="secondary acao" id="home-apresentar"
-                    title="Tela cheia, só com a tabela. Setas trocam a operação; Esc sai.">
-              <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-              Modo apresentação
-            </button>
+            <div class="cabecalho-acoes" id="home-acoes">
+              <button type="button" class="secondary acao" id="home-imagem"
+                      title="Copia a tabela dos indicadores como imagem, para colar no PowerPoint. Com Shift, salva o PNG em Downloads.">
+                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+                Imagem
+              </button>
+              <button type="button" class="secondary acao" id="home-apresentar"
+                      title="Tela cheia, só com a tabela. Setas trocam a operação; Esc sai.">
+                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                Modo apresentação
+              </button>
+            </div>
           </div>
 
           <div class="card filtros-card">
@@ -428,7 +442,7 @@
                 <select id="rg-resumo-periodo"></select>
               </div>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap tabela-fixa">
               <table class="indicators-table resumo-table">
                 <thead><tr id="rg-resumo-cabecalho"></tr></thead>
                 <tbody id="rg-resumo-corpo"></tbody>
@@ -537,7 +551,7 @@
                 <select id="rt-resumo-periodo"></select>
               </div>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap tabela-fixa">
               <table class="indicators-table resumo-table">
                 <thead><tr id="rt-resumo-cabecalho"></tr></thead>
                 <tbody id="rt-resumo-corpo"></tbody>
@@ -784,7 +798,7 @@
                 </select>
               </div>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap tabela-fixa tabela-historico">
               <table class="history-table">
                 <thead>
                   <tr>
@@ -976,7 +990,7 @@
                 </select>
               </div>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap tabela-fixa tabela-historico">
               <table class="history-table">
                 <thead>
                   <tr>
@@ -1110,7 +1124,7 @@
 
             <div class="hc-funcoes" id="hc-funcoes" hidden></div>
 
-            <div class="table-wrap" id="hc-tabela-wrap">
+            <div class="table-wrap tabela-fixa" id="hc-tabela-wrap">
               <table class="hc-tabela">
                 <thead>
                   <tr>
@@ -1486,7 +1500,7 @@
                 <h4>Arquivos da pasta que não foram lidos</h4>
                 <button type="button" class="secondary acao" id="saude-reler" title="Esquece o que já foi lido e calcula todos os relatórios da pasta de novo.">Ler a pasta do zero</button>
               </div>
-              <div class="table-wrap">
+              <div class="table-wrap tabela-fixa tabela-curta">
                 <table class="saude-tabela">
                   <thead><tr><th>Operação</th><th>Tipo</th><th>Arquivo</th><th>Motivo</th></tr></thead>
                   <tbody id="saude-nao-lidos-corpo"></tbody>
@@ -1538,6 +1552,19 @@
                   <button type="button" class="seg-opcao active" data-valor="completas">Completas</button>
                   <button type="button" class="seg-opcao" data-valor="leves">Leves</button>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card settings-card">
+            <div class="settings-topo">
+              <div>
+                <h3 class="card-title">Ajuda</h3>
+                <p class="settings-texto">O tour mostra em um minuto onde fica cada coisa na Início. As novidades contam o que mudou nesta versão.</p>
+              </div>
+              <div class="settings-acoes">
+                <button type="button" class="secondary acao" id="ajuda-novidades">O que há de novo</button>
+                <button type="button" class="secondary acao" id="ajuda-tour">Fazer o tour</button>
               </div>
             </div>
           </div>
@@ -1601,6 +1628,56 @@
   </div>
 </div>
 
+<!-- O que ha de novo: uma vez por versao (novidades.py). -->
+<div class="dialogo-fundo" id="novidades" hidden>
+  <div class="dialogo-caixa novidades-caixa" role="dialog" aria-modal="true" aria-labelledby="novidades-titulo">
+    <div class="novidades-topo">
+      <span class="novidades-versao" id="novidades-versao"></span>
+      <h3 id="novidades-titulo">O que há de novo</h3>
+    </div>
+    <ol class="novidades-lista" id="novidades-lista"></ol>
+    <div class="dialogo-botoes">
+      <button type="button" class="secondary" id="novidades-tour">Fazer o tour</button>
+      <button type="button" id="novidades-ok">Entendi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tour do primeiro uso: um recorte em volta de cada parte da Inicio. -->
+<div class="tour camada-do-app" id="tour" hidden>
+  <div class="tour-recorte" id="tour-recorte" aria-hidden="true"></div>
+  <div class="tour-caixa" id="tour-caixa" role="dialog" aria-modal="true" aria-labelledby="tour-titulo" aria-describedby="tour-texto">
+    <span class="tour-passo" id="tour-passo"></span>
+    <h3 id="tour-titulo"></h3>
+    <p id="tour-texto"></p>
+    <div class="tour-botoes">
+      <button type="button" class="tour-pular" id="tour-pular">Pular</button>
+      <span class="tour-pontos" id="tour-pontos" aria-hidden="true"></span>
+      <button type="button" class="secondary" id="tour-voltar">Voltar</button>
+      <button type="button" id="tour-proximo">Próximo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Procurar (Ctrl+K): abas, operacao + mes e acoes. -->
+<div class="paleta-fundo camada-do-app" id="paleta" hidden>
+  <div class="paleta-caixa" role="dialog" aria-modal="true" aria-label="Procurar telas, operações e ações">
+    <div class="paleta-busca">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="text" id="paleta-campo" role="combobox" aria-expanded="true" aria-controls="paleta-lista"
+             aria-autocomplete="list" autocomplete="off" spellcheck="false"
+             placeholder="Tela, operação, mês ou ação — ex.: hughes setembro">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="paleta-lista" id="paleta-lista" role="listbox" aria-label="Resultados"></ul>
+    <div class="paleta-rodape" aria-hidden="true">
+      <span><kbd>↑</kbd><kbd>↓</kbd> escolher</span>
+      <span><kbd>Enter</kbd> abrir</span>
+      <span><kbd>Esc</kbd> fechar</span>
+    </div>
+  </div>
+</div>
+
 <!-- Scripts comuns (sem modulo): todos dividem o mesmo escopo e rodam
      nesta ordem. Funcao de um arquivo chamada na carga de outro tem
      de estar num arquivo de cima. -->
@@ -1616,5 +1693,8 @@
 <script src="js/10-janelas.js"></script>
 <script src="js/11-sharepoint.js"></script>
 <script src="js/12-configuracoes.js"></script>
+<script src="js/13-novidades.js"></script>
+<script src="js/14-paleta.js"></script>
+<script src="js/15-imagem.js"></script>
 </body>
 </html>

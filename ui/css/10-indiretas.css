@@ -12,7 +12,7 @@
 
 .ind-visualizacao::before { background: var(--input-border); }
 
-.ind-visualizacao .seg-opcao.active { background: var(--input-border); color: var(--amarelo-tx); font-weight: var(--peso-forte); }
+.ind-visualizacao .seg-opcao.active { background: var(--input-border); color: var(--text); font-weight: var(--peso-forte); box-shadow: inset 0 -2px 0 var(--yellow); }
 
 .ind-extracao { width: 100%; max-width: none; margin-bottom: var(--esp-5); padding-top: var(--esp-45); padding-bottom: var(--esp-4); }
 
@@ -149,9 +149,9 @@
 
 .ind-trilho { height: 4px; margin-top: 5px; border-radius: 2px; background: var(--overlay-1); }
 
-.ind-trilho span { display: block; height: 100%; border-radius: 2px; background: var(--trilho); }
+.ind-trilho span { display: block; height: 100%; border-radius: 2px; background: var(--grafico-neutro); }
 
-.ind-atividade.maior .ind-trilho span { background: var(--yellow); }
+.ind-atividade.maior .ind-trilho span { background: var(--grafico-destaque); }
 
 /* Barras: lista da semana escolhida + tabela por semana. */
 .ind-vis-barras:not([hidden]) { display: grid; grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr); gap: var(--esp-6); align-items: start; }
@@ -178,9 +178,11 @@
 
 .ind-barras-item .ind-trilho { height: 9px; border-radius: 3px; }
 
-.ind-barras-item .ind-trilho span { background: var(--barra-neutra); border-radius: 3px; }
+.ind-barras-item .ind-trilho span { background: var(--grafico-neutro); border-radius: 3px; }
 
-.ind-barras-item.maior .ind-trilho span { background: var(--yellow); }
+.ind-barras-item.maior .ind-trilho span { background: var(--grafico-destaque); }
+.ind-barras-item.tem-dica:hover, .ind-atividade.tem-dica:hover { background: var(--overlay-1); }
+.ind-barras-item.tem-dica:hover .ind-trilho span, .ind-atividade.tem-dica:hover .ind-trilho span { filter: brightness(1.15); }
 
 .ind-barras-linha.total { padding-top: var(--esp-25); font-weight: var(--peso-forte); border-top: 1px solid var(--input-border); }
 
@@ -237,21 +239,21 @@
 
 .ind-pareto-legenda { display: flex; gap: var(--esp-4); flex-wrap: wrap; }
 
-.ind-legenda-barra { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--barra-neutra); }
+.ind-legenda-barra { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--grafico-neutro); }
 
 .ind-legenda-barra.maior { background: var(--yellow); }
 
-.ind-legenda-linha { display: inline-block; width: 18px; height: 2px; background: #38bdf8; border-radius: 1px; }
+.ind-legenda-linha { display: inline-block; width: 18px; height: 2px; background: var(--grafico-linha); border-radius: 1px; }
 
 .ind-pareto { display: block; width: 100%; max-height: 320px; margin: var(--esp-1) 0 var(--esp-4); overflow: visible; }
 
-.ind-pareto-barra { fill: var(--barra-neutra); }
+.ind-pareto-barra { fill: var(--grafico-neutro); }
 
-.ind-pareto-barra.maior { fill: var(--yellow); }
+.ind-pareto-barra.maior { fill: var(--grafico-destaque); }
 
-.ind-pareto-eixo { stroke: var(--eixo); stroke-width: 1; }
+.ind-pareto-eixo { stroke: var(--grafico-eixo); stroke-width: 1; }
 
-.ind-pareto-grade { stroke: var(--line); stroke-width: 1; }
+.ind-pareto-grade { stroke: var(--grafico-grade); stroke-width: 1; }
 
 .ind-pareto-eixo-texto { fill: var(--text-faint); font-size: var(--letra-xs); font-variant-numeric: tabular-nums; }
 
@@ -259,15 +261,17 @@
 
 .ind-pareto-pct { fill: var(--text-muted); font-size: var(--letra-2xs); text-anchor: middle; font-variant-numeric: tabular-nums; }
 
-.ind-pareto-acumulado { fill: none; stroke: #38bdf8; stroke-width: 2; stroke-linejoin: round; }
+.ind-pareto-acumulado { fill: none; stroke: var(--grafico-linha); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 
-.ind-pareto-ponto { fill: #38bdf8; stroke: var(--card-bg); stroke-width: 2; }
+.ind-pareto-ponto { fill: var(--grafico-linha); stroke: var(--card-bg); stroke-width: 2; }
 
 .ind-pareto-rotulo-fundo { fill: rgba(11, 14, 26, 0.92); }
 
 .ind-pareto-rotulo { fill: var(--text); font-size: var(--letra-xs); font-weight: var(--peso-forte); text-anchor: middle; font-variant-numeric: tabular-nums; }
 
-.ind-pareto-faixa:hover .ind-pareto-barra { filter: brightness(1.15); }
+.ind-pareto-faixa:hover .ind-pareto-barra,
+.ind-pareto-faixa:focus-visible .ind-pareto-barra { filter: brightness(1.15); }
+.ind-pareto-faixa { outline: none; cursor: help; }
 
 .ind-esqueleto { height: 220px; border-radius: var(--raio-l); background: var(--input-bg); animation: ind-pulsar 1.4s ease-in-out infinite; }
 

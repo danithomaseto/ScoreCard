@@ -19,7 +19,7 @@
 
 .topbar-sp[hidden] { display: none; }
 
-.topbar-sp:hover:not(:disabled) { background: rgba(29, 19, 0, 0.16); }
+.topbar-sp:hover:where(:not(:disabled)) { background: rgba(29, 19, 0, 0.16); }
 
 .topbar-sp:disabled { opacity: 1; cursor: progress; }
 
@@ -68,5 +68,9 @@
 /* Com o "No SharePoint", a linha de filtros do Resultado Gestor/Turno tem
    cinco campos: bases menores para caberem lado a lado no notebook. */
 .filtros-linha:has(.filtro-sp) > .filtro-campo { flex-basis: 170px; min-width: 150px; }
+
+/* O seletor segmentado (Semanal | Resultado do Mês) nao encolhe abaixo
+   do proprio texto: sem isto, em 1280 px ele passava da borda do card. */
+.filtros-linha:has(.filtro-sp) > .filtro-campo:has(> .segmentado) { min-width: max-content; }
 
 .filtros-linha:has(.filtro-sp) > .filtro-info { flex-basis: 190px; }

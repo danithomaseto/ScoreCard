@@ -199,6 +199,7 @@ mês vê o resultado mesmo sem ter extraído.
   | Atalho | O que faz |
   |---|---|
   | Ctrl+1 … Ctrl+9 | abre as abas do menu, na ordem (1 = Início, 2 = Resultado Gestor…) |
+  | Ctrl+K | procura telas, operações, meses e ações |
   | Ctrl+E | Extrair Dados, já com a operação da tela aberta |
   | Ctrl+B | recolhe ou abre o menu |
   | Ctrl+Shift+L | tema claro ou escuro |
@@ -206,6 +207,28 @@ mês vê o resultado mesmo sem ter extraído.
   | Esc | fecha a lista ou sai do modo apresentação |
   | ← → | trocam a operação no modo apresentação |
 
+- **Procurar (Ctrl+K, ou o botão com a lupa na barra amarela):** uma
+  caixa para ir direto a qualquer tela ou ação, sem passar pelo menu.
+  Sem acento e sem diferença de maiúscula; cada palavra digitada tem de
+  aparecer no item, e o que bate fica em destaque. Exemplos:
+
+  | Digitado | Vai para |
+  |---|---|
+  | `hughes setembro` | Início da Hughes em Setembro (e as outras abas da Hughes em setembro logo abaixo) |
+  | `swa cov` | Coverage da Swa |
+  | `hugo boss gestor ago` | Resultado Gestor da Hugo Boss em agosto |
+  | `tema` | troca para o tema claro/escuro |
+  | `imagem` | copia a tabela da Início como figura |
+
+  Mês sem ano é o mais recente que já passou (em outubro, "dezembro" é
+  o do ano passado); dá para escrever o ano ("set 2025") ou "09/2026".
+  Setas escolhem, Enter abre, Esc fecha.
+- **O que há de novo e tour:** na primeira vez que alguém abre o app,
+  um **tour** de cinco passos recorta cada parte da Início (filtros,
+  tabela, Imagem e Modo apresentação, Extrair Dados e Procurar) com uma
+  explicação curta; setas ou Próximo/Voltar andam, Esc ou Pular fecham.
+  Quem já usava e abre uma **versão nova** vê uma vez a janela **O que há
+  de novo** daquela versão. Os dois reabrem em Configurações > Ajuda.
 - **Avisos no canto:** ao copiar uma coluna ou tabela aparece um aviso no
   canto inferior direito dizendo o que foi copiado ("Copiado: 6 valores
   de Week 37"); erros também aparecem ali. Uma barrinha embaixo do aviso
@@ -288,6 +311,22 @@ mês vê o resultado mesmo sem ter extraído.
   quem não distingue verde de vermelho; a cópia leva só o número. Traço nunca é zero: zero seria um
   resultado ruim; traço é "ainda não temos".
 - **Percentuais** sempre com duas casas decimais (96,38%, 100,00%).
+- **A conta de cada número:** parando o mouse num valor (ou chegando
+  nele com Tab) aparece uma dica com a fórmula e a conta daquele
+  período, com as horas e as pessoas de verdade — por exemplo
+  "Goal ÷ Measured Direct · 302,0 h ÷ 267,6 h = 112,88%". No nome do
+  indicador aparece só a fórmula. Extrações antigas, que não guardavam
+  as somas, mostram só a fórmula. O mesmo vale no Resultado Gestor e no
+  Resultado Turno.
+- **Cabeçalho e primeira coluna fixos:** em tabela comprida ou larga, os
+  títulos e o nome do indicador ficam no lugar ao rolar (também nas
+  tabelas do Headcount, do histórico e da saúde do sistema).
+- **Imagem** (botão ao lado de Modo apresentação): copia a tabela como
+  figura, com fundo branco, título (operação e mês), data em que foi
+  gerada e a legenda, em resolução dobrada para não borrar no projetor —
+  é só colar no PowerPoint com Ctrl+V. **Shift + clique** salva o PNG em
+  Downloads (o Explorer abre com ele selecionado); se a cópia não der
+  certo, ele salva o arquivo sozinho.
 - **Copiar:** cada coluna tem um botão que copia os seis valores, na
   ordem da tela, para colar direto na apresentação (Excel ou
   PowerPoint). Indicador sem número vira célula vazia, para nenhum
@@ -318,8 +357,17 @@ faixa de Var no mês, da extração Month — ver [5.7](#57-distribuição-da-di
   operação sozinho a cada 15 s, 30 s, 1 min ou 2 min, com uma linha
   amarela mostrando o tempo até a próxima. Entre uma operação e outra
   aparece uma **capa** com o nome da operação, o mês e um resumo (quantos
-  indicadores dentro da meta). O mês fica o escolhido; operação sem dado
-  no mês é pulada;
+  indicadores dentro da meta). O mês fica o escolhido e o rodízio passa
+  **só pelas operações que têm dados nele** (semana, mês ou pico). Com
+  uma só, aparece o aviso "Só <operação> tem dados em <mês>" e o
+  automático fica nela, conferindo de novo a cada intervalo — quando
+  outra operação tiver extração, ela entra no rodízio. Sem nenhuma, o
+  aviso diz isso e sugere trocar o mês;
+- **tamanho pela altura da tela:** letras, números e espaços crescem e
+  encolhem com a altura — a tabela enche a TV em 1920×1080 e cabe sem
+  rolar num notebook 1366×768, inclusive com o Windows em 125% (a
+  janela vira 1093×615); em tela baixa os filtros perdem o rótulo e a
+  dica das setas sai da barra;
 - **Esc** sai (a janela volta maximizada).
 
 ### 4.4 Extrair Dados (uma operação)
@@ -549,8 +597,13 @@ mudarem de linha.
 
 - **Pasta do SharePoint:** mostra a pasta atual e permite trocar.
 - **Aparência:** tema (escuro ou claro), densidade (confortável ou
-  compacta — a compacta mostra mais linhas numa tela de notebook) e menu
-  lateral (aberto ou recolhido). Só muda a tela, nunca um número.
+  compacta — a compacta mostra mais linhas numa tela de notebook), menu
+  lateral (aberto ou recolhido) e **animações** (completas ou **leves** —
+  o modo leve desliga o que só enfeita: fundo do login, contagem dos
+  números, entradas e transições; bom para notebook fraco, Citrix e
+  projetor). Só muda a tela, nunca um número.
+- **Ajuda:** **O que há de novo** (as novidades da versão) e **Fazer o
+  tour** (o passeio pela Início).
 - **Atalhos de teclado:** a mesma lista da tecla `?`.
 - **Gerar diagnóstico:** cria um zip para mandar ao suporte (ver
   [Suporte](#10-suporte-e-diagnóstico)).
@@ -558,7 +611,9 @@ mudarem de linha.
   vermelho em cada item — VPN e servidores (quais não respondem), a
   pasta do SharePoint (existe, dá para gravar, está no OneDrive), os
   relatórios na pasta (quantos, o mais novo e quantos estão só na
-  nuvem), a leitura da pasta, a versão do app, a versão dos dados, os
+  nuvem), a leitura da pasta (com "observando a pasta" quando o aviso
+  do Windows está ligado), o navegador da automação (Edge, Chrome ou o
+  Chromium embutido), a versão do app, a versão dos dados, os
   lançamentos compartilhados e o último backup. **Conferir de novo**
   atualiza.
   - **Relatórios não lidos:** a lista dos arquivos da pasta que ficaram
@@ -963,8 +1018,9 @@ abertura refaz.
 ## 11. Arquitetura técnica
 
 **Tecnologias:** Python, **pywebview** (janela com interface
-HTML/CSS/JavaScript, via WebView2), **Playwright** com Chromium
-embutido (automação do BlueYonder), **xlrd/openpyxl** (leitura do
+HTML/CSS/JavaScript, via WebView2), **Playwright** com o **Edge** da
+máquina — ou o Chrome, ou o Chromium embutido na versão completa —
+(automação do BlueYonder), **xlrd/openpyxl** (leitura do
 export .xls/.xlsx) e **PyInstaller** (empacotamento).
 
 ```
@@ -982,7 +1038,7 @@ ScoreCard.exe (lancador.py)
 |---|---|
 | `lancador.py` | o `ScoreCard.exe`: descompacta o app uma vez e abre |
 | `instancia_unica.py` | uma janela só: a segunda abertura traz a primeira |
-| `main.py` | cria a janela, confere o Chromium, aviso ao fechar |
+| `main.py` | cria a janela, aviso ao fechar; `--autoteste` confere o pacote no build |
 | `api.py` | métodos chamados pela tela (login, extração, telas, lançamentos) |
 | `automation/base.py` | login, menu Reports, filtros, exportação |
 | `automation/generic.py` | orquestra o fluxo de uma operação |
@@ -1010,8 +1066,14 @@ ScoreCard.exe (lancador.py)
 | `migracoes.py` | versão dos dados e os consertos do que já está gravado, uma vez cada |
 | `backup.py` | backup diário dos dados e restauração |
 | `atualizacao.py` / `tools/publicar_versao.py` | aviso de versão nova pela pasta do SharePoint |
-| `ui/js/01-base.js` … `12-configuracoes.js` | a tela, um arquivo por aba ou assunto, na ordem do número |
-| `ui/css/01-base.css` … `18-configuracoes.css` | os estilos, na ordem do número (a ordem decide qual regra vale) |
+| `navegadores.py` | qual navegador a automação usa: Edge, depois Chrome, depois o Chromium embutido |
+| `cache_de_telas.py` | telas montadas guardadas em memória até os dados mudarem (gravação, arquivo mudado por fora ou virada do dia) |
+| `observador_de_pasta.py` | aviso do Windows quando a pasta do SharePoint muda (ou conferência barata de nomes, tamanhos e datas) |
+| `explicacoes.py` | a fórmula e a conta de cada indicador, para a dica da tabela |
+| `novidades.py` | "O que há de novo" por versão e o tour do primeiro uso |
+| `exportar_imagem.py` | PNG da tabela da Início salvo em Downloads (só PNG de verdade, nome montado no Python) |
+| `ui/js/01-base.js` … `15-imagem.js` | a tela, um arquivo por aba ou assunto, na ordem do número (13 novidades e tour, 14 Procurar, 15 imagem da tabela) |
+| `ui/css/00-tokens.css` … `19-movimento.css` | os estilos: `00-tokens` com as medidas, letras, raios, tempos e cores (inclusive a paleta dos gráficos, igual nos dois temas); um arquivo por componente ou aba; no fim animações, tema claro, densidade e movimento (a ordem decide qual regra vale) |
 | `diagnostico.py` | zip de diagnóstico |
 | `versao.py` / `VERSAO` | número da versão e detalhes do .exe |
 | `config/operations.py` | cadastro das 12 operações |
@@ -1021,11 +1083,14 @@ ScoreCard.exe (lancador.py)
 
 ## 12. Testes
 
-São cerca de 320 testes automáticos (`tests/`). Eles rodam a extração
+São cerca de 360 testes automáticos (`tests/`). Eles rodam a extração
 contra páginas que imitam o BlueYonder, conferem cada cálculo contra as
 planilhas de referência (Efetividade 96,38%, Hora Direta 85,37%,
 Dispersão 81,82%, Pico 96,57%/96,82%, Coverage) e cobrem presenteísmo,
-calendário, gravação, lançador, log e segurança. As planilhas de teste
+calendário, gravação, lançador, log e segurança, o build (dist que não
+some, autoteste), a escolha do navegador, o cache das telas, o
+observador da pasta, a conta mostrada nas dicas, as novidades e o tour,
+a imagem da tabela e o rodízio da apresentação automática. As planilhas de teste
 com Supervisor e Shift (`summary_gestor_*.xlsx`, `summary_turno_*.xlsx`)
 têm nomes fictícios.
 
@@ -1063,7 +1128,10 @@ aparece na aba Actions e no selo do README.
 - Aba própria para a **hora direta de pico por hora** (já levantada
   como próximo passo).
 - Religar a importação da planilha de ausências.
-- Explicação das fórmulas ao passar o mouse nos indicadores.
+- Imagem também do Resultado Gestor, do Resultado Turno e do Coverage,
+  e um "pacote da reunião" (todas as operações do mês num PowerPoint).
+- Extração agendada (por exemplo, toda segunda de manhã a Week de todas
+  as operações), com aviso quando terminar.
 
 ---
 
@@ -1089,6 +1157,7 @@ aparece na aba Actions e no selo do README.
 | 09/10/2026 | Menu em grupos e recolhível; Resumo, barra de nomes e tabelas recolhíveis no Resultado Gestor/Turno; nomes do Summary sugeridos no Headcount; **tema claro**; símbolos junto das cores; filtros iguais em todas as abas; avisos de "copiado"; atalhos de teclado; densidade compacta; filtro no histórico |
 | 08/10/2026 | Abas **Resultado Gestor** e **Resultado Turno** (extrações Gestor e Turno, Week e Month, com Group By 3); Week com o Supervisor no meio e **Coverage por gestor**; **Vários filtros** no Extrair Múltiplos; cópia das Horas Indiretas para o PowerPoint; animações de abertura, login, entrada no app e transições |
 | 13/10/2026 | Semana e Report Date em dia/mês ou mês/dia (servidor americano); **pasta do SharePoint compartilhada**: o que qualquer pessoa extrai aparece para todos, com a data do arquivo mais novo ao lado da última extração |
+| 14/10/2026 | **App mais leve:** extração no Edge do Windows (o .exe cai de ~180 MB para ~70 MB), pacote enxuto com autoteste no build, telas guardadas até os dados mudarem, leitura da pasta pelo aviso do Windows, Coverage desenhando só as linhas visíveis, modo leve e pausa com a janela minimizada. **Layout:** CSS por componente com medidas padrão; telas pequenas e escala do Windows; tabelas com cabeçalho e primeira coluna fixos; contraste do tema claro; dica com a conta de cada indicador; gráficos com a mesma paleta; botões e ícones padronizados; O que há de novo e tour; Procurar (Ctrl+K); tabela como imagem. Apresentação automática passando só pelas operações com dados no mês |
 | 14/10/2026 | **Headcount e Coverage compartilhados** pela pasta; saúde do sistema, relatórios não lidos e "ler a pasta do zero"; backup diário com restauração; aviso de versão nova; versão dos dados; login com saudação, VPN, olho da senha e trava de 2 senhas recusadas; alça do menu no meio da borda; números, gráficos e tabelas animados, barra de carregamento e tempo dos avisos; apresentação automática com capa; testes no GitHub; tela dividida por aba |
 
 ---

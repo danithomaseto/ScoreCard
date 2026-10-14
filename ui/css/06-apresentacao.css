@@ -10,29 +10,32 @@ body.apresentacao #indicators-extrair,
 body.apresentacao .indicators-table .copy-btn,
 body.apresentacao .legend-note { display: none; }
 
-body.apresentacao .content-area { padding: var(--esp-5) var(--esp-8) 72px; }
+/* Tudo em funcao da altura da tela (vh): a tabela enche a TV em
+   1920x1080 e cabe sem rolar num notebook 1366x768, inclusive com o
+   Windows em 125% (a janela vira 1093x615 px de CSS). */
+body.apresentacao .content-area { padding: clamp(10px, 2vh, 28px) var(--esp-8) 72px; }
 
-body.apresentacao .filtros-card { padding-top: var(--esp-4); padding-bottom: var(--esp-4); margin-bottom: var(--esp-4); }
+body.apresentacao .filtros-card { padding-top: clamp(8px, 1.4vh, 16px); padding-bottom: clamp(8px, 1.4vh, 16px); margin-bottom: clamp(8px, 1.6vh, 20px); }
 
 body.apresentacao .indicators-table th,
-body.apresentacao .indicators-table td { padding-top: var(--esp-4); padding-bottom: var(--esp-4); }
+body.apresentacao .indicators-table td { padding-top: clamp(3px, calc(2.4vh - 10px), 20px); padding-bottom: clamp(3px, calc(2.4vh - 10px), 20px); }
 
-body.apresentacao .corner-operation { font-size: 26px; }
+body.apresentacao .corner-operation { font-size: clamp(18px, 2.6vh, 32px); }
 
-body.apresentacao .col-title { font-size: var(--letra-2xl); }
+body.apresentacao .col-title { font-size: clamp(15px, 2.1vh, 26px); }
 
 body.apresentacao .col-subtitle,
-body.apresentacao .col-warning { font-size: var(--letra-m); }
+body.apresentacao .col-warning { font-size: clamp(11px, 1.35vh, 16px); }
 
-body.apresentacao .indicator-label { font-size: 19px; }
+body.apresentacao .indicator-label { font-size: clamp(14px, 2vh, 24px); }
 
-body.apresentacao .indicator-meta { font-size: var(--letra-m); }
+body.apresentacao .indicator-meta { font-size: clamp(11px, 1.35vh, 16px); }
 
-body.apresentacao .indicator-value { font-size: var(--letra-4xl); min-width: 124px; padding: 9px var(--esp-4); }
+body.apresentacao .indicator-value { font-size: clamp(16px, calc(3.6vh - 6px), 36px); min-width: clamp(96px, 12vh, 150px); padding: clamp(3px, 0.8vh, 12px) var(--esp-4); }
 
-body.apresentacao .indicator-cell.sem-numero { font-size: var(--letra-4xl); }
+body.apresentacao .indicator-cell.sem-numero { font-size: clamp(16px, calc(3.6vh - 6px), 36px); }
 
-body.apresentacao .legend-item { font-size: var(--letra-base); }
+body.apresentacao .legend-item { font-size: clamp(12px, 1.5vh, 17px); }
 
 /* Discreta ate o mouse chegar perto: nao pode competir com a tabela. */
 .apresentacao-barra {
@@ -148,3 +151,20 @@ body.apresentacao .menu-alca { display: none; }
 .apresentacao-capa.entrando .capa-resumo { animation: capa-item 560ms 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both; }
 
 .apresentacao-capa.saindo { animation: capa-sai 420ms cubic-bezier(0.6, 0, 0.4, 1) forwards; }
+
+/* A barra nunca quebra linha; em janela estreita a dica das setas sai. */
+.apresentacao-barra { white-space: nowrap; max-width: calc(100vw - 32px); }
+
+@media (max-width: 1200px) {
+  .apresentacao-dica { display: none; }
+}
+
+/* Tela baixa (notebook com o Windows em 125% ou 150%): filtros numa
+   linha so, sem os rotulos, e o card da tabela mais justo. */
+@media (max-height: 720px) {
+  body.apresentacao #page-home .filtros-card label { display: none; }
+  body.apresentacao #page-home .filtros-card select { height: 36px; }
+  body.apresentacao .indicators-card { padding-top: var(--esp-3); padding-bottom: var(--esp-3); }
+  body.apresentacao .indicators-legend { margin-top: var(--esp-2); padding-top: var(--esp-2); }
+  body.apresentacao .content-area { padding-bottom: 64px; }
+}

@@ -1370,4 +1370,91 @@ no CSS a ordem decide empates). Conferido: o mesmo texto e os mesmos
 estilos calculados em todas as abas antes e depois.
 
 **CI.** `.github/workflows/testes.yml`: pytest, flake8 (so erros `F`) e
-eslint (`no-undef`, `no-redeclare`) nos doze scripts juntos.
+eslint (`no-undef`, `no-redeclare`) em todos os scripts juntos.
+
+## 31. App mais leve, layout e apresentacao automatica (14/10/2026)
+
+Nada aqui muda um numero: so onde o app roda, quando a tela relê e como
+mostra. A unica conta nova e a da dica, que usa as somas ja guardadas.
+
+**Navegador da automacao (`navegadores.py`).** Ordem: Edge
+(`channel="msedge"`), Chrome (`channel="chrome"`), Chromium embutido (so
+na versao completa do build). `SCORECARD_NAVEGADOR=edge|chrome|chromium`
+forca um; `SemNavegador` quando nenhum existe. O perfil e temporario
+(nada da sessao do Edge da pessoa e lido nem gravado).
+
+**Pacote e build.** `build.spec` tira do pacote o que o app nao usa
+(`EXCLUIDOS`: Tcl/Tk no app — a tela de abertura e do lancador —,
+unittest, pydoc e outros modulos sem uso, a API assincrona do
+Playwright; do driver do Playwright saem as telas de relatorio/trace e
+os tipos) e roda o app gerado com `--autoteste`
+(`main.autoteste`: importa os modulos, abre e grava um xlsx, confere o
+driver do Playwright e os arquivos da tela). Falhou, o build para e o
+`dist` anterior fica.
+
+**Telas guardadas (`cache_de_telas.py`).** `get_indicator_table`,
+`get_headcount`, `get_indiretas`, `get_coverage` e `get_resultado_grupo`
+guardam o resultado por argumentos + assinatura (contador de gravacoes
+do `arquivo_seguro`, data de hoje e data/tamanho dos `.json` de dados);
+qualquer gravacao, arquivo mudado por fora ou virada do dia monta de
+novo. Ate 48 telas.
+
+**Pasta observada (`observador_de_pasta.py`).** No Windows,
+`FindFirstChangeNotificationW` na pasta inteira (nome, tamanho, data de
+gravacao); fora dele, ou se falhar, uma assinatura barata (nomes,
+tamanhos e datas) a cada 15 s. Mudou: espera 2,5 s de silencio e avisa a
+tela (`pastaMudou`), que le a pasta. A leitura periodica passa de 1 para
+5 min.
+
+**Tela.** Coverage desenha so as linhas visiveis (as outras viram dois
+espacadores com a altura medida); a linha em edicao nunca sai. Janela
+minimizada pausa animacoes, rodape e leituras (`janelaMinimizada`).
+Modo leve (`preferencias.animacoes = "leves"`) liga as mesmas regras do
+"reduzir movimento" do Windows.
+
+**CSS por componente.** `ui/css/00-tokens.css` (espacos `--esp-*`,
+raios `--raio-*`, letras `--letra-*`, pesos, tempos, sombras e a paleta
+dos graficos `--grafico-*`) e um arquivo por componente ou aba; no fim
+`16-animacoes`, `17-tema-claro`, `18-densidade` e `19-movimento`.
+Conferido: os mesmos estilos calculados em 44 estados antes e depois.
+
+**Dica com a conta (`explicacoes.py`).** Cada celula da Inicio e do
+Resultado Gestor/Turno leva `dica = {formula, conta}`:
+
+| Indicador | Conta mostrada |
+|---|---|
+| Efetividade | `soma_goal ÷ soma_measured_direct` |
+| Hora direta | `(measured + signon + insert direct) ÷ (total − pd_brk)` |
+| Hora direta (Pico) | horas diretas ÷ horas dos dias de pico |
+| Dispersao | pessoas dentro ÷ (dentro + fora) |
+| Presenteismo | `1 − horas perdidas ÷ horas disponiveis` |
+| Cubo | efetividade × hora direta × presenteismo |
+| Coverage | `(LMS − diretas sem meta) ÷ (Metrics + sinergia recebida − cedida)` |
+
+Sem as somas (extracao antiga) vai so a formula.
+
+**Apresentacao.** Tamanhos em funcao da altura (`clamp` com `vh`) e, em
+tela com ate 720 px de altura, filtros sem rotulo. O automatico passa
+so pelas operacoes de `Api.operacoes_com_dados(mes)` (alguma semana,
+mes ou pico no mes, na ordem do menu). Antes ele carregava a tabela de
+cada operacao ate achar uma com dados: com uma so no mes, dava a volta e
+voltava nela (parecia travado), e uma leitura do SharePoint no meio
+tornava o pedido velho e fazia pular a seguinte. Cada chamada tem limite
+de 20 s (`comLimite`): uma que nao volta nao trava mais o relogio.
+
+**Novidades e tour (`novidades.py`).** `settings.json` guarda
+`vistos = {"novidades": "<versao>", "tour": true}`. Sem nada visto e sem
+historico nem pasta configurada: tour. Com versao diferente da vista:
+"O que ha de novo". Concluir o tour marca tambem as novidades da versao.
+
+**Procurar (Ctrl+K).** So na tela: abas do menu, acoes e, com uma
+operacao ou mes na busca, as abas ja filtradas. Mes sem ano e o mais
+recente que ja passou. O mes e trocado antes da operacao (cada aba
+guarda o mes no proprio estado ao trocar o seletor).
+
+**Imagem da tabela.** Desenhada num canvas a partir da tabela da tela,
+sempre no visual claro, em dobro de resolucao. Copia com
+`ClipboardItem({"image/png": promessa})` (a promessa mantem a copia
+dentro do clique); senao, `Api.salvar_imagem` grava em Downloads
+(`exportar_imagem.py`: so PNG pela assinatura, ate 20 MB, nome so com
+letras, numeros, `_` e `-`).

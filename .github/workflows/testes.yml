@@ -35,7 +35,7 @@ jobs:
 
       - name: JavaScript - variavel ou funcao que nao existe (eslint)
         # Os arquivos de ui/js dividem o mesmo escopo no navegador: a
-        # checagem roda nos doze juntos, na ordem do index.html.
+        # checagem roda em todos juntos, na ordem do index.html.
         run: |
           cat ui/js/*.js > "$RUNNER_TEMP/ui.js"
           npx --yes eslint@8.57.0 --no-eslintrc --env browser,es2022 \

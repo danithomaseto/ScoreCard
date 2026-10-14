@@ -180,10 +180,10 @@ function desenharDistribuicao(dist) {
     const x = centro(i) - larguraBarra / 2;
     const altura = Math.max(0, base - y(faixa.pessoas));
     const raio = Math.min(4, altura);
-    const grupo = elementoSvg('g', { class: 'distribuicao-faixa' });
-    grupo.appendChild(elementoSvg('title', {},
-      `${faixa.rotulo}: ${plural(faixa.pessoas, 'pessoa', 'pessoas')} `
-      + `(${percentualDe(faixa.pessoas, dist.total)}) · meta ${num(faixa.meta)}`));
+    const grupo = elementoSvg('g', { class: 'distribuicao-faixa', tabindex: '0' });
+    marcarDica(grupo, `Var ${faixa.rotulo}`,
+      `${plural(faixa.pessoas, 'pessoa', 'pessoas')} · ${percentualDe(faixa.pessoas, dist.total)} das ${num(dist.total)}`,
+      `meta ${num(faixa.meta)}`);
     // Area de toque maior que a barra, para a dica aparecer facil.
     grupo.appendChild(elementoSvg('rect', { x: centro(i) - passo / 2, y: topo - 20, width: passo, height: base - topo + 20, fill: 'transparent' }));
     if (altura > 0) {
@@ -212,9 +212,12 @@ function desenharDistribuicao(dist) {
 
   // Os numeros das barras por ultimo, por cima da curva, com um contorno
   // da cor do fundo: onde a curva passa perto, o numero continua legivel.
+  // Com o simbolo da faixa (dentro, abaixo ou acima da tolerancia), como
+  // nos indicadores: a cor nunca e a unica pista.
   dist.faixas.forEach((faixa, i) => {
+    const simbolo = faixa.chave === 'dentro' ? '\u2713' : (faixa.chave.startsWith('abaixo') ? '\u25BC' : '\u25B2');
     svg.appendChild(elementoSvg('text', { x: centro(i), y: y(faixa.pessoas) - 8, class: 'distribuicao-valor' },
-      num(faixa.pessoas)));
+      `${simbolo} ${num(faixa.pessoas)}`));
   });
 
   // A mesma informacao em tabela, como na planilha: pessoas e meta.
@@ -316,6 +319,8 @@ function desenharLinhasEm(corpo, linhas, colunas) {
     meta.textContent = linha.meta;
     th.appendChild(nome);
     th.appendChild(meta);
+    const formula = linha.celulas.find((c) => c.dica)?.dica.formula;
+    if (formula) marcarDica(th, linha.rotulo, formula, '');
     tr.appendChild(th);
 
     linha.celulas.forEach((celula, indice) => {
@@ -334,6 +339,9 @@ function desenharLinhasEm(corpo, linhas, colunas) {
         valor.className = 'indicator-value ' + (celula.cor || '');
         valor.textContent = celula.texto;
         td.appendChild(valor);
+        if (celula.dica) {
+          marcarDica(td, `${linha.rotulo} · ${coluna.titulo}`, celula.dica.formula, celula.dica.conta);
+        }
       } else {
         // Sem numero e traco, nunca zero: zero e um numero ruim, traco
         // e "ainda nao temos".
@@ -559,12 +567,65 @@ async function modoApresentacao(ligar) {
   if (!ligar) document.getElementById('home-apresentar').focus();
 }
 
-// Troca a operacao com a capa na frente. No automatico, pula as
-// operacoes sem dados no mes (a capa cobre a procura).
+// Troca a operacao com a capa na frente. Com as setas passa por todas;
+// no automatico, so pelas que tem dados no mes (a lista vem pronta do
+// Python). Antes o automatico carregava a tabela de cada operacao ate
+// achar uma com dados: com uma so operacao no mes ele dava a volta e
+// voltava nela, e uma leitura do SharePoint no meio fazia pular a
+// seguinte. Uma chamada que nao volta tambem nao trava mais: depois de
+// LIMITE_DA_TROCA a troca segue e o relogio volta a correr.
 let trocandoNaApresentacao = false;
+const LIMITE_DA_TROCA = 20000;
+
+function comLimite(promessa, ms) {
+  let relogio;
+  const limite = new Promise((resolver) => { relogio = setTimeout(() => resolver(null), ms); });
+  return Promise.race([promessa, limite]).finally(() => clearTimeout(relogio));
+}
+
+// A proxima operacao no sentido do passo (dando a volta). No automatico,
+// so entre as que tem dados no mes; null se nenhuma tem.
+async function proximaOperacaoDaApresentacao(passo, mes) {
+  const opcoes = [...homeOperationSelect.options].map((o) => o.value);
+  const total = opcoes.length;
+  const atual = Math.max(0, homeOperationSelect.selectedIndex);
+  const seguinte = (i) => opcoes[(((atual + passo * i) % total) + total) % total];
+  if (!apresentacaoAuto.ligado) return seguinte(1);
+  let comDados = null;
+  try {
+    comDados = await comLimite(pywebview.api.operacoes_com_dados(mes), LIMITE_DA_TROCA);
+  } catch (erro) {
+    registrarErro('apresentação automática', erro);
+  }
+  if (!Array.isArray(comDados)) return seguinte(1); // sem a lista, segue a ordem
+  apresentacaoAuto.comDados = comDados;
+  for (let i = 1; i <= total; i += 1) {
+    if (comDados.includes(seguinte(i))) return seguinte(i);
+  }
+  return null;
+}
+
+// Aviso de "so uma operacao" ou "nenhuma", uma vez por mes da apresentacao.
+function avisarRodizio(mes, mesRotulo) {
+  const lista = apresentacaoAuto.comDados || [];
+  if (lista.length > 1 || apresentacaoAuto.avisado === mes) return;
+  apresentacaoAuto.avisado = mes;
+  if (!lista.length) {
+    avisar(`Nenhuma operação tem dados em ${mesRotulo}`, 'info',
+      'O automático fica parado aqui e confere de novo a cada intervalo. Troque o mês no filtro, se quiser.');
+  } else {
+    const nome = [...homeOperationSelect.options].find((o) => o.value === lista[0])?.text || lista[0];
+    avisar(`Só ${nome} tem dados em ${mesRotulo}`, 'info',
+      'O automático fica nela e confere de novo a cada intervalo: quando outra operação tiver extração, ela entra no rodízio.');
+  }
+}
+
 async function trocarOperacaoNaApresentacao(passo) {
-  const total = homeOperationSelect.options.length;
-  if (!total || trocandoNaApresentacao) return;
+  if (!homeOperationSelect.options.length) return;
+  if (trocandoNaApresentacao) {
+    agendarProximaOperacao();
+    return;
+  }
   trocandoNaApresentacao = true;
   clearTimeout(apresentacaoAuto.timer);
   const inicio = performance.now();
@@ -572,20 +633,30 @@ async function trocarOperacaoNaApresentacao(passo) {
   // uma operacao sem dados nele voltaria o seletor para o mes atual).
   const mes = homeMes.value;
   const mesRotulo = homeMes.selectedOptions[0]?.text || '';
+  const manterMes = () => {
+    if (mes && ![...homeMes.options].some((o) => o.value === mes)) homeMes.add(new Option(mesRotulo, mes));
+    homeMes.value = mes;
+  };
   try {
-    for (let tentativa = 0; tentativa < total; tentativa += 1) {
-      homeOperationSelect.selectedIndex = (homeOperationSelect.selectedIndex + passo + total) % total;
-      mostrarCapa(homeOperationSelect.selectedOptions[0]?.text || '', mesRotulo);
-      if (mes && ![...homeMes.options].some((o) => o.value === mes)) homeMes.add(new Option(mesRotulo, mes));
-      homeMes.value = mes;
-      const tabela = await loadHome();
-      const temDados = tabela && tabela.colunas.length > 0 && tabela.mes === mes;
-      if (!apresentacaoAuto.ligado || temDados) break;
+    const destino = await proximaOperacaoDaApresentacao(passo, mes);
+    if (apresentacaoAuto.ligado) avisarRodizio(mes, mesRotulo);
+    if (!destino || destino === homeOperationSelect.value) {
+      // Ninguem mais no rodizio: so atualiza os numeros da que esta na tela.
+      manterMes();
+      await comLimite(loadHome(), LIMITE_DA_TROCA);
+      return;
     }
+    homeOperationSelect.value = destino;
+    mostrarCapa(homeOperationSelect.selectedOptions[0]?.text || '', mesRotulo);
+    manterMes();
+    await comLimite(loadHome(), LIMITE_DA_TROCA);
     preencherResumoDaCapa();
     // A capa fica pelo menos um instante, mesmo com a resposta rapida.
     const falta = Math.max(0, (SEM_ANIMACAO ? 400 : 1500) - (performance.now() - inicio));
     setTimeout(() => esconderCapa(), falta);
+  } catch (erro) {
+    registrarErro('apresentação', erro);
+    esconderCapa(true);
   } finally {
     trocandoNaApresentacao = false;
     agendarProximaOperacao();
@@ -593,7 +664,7 @@ async function trocarOperacaoNaApresentacao(passo) {
 }
 
 // ---- Automatico: troca sozinho a cada intervalo ----
-const apresentacaoAuto = { ligado: false, intervalo: 30000, timer: null };
+const apresentacaoAuto = { ligado: false, intervalo: 30000, timer: null, comDados: null, avisado: null };
 const capa = document.getElementById('apresentacao-capa');
 
 function ligarAutomatico(ligar) {
@@ -602,6 +673,22 @@ function ligarAutomatico(ligar) {
   botao.setAttribute('aria-pressed', String(ligar));
   document.getElementById('apresentacao-auto-texto').textContent = ligar ? 'Pausar' : 'Automático';
   agendarProximaOperacao();
+  if (ligar) conferirRodizio();
+}
+
+// Ao ligar, ja diz se o rodizio vai ficar numa operacao so (sem esperar
+// o primeiro intervalo passar).
+async function conferirRodizio() {
+  const mes = homeMes.value;
+  try {
+    const lista = await comLimite(pywebview.api.operacoes_com_dados(mes), LIMITE_DA_TROCA);
+    if (Array.isArray(lista) && apresentacaoAuto.ligado && homeMes.value === mes) {
+      apresentacaoAuto.comDados = lista;
+      avisarRodizio(mes, homeMes.selectedOptions[0]?.text || '');
+    }
+  } catch (erro) {
+    registrarErro('apresentação automática', erro);
+  }
 }
 
 function agendarProximaOperacao() {

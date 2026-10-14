@@ -639,9 +639,11 @@ def presenteismo_por_periodo(operacao, hoje=None, semanas=None, meses=None):
 # E a mesma conta da tela de Headcount: o numero que aparece la para uma
 # semana ou um ciclo e o que vai para o Inicio e para o cubo.
 
-def _agregar(gestores, pedacos, config):
+def _agregar(gestores, pedacos, config, detalhado=False):
     """Presenteismo de um conjunto de periodos (uma semana do Summary pode
-    ter dois pedacos, um de cada mes), cada um com os numeros dele."""
+    ter dois pedacos, um de cada mes), cada um com os numeros dele.
+    detalhado=True devolve tambem as horas ({"valor", "horas_disponiveis",
+    "horas_perdidas"}), para a dica da aba Inicio."""
     disponiveis = perdidas = 0.0
     for gestor in gestores:
         for periodo in pedacos:
@@ -658,7 +660,10 @@ def _agregar(gestores, pedacos, config):
             perdidas += q["faltas"] * q["horas_dia"]
     if disponiveis <= 0:
         return None
-    return round(1 - perdidas / disponiveis, 6)
+    valor = round(1 - perdidas / disponiveis, 6)
+    if detalhado:
+        return {"valor": valor, "horas_disponiveis": round(disponiveis, 4), "horas_perdidas": round(perdidas, 4)}
+    return valor
 
 
 def _pedacos_da_semana(inicio, hoje, escala):
@@ -704,10 +709,12 @@ def _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses, so_os_gest
         inicio = datetime.date.fromisoformat(chave)
         if inicio > hoje:
             continue  # semana que nem comecou
-        valor = _agregar(gestores, _pedacos_da_semana(inicio, hoje, escala), config)
-        if valor is not None:
+        conta = _agregar(gestores, _pedacos_da_semana(inicio, hoje, escala), config, detalhado=True)
+        if conta is not None:
             resultado["week"][chave] = {
-                "presenteismo": valor,
+                "presenteismo": conta["valor"],
+                "horas_disponiveis": conta["horas_disponiveis"],
+                "horas_perdidas": conta["horas_perdidas"],
                 "parcial": inicio <= hoje <= inicio + datetime.timedelta(days=6),
             }
 
@@ -717,10 +724,12 @@ def _presenteismo_das_faltas_lancadas(operacao, hoje, semanas, meses, so_os_gest
         ciclo = ciclos.get(chave)
         if not ciclo or ciclo["dias_uteis"] <= 0:
             continue  # ciclo que ainda nao abriu, ou antigo demais
-        valor = _agregar(gestores, [ciclo], config)
-        if valor is not None:
+        conta = _agregar(gestores, [ciclo], config, detalhado=True)
+        if conta is not None:
             resultado["month"][chave] = {
-                "presenteismo": valor,
+                "presenteismo": conta["valor"],
+                "horas_disponiveis": conta["horas_disponiveis"],
+                "horas_perdidas": conta["horas_perdidas"],
                 "de": ciclo["inicio"],
                 "ate": ciclo["fim"],
                 "em_aberto": ciclo["status"] == "Em aberto",

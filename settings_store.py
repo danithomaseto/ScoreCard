@@ -95,6 +95,23 @@ def set_preferencia(chave, valor):
     return get_preferencias()
 
 
+# O que a pessoa ja viu nesta maquina: a versao das novidades ("O que ha
+# de novo") e o tour do primeiro uso (novidades.py).
+def get_vistos():
+    vistos = get_settings().get("vistos")
+    vistos = vistos if isinstance(vistos, dict) else {}
+    novidades = vistos.get("novidades")
+    return {"novidades": novidades if isinstance(novidades, str) else "", "tour": vistos.get("tour") is True}
+
+
+def marcar_visto(chave, valor):
+    settings = get_settings()
+    if not isinstance(settings.get("vistos"), dict):
+        settings["vistos"] = {}
+    settings["vistos"][chave] = valor
+    save_settings(settings)
+
+
 # Versao dos arquivos de dados: ate qual migracao (migracoes.py) esta
 # maquina ja rodou.
 def get_versao_dos_dados():

@@ -1,16 +1,18 @@
-/* Tema claro: Tema claro: o que muda alem das cores do :root.
+/* Tema claro: o que muda alem das cores do :root.
    (ui/css: um arquivo por componente ou aba, na ordem do numero.) */
 
 :root[data-tema="claro"] #app-view,
 :root[data-tema="claro"] .atalhos-fundo,
-:root[data-tema="claro"] .dialogo-fundo {
+:root[data-tema="claro"] .dialogo-fundo,
+:root[data-tema="claro"] .dica-flutuante,
+:root[data-tema="claro"] .camada-do-app {
   color-scheme: light;
   --bg: #f2f4f8;
   --card-bg: #ffffff;
   --card-border: #e1e5ec;
   --text: #1d2433;
   --text-muted: #566072;
-  --text-faint: #8a93a3;
+  --text-faint: #6b7280; /* 4,5:1 sobre o branco */
   --input-bg: #f5f7fa;
   --input-border: #d3d9e3;
   --line: #eceff4;
@@ -21,11 +23,21 @@
   --eixo: #c3cad6;
   --barra-neutra: #9aa5b8;
   --trilho: #b8c1cf;
+  --grafico-bom: #16a34a;
+  --grafico-atencao: #b98900;
+  --grafico-critico: #c81e1e;
+  --grafico-meta: #7c3aed;
+  --grafico-linha: #1d4ed8;
+  --grafico-neutro: #98a3b6;
+  --grafico-destaque: #b88600;
+  /* Derivadas: declaradas de novo aqui para pegarem as cores deste tema. */
+  --grafico-grade: var(--line);
+  --grafico-eixo: var(--eixo);
   --overlay-0: rgba(15, 23, 42, 0.015);
   --overlay-1: rgba(15, 23, 42, 0.04);
   --overlay-2: rgba(15, 23, 42, 0.08);
   --overlay-3: rgba(15, 23, 42, 0.12);
-  --ok-tx: #15803d;
+  --ok-tx: #166534;
   --erro-tx: #b42318;
   --perigo-tx: #d92d20;
   --alerta-tx: #b54708;

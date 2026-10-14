@@ -107,7 +107,7 @@
   color: var(--text);
 }
 
-.run-actions button:hover { background: var(--input-border); }
+.run-actions button:hover:where(:not(:disabled)) { background: var(--input-border); }
 
 .ops-list {
   display: grid;

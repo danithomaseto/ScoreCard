@@ -1,4 +1,4 @@
-/* Densidade: Densidade compacta.
+/* Densidade: compacta.
    (ui/css: um arquivo por componente ou aba, na ordem do numero.) */
 
 /* ---------- 12: densidade compacta ---------- */
@@ -12,7 +12,7 @@
 :root[data-densidade="compacta"] #app-view .filtro-campo select,
 :root[data-densidade="compacta"] #app-view .historico-filtros select { margin-bottom: 0; }
 
-:root[data-densidade="compacta"] #app-view button:not(.nav-item):not(.link-btn):not(.copy-btn):not(.topbar-botao):not(.grupo-chip):not(.grupo-alternar) { height: 38px; font-size: var(--letra-m); }
+:root[data-densidade="compacta"] #app-view button:not(.nav-item):not(.link-btn):not(.copy-btn):not(.topbar-botao):not(.topbar-procurar):not(.grupo-chip):not(.grupo-alternar) { height: 38px; font-size: var(--letra-m); }
 
 :root[data-densidade="compacta"] .segmentado { height: 38px; }
 

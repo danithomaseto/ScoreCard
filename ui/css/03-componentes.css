@@ -84,14 +84,14 @@ button {
   cursor: pointer;
 }
 
-button:hover { background: var(--yellow-dark); }
+button:hover:where(:not(:disabled)) { background: var(--yellow-dark); }
 
 button.secondary {
   background: var(--input-bg);
   color: var(--text);
 }
 
-button.secondary:hover { background: var(--input-border); }
+button.secondary:hover:where(:not(:disabled)) { background: var(--input-border); }
 
 button:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -193,7 +193,7 @@ th.peak-col .col-title { color: var(--amarelo-tx); }
   font-weight: var(--peso-semi);
 }
 
-.link-btn:hover { background: none; text-decoration: underline; }
+.link-btn:hover:where(:not(:disabled)) { background: none; text-decoration: underline; }
 
 .table-wrap { overflow-x: auto; }
 
@@ -234,6 +234,9 @@ th.peak-col .col-title { color: var(--amarelo-tx); }
 .filtros-linha { display: flex; gap: var(--esp-45); flex-wrap: wrap; align-items: flex-start; }
 
 .filtro-campo { display: flex; flex-direction: column; flex: 1 1 210px; min-width: 190px; }
+/* Campo com seletor de duas opcoes: nunca mais estreito que os rotulos
+   ("Resultado do Mes" vazava em 1280 px). */
+.filtro-campo:has(> .segmentado) { min-width: max-content; }
 
 /* O ciclo da folha ponto tem o texto mais longo dos quatro campos. */
 .filtro-campo.largo { flex-grow: 1.35; }
@@ -273,7 +276,7 @@ th.peak-col .col-title { color: var(--amarelo-tx); }
   cursor: pointer;
 }
 
-.seg-opcao:hover:not(.active) { color: var(--text); background: var(--overlay-1); }
+.seg-opcao:hover:where(:not(:disabled)):not(.active) { color: var(--text); background: var(--overlay-1); }
 
 .seg-opcao.active { background: var(--yellow); color: #151515; }
 
@@ -407,13 +410,13 @@ button.hc-icone svg {
   stroke-linejoin: round;
 }
 
-button.hc-icone-editar:hover { background: rgba(255, 204, 0, 0.12); color: var(--amarelo-tx); }
+button.hc-icone-editar:hover:where(:not(:disabled)) { background: rgba(255, 204, 0, 0.12); color: var(--amarelo-tx); }
 
-button.hc-icone-excluir:hover { background: rgba(249, 112, 102, 0.12); color: var(--perigo-tx); }
+button.hc-icone-excluir:hover:where(:not(:disabled)) { background: rgba(249, 112, 102, 0.12); color: var(--perigo-tx); }
 
 button.excluir-definitivo { background: #d92d20; color: #fff; }
 
-button.excluir-definitivo:hover { background: #b42318; }
+button.excluir-definitivo:hover:where(:not(:disabled)) { background: #b42318; }
 
 /* ---------- Telas vazias com atalho para extrair ---------- */
 .estado-vazio {
@@ -690,3 +693,90 @@ button.com-onda-livre { overflow: hidden; }
 .toast.erro .toast-tempo { background: #ef4444; opacity: 0.7; }
 
 .toast:hover .toast-tempo { animation-play-state: paused; }
+
+
+/* Dica ao passar o mouse: a formula e a conta de cada indicador. */
+.tem-dica { cursor: help; }
+.dica-flutuante {
+  position: fixed;
+  z-index: 1200;
+  max-width: 380px;
+  padding: var(--esp-25) var(--esp-3);
+  border: 1px solid var(--card-border);
+  border-radius: var(--raio-m);
+  background: var(--surface-2);
+  box-shadow: var(--sombra-flutuante);
+  color: var(--text);
+  font-size: var(--letra-s);
+  line-height: 1.45;
+  pointer-events: none;
+}
+.dica-flutuante[hidden] { display: none; }
+.dica-titulo { font-weight: var(--peso-forte); color: var(--text); margin-bottom: var(--esp-05); }
+.dica-formula { color: var(--text-muted); }
+.dica-conta { margin-top: var(--esp-1); font-weight: var(--peso-semi); font-variant-numeric: tabular-nums; color: var(--amarelo-tx); }
+
+
+/* Tabelas longas: rolam dentro do cartao com o cabecalho, a primeira
+   coluna (o nome da linha) e o total fixos, como no Coverage. */
+.tabela-fixa { overflow: auto; max-height: max(320px, calc(100vh - 360px)); }
+.tabela-fixa.tabela-historico { max-height: 440px; }
+.tabela-fixa.tabela-curta { max-height: 280px; }
+.tabela-fixa thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--card-bg);
+  /* Com border-collapse a borda nao acompanha a celula fixa: a linha
+     de baixo vira sombra. */
+  box-shadow: inset 0 -1px 0 var(--card-border);
+}
+.tabela-fixa tbody th:first-child,
+.tabela-fixa tbody td:first-child,
+.tabela-fixa tfoot td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: var(--card-bg);
+}
+.tabela-fixa thead th:first-child { left: 0; z-index: 3; }
+.tabela-fixa tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background-color: var(--card-bg);
+  box-shadow: inset 0 1px 0 var(--card-border);
+}
+.tabela-fixa tfoot td:first-child { z-index: 2; }
+
+
+/* ---------- Botoes e icones: os mesmos estados em todas as variantes ---------- */
+/* Foco do teclado (Tab): o mesmo contorno amarelo em tudo que recebe foco.
+   So aparece navegando pelo teclado, nao no clique do mouse. */
+#app-view :is(button, select, input, a, [tabindex]):focus-visible,
+.dialogo-fundo button:focus-visible,
+.atalhos-fundo button:focus-visible,
+.camada-do-app :is(button, input, [tabindex]):focus-visible,
+#login-view button:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+/* Desabilitado: apagado, sem reagir ao mouse nem afundar no clique. */
+button:disabled,
+button[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+button:disabled:active { transform: none; }
+
+/* Acao perigosa (excluir): vermelho no texto e no fundo ao passar o mouse. */
+button.perigo:hover:where(:not(:disabled)),
+.hc-acoes .perigo:hover:where(:not(:disabled)) { background: rgba(249, 112, 102, 0.12); border-color: var(--perigo-tx); }
+
+/* Icones de traco: um conjunto so, mesma espessura e pontas redondas
+   (os grandes das telas vazias ficam mais finos para pesar igual). */
+:where(svg[viewBox="0 0 24 24"]) {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

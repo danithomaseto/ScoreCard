@@ -82,13 +82,20 @@ def _opcoes_de_gestor(linhas):
 def total_do_periodo(operacao, periodo, chave_periodo):
     """Coverage total de uma operacao num periodo (para a aba Inicio), ou
     None se esse periodo nao tem extracao."""
+    total = total_detalhado(operacao, periodo, chave_periodo)
+    return total["coverage"] if total else None
+
+
+def total_detalhado(operacao, periodo, chave_periodo):
+    """A linha TOTAL inteira (horas LMS, diretas sem meta, metrics,
+    sinergias e o coverage), ou None sem extracao."""
     extracao = coverage_store.extracoes(operacao).get(operacao, {}).get(
         coverage_store.chave(periodo, chave_periodo))
     if not extracao:
         return None
     chave_guardada = coverage_store.chave(periodo, chave_periodo)
     return coverage.total(_linhas(operacao, periodo, chave_periodo, extracao),
-                          coverage_store.sinergia(operacao, chave_guardada))["coverage"]
+                          coverage_store.sinergia(operacao, chave_guardada))
 
 
 def _grupos_de_semanas(extracoes, mes):

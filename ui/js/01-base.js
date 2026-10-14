@@ -63,6 +63,66 @@ window.janelaMinimizada = (minimizada) => {
 };
 document.addEventListener('visibilitychange', () => window.janelaMinimizada(janela.minimizada));
 
+// Dica ao passar o mouse (a conta de cada indicador): o elemento leva o
+// titulo, a formula e a conta em data-*, e uma caixa so, flutuante,
+// aparece perto dele. Some ao sair, rolar ou teclar.
+const dicaFlutuante = document.createElement('div');
+dicaFlutuante.className = 'dica-flutuante';
+dicaFlutuante.setAttribute('role', 'tooltip');
+dicaFlutuante.hidden = true;
+document.body.appendChild(dicaFlutuante);
+
+function marcarDica(elemento, titulo, formula, conta) {
+  elemento.dataset.dicaTitulo = titulo;
+  elemento.dataset.dicaFormula = formula;
+  elemento.dataset.dicaConta = conta || '';
+  elemento.classList.add('tem-dica');
+}
+
+function mostrarDica(elemento) {
+  dicaFlutuante.innerHTML = '';
+  const partes = [['dica-titulo', elemento.dataset.dicaTitulo], ['dica-formula', elemento.dataset.dicaFormula],
+    ['dica-conta', elemento.dataset.dicaConta]];
+  for (const [classe, texto] of partes) {
+    if (!texto) continue;
+    const linha = document.createElement('div');
+    linha.className = classe;
+    linha.textContent = texto;
+    dicaFlutuante.appendChild(linha);
+  }
+  dicaFlutuante.hidden = false;
+  const alvo = elemento.getBoundingClientRect();
+  const caixa = dicaFlutuante.getBoundingClientRect();
+  const margem = 8;
+  let topo = alvo.top - caixa.height - margem;
+  if (topo < margem) topo = alvo.bottom + margem;
+  const esquerda = Math.min(Math.max(margem, alvo.left + alvo.width / 2 - caixa.width / 2),
+    window.innerWidth - caixa.width - margem);
+  dicaFlutuante.style.top = `${Math.round(topo)}px`;
+  dicaFlutuante.style.left = `${Math.round(esquerda)}px`;
+}
+
+function esconderDica() {
+  dicaFlutuante.hidden = true;
+}
+
+let dicaPendente = null;
+document.addEventListener('pointerover', (evento) => {
+  const alvo = evento.target.closest('.tem-dica');
+  clearTimeout(dicaPendente);
+  if (!alvo) { esconderDica(); return; }
+  // Um instante antes de aparecer: passar o mouse por cima da tabela nao
+  // acende uma dica atras da outra.
+  dicaPendente = setTimeout(() => mostrarDica(alvo), 250);
+});
+document.addEventListener('pointerleave', esconderDica);
+document.addEventListener('focusin', (evento) => {
+  const alvo = evento.target.closest?.('.tem-dica');
+  if (alvo) mostrarDica(alvo); else esconderDica();
+});
+document.addEventListener('scroll', esconderDica, true);
+document.addEventListener('keydown', esconderDica);
+
 // Esqueleto de carregamento: linhas cinza no formato da tabela enquanto
 // o Python responde. So aparece se a resposta passar de 150 ms — abaixo
 // disso ele so piscaria na tela, o que parece mais lento, nao menos.
@@ -431,6 +491,7 @@ async function showApp() {
   atualizarRodape();
   iniciarLeituraDoSharePoint();
   conferirVersaoNova();
+  conferirNovidades();
   preCarregar();
 }
 

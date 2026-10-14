@@ -9,6 +9,7 @@ import datetime
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -28,6 +29,8 @@ import conexao
 import coverage_store
 import coverage_tela
 import diagnostico
+import explicacoes
+import exportar_imagem
 import grupos_store
 import grupos_tela
 import headcount
@@ -41,6 +44,7 @@ import indicators_store
 import lancamentos
 import migracoes
 import navegadores
+import novidades
 import observador_de_pasta
 import registro
 import settings_store
@@ -961,6 +965,17 @@ class Api:
     def get_app_info(self):
         return versao.info()
 
+    def get_novidades(self):
+        """Novidades da versao e se a tela mostra o tour ou a janela
+        "O que ha de novo" ao abrir (novidades.py)."""
+        return novidades.estado()
+
+    def marcar_visto(self, o_que):
+        try:
+            return {"success": True, **novidades.marcar(o_que)}
+        except ValueError as exc:
+            return {"success": False, "message": str(exc)}
+
     def gerar_diagnostico(self):
         """Zip com log, versao e ambiente, sem credenciais nem dados das
         pessoas, na pasta Downloads — pra mandar a quem da suporte."""
@@ -970,15 +985,33 @@ class Api:
             log.exception("não deu pra gerar o diagnóstico")
             return {"success": False, "message": f"Não deu pra gerar o diagnóstico: {exc}"}
         log.info("diagnóstico gerado em %s", caminho)
+        self._mostrar_arquivo(caminho, "Pasta do diagnóstico")
+        return {"success": True, "caminho": caminho,
+                "message": f"Diagnóstico salvo em {caminho}"}
+
+    def salvar_imagem(self, nome, conteudo_base64):
+        """PNG da tabela da Inicio na pasta Downloads (botao Imagem com
+        Shift, ou quando a copia nao deu)."""
+        try:
+            caminho = exportar_imagem.salvar_png(nome, conteudo_base64)
+        except ValueError as exc:
+            return {"success": False, "message": str(exc)}
+        except OSError as exc:
+            log.exception("não deu pra salvar a imagem")
+            return {"success": False, "message": f"Não deu pra salvar a imagem: {exc}"}
+        log.info("imagem da tabela salva em %s", caminho)
+        self._mostrar_arquivo(caminho, "Pasta da imagem")
+        return {"success": True, "caminho": caminho, "message": f"Imagem salva em {caminho}"}
+
+    def _mostrar_arquivo(self, caminho, descricao):
+        """Abre o Explorer ja com o arquivo selecionado."""
         if sys.platform == "win32":
-            try:  # abre o Explorer ja com o zip selecionado
+            try:
                 subprocess.Popen(["explorer", "/select,", caminho])
             except OSError:
                 pass
         else:
-            self._open_path(os.path.dirname(caminho), "Pasta do diagnóstico")
-        return {"success": True, "caminho": caminho,
-                "message": f"Diagnóstico salvo em {caminho}"}
+            self._open_path(os.path.dirname(caminho), descricao)
 
     # ---------------- Abrir arquivos ----------------
 
@@ -1005,6 +1038,20 @@ class Api:
         return self._open_path(self._last_screenshot, "Imagem do erro")
 
     # ---------------- Indicadores ----------------
+
+    def operacoes_com_dados(self, mes):
+        """Operacoes com alguma coluna (semana, mes ou pico) no mes, na
+        ordem do menu. A apresentacao automatica passa so por elas: antes
+        ela carregava a tabela de cada operacao ate achar uma com dados,
+        e com uma so operacao no mes dava a volta e parecia travada."""
+        if not isinstance(mes, str) or not re.fullmatch(r"\d{4}-\d{2}", mes):
+            return []
+        com_dados = []
+        for chave in OPERATIONS:
+            do_mes = periodos.so_do_mes(indicators_store.get_indicators(chave), mes)
+            if any(do_mes[tipo] for tipo in ("week", "month", "peak")):
+                com_dados.append(chave)
+        return com_dados
 
     @cache_de_telas.guardada
     def get_indicator_table(self, operation_key, mes=None):
@@ -1090,10 +1137,14 @@ class Api:
                     celulas.append({"texto": "", "cor": "", "nao_se_aplica": True})
                     continue
                 valor = coluna["_entrada"].get(indicador)
-                celulas.append({
+                celula = {
                     "texto": limits.formatar(valor),
                     "cor": limits.cor(indicador, valor),
-                })
+                }
+                dica = explicacoes.explicar(indicador, coluna["_entrada"], coluna["periodo"])
+                if dica:
+                    celula["dica"] = dica
+                celulas.append(celula)
             linhas.append({
                 "chave": indicador,
                 "rotulo": limits.ROTULOS[indicador],
@@ -1140,8 +1191,12 @@ class Api:
         """O pico usa efetividade, dispersao e presenteismo do mes; so a
         hora direta e dos dias de pico — e o cubo muda com ela. Sem a
         extracao mensal, fica so a hora direta, e o cubo sem numero."""
-        entrada = {campo: entrada_mes.get(campo) for campo in ("efetividade", "dispersao")}
+        # Para a dica: as somas do mes (efetividade e dispersao) e os dias
+        # de pico (hora direta).
+        entrada = {campo: entrada_mes.get(campo) for campo in (
+            "efetividade", "dispersao", "soma_goal", "soma_measured_direct", "dentro", "fora")}
         entrada["hora_direta"] = entrada_pico.get("hora_direta")
+        entrada["_dias_pico"] = entrada_pico.get("dias") or []
         dias = [datetime.date.fromisoformat(d["data"]).strftime("%d/%m")
                 for d in entrada_pico.get("dias", [])]
         titulo, _ = periodos.rotulo_mes(chave)
@@ -1162,15 +1217,17 @@ class Api:
     def _com_coverage(entrada, operation_key, periodo, chave):
         """Poe o coverage total da aba Coverage, calculado agora (com os
         dias, horas e sinergias digitados la)."""
-        valor = coverage_tela.total_do_periodo(operation_key, periodo, chave)
-        if valor is not None:
-            entrada["coverage"] = valor
+        total = coverage_tela.total_detalhado(operation_key, periodo, chave)
+        if total is not None:
+            entrada["coverage"] = total["coverage"]
+            entrada["_coverage_partes"] = total
         return entrada
 
     @staticmethod
     def _com_presenteismo(entrada, vivo):
         """Poe o presenteismo calculado na hora e refaz o CUBO com ele."""
         entrada["presenteismo"] = vivo["presenteismo"] if vivo else None
+        entrada["_presenteismo_partes"] = vivo or {}
         entrada["cubo"] = weekly.calcular_cubo(
             entrada.get("efetividade"),
             entrada.get("hora_direta"),

@@ -84,7 +84,7 @@
   line-height: 26px;
 }
 
-.grupo-chip:hover { border-color: var(--yellow); background: rgba(255, 204, 0, 0.1); }
+.grupo-chip:hover:where(:not(:disabled)) { border-color: var(--yellow); background: rgba(255, 204, 0, 0.1); }
 
 .grupos-navegacao-acoes { display: flex; gap: var(--esp-3); flex-shrink: 0; }
 
@@ -105,7 +105,7 @@
 
 .grupo-alternar:hover { color: var(--text); background: var(--input-border); }
 
-.grupo-alternar svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms ease; }
+.grupo-alternar svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms ease; }
 
 .grupo-tabela.recolhido .grupo-alternar svg { transform: rotate(-90deg); }
 
@@ -143,7 +143,7 @@
 
 .resumo-table .resumo-nome button { height: auto; padding: 0; background: none; color: inherit; font: inherit; text-align: left; }
 
-.resumo-table .resumo-nome button:hover { color: var(--amarelo-tx); text-decoration: underline; }
+.resumo-table .resumo-nome button:hover:where(:not(:disabled)) { color: var(--amarelo-tx); text-decoration: underline; }
 
 .resumo-table .resumo-nome small { display: block; font-size: var(--letra-2xs); font-weight: var(--peso-semi); color: var(--text-faint); }
 

@@ -1,0 +1,150 @@
+/* Paleta: Procurar (Ctrl+K), com abas, operacao + mes e acoes.
+   (ui/css: um arquivo por componente ou aba, na ordem do numero.) */
+
+/* Botao na barra amarela: lupa, "Procurar" e o atalho. */
+.topbar-procurar {
+  height: 34px;
+  padding: 0 var(--esp-15) 0 var(--esp-25);
+  gap: var(--esp-2);
+  border-radius: var(--raio-m);
+  background: rgba(29, 19, 0, 0.08);
+  color: #1d1300;
+  font-size: var(--letra-s);
+  font-weight: var(--peso-forte);
+  white-space: nowrap;
+}
+
+.topbar-procurar:hover:where(:not(:disabled)) { background: rgba(29, 19, 0, 0.16); }
+
+.topbar-procurar kbd { border-color: rgba(29, 19, 0, 0.25); background: rgba(255, 255, 255, 0.35); color: #1d1300; }
+
+@media (max-width: 1100px) {
+  .topbar-procurar-texto,
+  .topbar-procurar kbd { display: none; }
+  .topbar-procurar { width: 34px; padding: 0; }
+}
+
+body.apresentacao .topbar-procurar { display: none; }
+
+.paleta-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 9650;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: max(56px, 12vh) var(--esp-4) var(--esp-4);
+  background: rgba(5, 8, 16, 0.55);
+  backdrop-filter: blur(3px);
+  animation: surgir 140ms ease-out;
+}
+
+.paleta-fundo[hidden] { display: none; }
+
+.paleta-caixa {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 100%);
+  max-height: calc(100vh - max(56px, 12vh) - 24px);
+  border-radius: var(--raio-xl);
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text);
+  box-shadow: var(--sombra-dialogo);
+  overflow: hidden;
+  animation: paleta-entra 200ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.paleta-busca {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-25);
+  padding: 0 var(--esp-4);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.paleta-busca svg { width: 18px; height: 18px; flex-shrink: 0; fill: none; stroke: var(--text-muted); stroke-width: 2; stroke-linecap: round; }
+
+.paleta-busca input {
+  flex: 1;
+  width: auto;
+  height: 54px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  color: var(--text);
+  font-size: var(--letra-l);
+}
+
+/* O campo e a unica coisa com foco na caixa: o cursor piscando ja diz
+   onde se digita, sem o anel amarelo do resto do app. */
+#paleta-campo:focus,
+#paleta-campo:focus-visible { outline: none; border: none; box-shadow: none; }
+
+.paleta-lista { flex: 1; min-height: 0; overflow: auto; margin: 0; padding: var(--esp-15); list-style: none; }
+
+.paleta-grupo {
+  padding: var(--esp-25) var(--esp-25) var(--esp-1);
+  font-size: var(--letra-2xs);
+  font-weight: var(--peso-forte);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.paleta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  min-height: 42px;
+  padding: var(--esp-15) var(--esp-25);
+  border-radius: var(--raio-m);
+  cursor: pointer;
+  color: var(--text);
+  font-size: var(--letra-m);
+}
+
+.paleta-item[aria-selected="true"] { background: var(--input-bg); box-shadow: inset 3px 0 0 var(--yellow); }
+
+.paleta-icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--raio-s);
+  background: var(--input-bg);
+  color: var(--text-muted);
+}
+
+.paleta-item[aria-selected="true"] .paleta-icone { background: rgba(255, 204, 0, 0.16); color: var(--amarelo-tx); }
+
+.paleta-icone svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.paleta-texto { flex: 1; min-width: 0; }
+
+.paleta-texto strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--peso-semi); }
+
+.paleta-texto span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--letra-s); color: var(--text-muted); }
+
+.paleta-texto mark { background: none; color: var(--amarelo-tx); font-weight: var(--peso-forte); }
+
+.paleta-item kbd { flex-shrink: 0; }
+
+.paleta-vazio { padding: var(--esp-6) var(--esp-4); text-align: center; font-size: var(--letra-m); color: var(--text-muted); }
+
+.paleta-rodape {
+  display: flex;
+  gap: var(--esp-45);
+  padding: var(--esp-2) var(--esp-4);
+  border-top: 1px solid var(--card-border);
+  font-size: var(--letra-xs);
+  color: var(--text-faint);
+}
+
+.paleta-rodape kbd { margin-right: var(--esp-1); }
+
+@keyframes paleta-entra { from { opacity: 0; transform: translateY(-8px) scale(0.98); } }

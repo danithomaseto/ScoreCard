@@ -389,15 +389,6 @@
 
 .app-entrando .content-area { animation: conteudo-entra 700ms 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
-/* ---------- 9: foco visivel no teclado ---------- */
-/* So aparece navegando pelo teclado (Tab), nao no clique do mouse. */
-#app-view :is(button, select, input, a, [tabindex]):focus-visible,
-.dialogo-fundo button:focus-visible,
-.atalhos-fundo button:focus-visible,
-#login-view button:focus-visible {
-  outline: 2px solid var(--yellow);
-  outline-offset: 2px;
-}
 
 .login-rodape {
   display: flex;

@@ -1,0 +1,120 @@
+/* Novidades e tour: janela "O que ha de novo" (uma vez por versao) e o
+   tour do primeiro uso, com um recorte em volta de cada parte da Inicio.
+   (ui/css: um arquivo por componente ou aba, na ordem do numero.) */
+
+/* ---------- O que ha de novo ---------- */
+/* Em tela baixa rola so a lista: o titulo e os botoes ficam a vista. */
+.novidades-caixa { display: flex; flex-direction: column; width: min(580px, 100%); max-height: calc(100vh - 32px); overflow: hidden; text-align: left; }
+
+.novidades-topo { display: flex; align-items: center; gap: var(--esp-25); margin-bottom: var(--esp-35); }
+
+.novidades-topo h3 { margin: 0; }
+
+.novidades-versao {
+  padding: var(--esp-05) var(--esp-25);
+  border-radius: var(--raio-pilula);
+  background: rgba(255, 204, 0, 0.16);
+  color: var(--amarelo-tx);
+  font-size: var(--letra-xs);
+  font-weight: var(--peso-forte);
+  letter-spacing: 0.04em;
+}
+
+.novidades-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0 0 var(--esp-5);
+  padding: 0 var(--esp-1) 0 0;
+  list-style: none;
+  counter-reset: novidade;
+}
+
+.novidades-lista li {
+  position: relative;
+  padding-left: var(--esp-7);
+  counter-increment: novidade;
+}
+
+.novidades-lista li::before {
+  content: counter(novidade);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--input-bg);
+  color: var(--text-muted);
+  font-size: var(--letra-xs);
+  font-weight: var(--peso-forte);
+  line-height: 22px;
+  text-align: center;
+}
+
+.novidades-lista strong { display: block; font-size: var(--letra-base); color: var(--text); }
+
+.novidades-lista span { display: block; margin-top: var(--esp-05); font-size: var(--letra-m); line-height: 1.55; color: var(--text-muted); }
+
+.novidades-caixa .dialogo-botoes { justify-content: flex-end; }
+
+/* ---------- Tour ---------- */
+.tour { position: fixed; inset: 0; z-index: 9700; }
+
+.tour[hidden] { display: none; }
+
+/* O escurecido e a sombra enorme do proprio recorte: o buraco fica em
+   volta do que o passo mostra. */
+.tour-recorte {
+  position: fixed;
+  border-radius: var(--raio-l);
+  box-shadow: 0 0 0 2px var(--yellow), 0 0 0 200vmax rgba(5, 8, 16, 0.62);
+  pointer-events: none;
+  transition: left var(--tempo-medio) cubic-bezier(0.2, 0.9, 0.2, 1), top var(--tempo-medio) cubic-bezier(0.2, 0.9, 0.2, 1),
+              width var(--tempo-medio) cubic-bezier(0.2, 0.9, 0.2, 1), height var(--tempo-medio) cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.tour-caixa {
+  position: fixed;
+  width: min(360px, calc(100vw - 32px));
+  padding: var(--esp-45) var(--esp-5) var(--esp-4);
+  border-radius: var(--raio-xl);
+  border: 1px solid var(--card-border);
+  border-top: 3px solid var(--yellow);
+  background: var(--card-bg);
+  color: var(--text);
+  box-shadow: var(--sombra-dialogo);
+  transition: left var(--tempo-medio) cubic-bezier(0.2, 0.9, 0.2, 1), top var(--tempo-medio) cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.tour-caixa.entrando { animation: card-entra 280ms cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+
+.tour-passo { font-size: var(--letra-xs); font-weight: var(--peso-forte); letter-spacing: 0.08em; text-transform: uppercase; color: var(--amarelo-tx); }
+
+.tour-caixa h3 { margin: var(--esp-1) 0 var(--esp-15); font-size: var(--letra-xl); }
+
+.tour-caixa p { margin: 0 0 var(--esp-4); font-size: var(--letra-m); line-height: 1.6; color: var(--text-muted); }
+
+.tour-botoes { display: flex; align-items: center; gap: var(--esp-2); }
+
+.tour-botoes button { height: 36px; padding: 0 var(--esp-35); font-size: var(--letra-m); }
+
+.tour-botoes .tour-pular { padding: 0 var(--esp-1); background: none; color: var(--text-muted); font-weight: var(--peso-semi); }
+
+.tour-botoes .tour-pular:hover:where(:not(:disabled)) { background: none; color: var(--text); text-decoration: underline; }
+
+.tour-pontos { display: flex; gap: var(--esp-1); margin-right: auto; padding-left: var(--esp-1); }
+
+.tour-pontos i { width: 6px; height: 6px; border-radius: 50%; background: var(--input-border); transition: width var(--tempo-curto) ease, background-color var(--tempo-curto) ease; }
+
+.tour-pontos i.atual { width: 16px; border-radius: var(--raio-pilula); background: var(--yellow); }
+
+/* ---------- Configuracoes > Ajuda e acoes do cabecalho ---------- */
+.settings-acoes { display: flex; flex-wrap: wrap; gap: var(--esp-2); flex-shrink: 0; }
+
+.cabecalho-acoes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--esp-2); flex-shrink: 0; margin-top: var(--esp-05); }
+
+body.apresentacao #home-acoes { display: none; }

@@ -53,7 +53,27 @@ Detalhes de uso:
   digitados tambem (um arquivo por operacao em `<operacao>\Lancamentos`).
 - **Apresentacao automatica:** no modo apresentacao, o botao Automatico
   (ou a barra de espaco) troca a operacao sozinho, com uma capa entre
-  uma e outra.
+  uma e outra, passando so pelas operacoes com dados no mes escolhido
+  (com uma so, avisa e fica nela). A tabela se ajusta a altura da tela:
+  enche a TV em 1920x1080 e cabe sem rolar num notebook 1366x768, mesmo
+  com o Windows em 125%.
+- **Procurar (Ctrl+K):** "hughes setembro" abre a Inicio da Hughes em
+  setembro; "swa coverage", o Coverage da Swa; "tema", a troca de tema.
+- **Imagem:** o botao ao lado do Modo apresentacao copia a tabela da
+  Inicio como figura (fundo branco) para colar no PowerPoint; com Shift,
+  salva o PNG em Downloads.
+- **Dica com a conta:** parando o mouse (ou o foco do teclado) num numero
+  da tabela aparece a formula e a conta daquele periodo ("302,0 h ÷
+  267,6 h = 112,88%").
+- **O que ha de novo e tour:** na primeira vez, um tour de cinco passos
+  pela Inicio; a cada versao nova, a janela com as novidades. Os dois
+  reabrem em Configuracoes > Ajuda.
+- **Mais leve:** a tela le a pasta quando o Windows avisa que ela mudou
+  (a leitura a cada 5 min fica de reserva), as telas montadas ficam
+  guardadas ate os dados mudarem, o Coverage desenha so as linhas
+  visiveis e, com a janela minimizada, animacoes e leituras param.
+  **Modo leve** (Configuracoes > Aparencia > Animacoes: Leves) desliga o
+  que so enfeita, para notebook fraco, Citrix e projetor.
 - **Configuracoes > Saude do sistema:** VPN por servidor, a pasta, os
   relatorios que nao foram lidos (e por que), "Ler a pasta do zero", as
   versoes, os lancamentos compartilhados e o backup.
@@ -152,9 +172,11 @@ terminal, de qualquer pasta). Ele:
    `python` do PATH).
 2. Cria o ambiente virtual `venv` — e refaz, se estiver quebrado ou for
    de uma versao do Python fora da faixa testada.
-3. Chama `tools/build.py`, que instala as dependencias, baixa o
-   Chromium (`playwright install chromium`) e empacota tudo com o
-   PyInstaller num **arquivo unico**.
+3. Chama `tools/build.py`, que instala as dependencias e empacota tudo
+   com o PyInstaller num **arquivo unico**. Antes de trocar o `dist`, ele
+   abre o app gerado com `--autoteste` (confere que nenhum modulo ou
+   arquivo da tela ficou de fora do pacote); se falhar, o build para.
+   `SCORECARD_BUILD_SEM_AUTOTESTE=1` pula essa conferencia.
 
 **Se der erro:** o build para no passo que falhou e mostra a causa
 provavel e o que fazer (Python sem Tcl/Tk, pythonnet que nao instala na
@@ -177,7 +199,7 @@ Propriedades > Detalhes dele aparecem o nome, a versao (a do arquivo
 `VERSAO`) e o autor.
 
 > **Como o arquivo unico abre rapido:** o `ScoreCard.exe` e um lancador
-> pequeno com o app inteiro (Python, interface, Chromium) guardado
+> pequeno com o app inteiro (Python e interface, e o Chromium na versao completa) guardado
 > dentro. Na **primeira abertura de cada versao** ele descompacta o app
 > em `%LOCALAPPDATA%\ScoreCard\app-<versao>` — a tela de abertura
 > mostra o andamento no rodape — e nas seguintes so abre, sem
@@ -185,11 +207,16 @@ Propriedades > Detalhes dele aparecem o nome, a versao (a do arquivo
 > vez e apaga a pasta da anterior. Se a descompactacao for interrompida
 > (PC desligou), a proxima abertura refaz. Detalhes em `lancador.py`.
 >
-> O Chromium embutido e o **headless shell**, a versao feita pra rodar
-> sem janela, com mais ou menos metade do tamanho do completo. Para
-> gerar um .exe que consiga mostrar a automacao na tela
-> (`SCORECARD_HEADLESS=0`, so pra diagnostico), rode o build com
-> `SCORECARD_BUILD_FULL_CHROMIUM=1`.
+> **Navegador da automacao:** o `.exe` padrao **nao leva navegador
+> proprio** (uns 70 MB, contra uns 180 MB com o Chromium): a extracao usa
+> o **Microsoft Edge** que ja vem no Windows, e na falta dele o Google
+> Chrome. Para maquina sem nenhum dos dois, gere a versao completa com
+> `SCORECARD_BUILD_COM_CHROMIUM=1` (embute o Chromium **headless
+> shell**, que fica de reserva). `SCORECARD_BUILD_FULL_CHROMIUM=1` embute
+> tambem o Chromium completo, que consegue mostrar a automacao na tela
+> (`SCORECARD_HEADLESS=0`, so pra diagnostico). Na maquina,
+> `SCORECARD_NAVEGADOR=edge|chrome|chromium` forca um deles; Configuracoes
+> > Saude do sistema mostra qual esta sendo usado.
 
 ### Pre-requisitos na maquina que gera o .exe
 
@@ -203,10 +230,10 @@ Propriedades > Detalhes dele aparecem o nome, a versao (a do arquivo
 
 ### Pre-requisitos na maquina de quem so vai USAR o .exe
 
-Nenhum — nem Python, nem nada tecnico, nem internet (o Chromium ja vai
-embutido). So o WebView2 Runtime (que, de novo, ja vem com o Windows
-atualizado) e, claro, acesso a rede da operacao (VPN) na hora de rodar
-a extracao de verdade.
+Nenhum — nem Python, nem nada tecnico, nem internet. So o WebView2
+Runtime e o Microsoft Edge (os dois ja vem com o Windows atualizado; o
+Chrome tambem serve) e, claro, acesso a rede da operacao (VPN) na hora
+de rodar a extracao de verdade.
 
 ## Log
 
@@ -277,7 +304,7 @@ aparece sozinha no dropdown, sem precisar mexer em mais nada.
 ## Estrutura
 
 ```
-main.py              # cria a janela, garante que o Chromium existe
+main.py              # cria a janela; --autoteste confere o pacote no build
 lancador.py          # o ScoreCard.exe: descompacta o app uma vez e abre
 instancia_unica.py   # uma janela so: a segunda abertura traz a primeira
 api.py                # metodos chamados pelo JS (login, executar, config)
@@ -303,6 +330,12 @@ lancamentos.py        # Headcount e Coverage digitados, compartilhados pela past
 migracoes.py          # versao dos dados e os consertos do que ja esta gravado
 backup.py             # backup diario dos dados e restauracao
 atualizacao.py        # aviso de versao nova publicada na pasta do SharePoint
+navegadores.py        # Edge, Chrome ou Chromium embutido para a automacao
+cache_de_telas.py     # telas montadas guardadas ate os dados mudarem
+observador_de_pasta.py  # aviso do Windows quando a pasta do SharePoint muda
+explicacoes.py        # a conta de cada indicador, para a dica da tabela
+novidades.py          # "O que ha de novo" por versao e o tour do primeiro uso
+exportar_imagem.py    # PNG da tabela da Inicio salvo em Downloads
 automation/
   base.py              # login, iframe, comboboxes, export (Playwright)
   generic.py            # orquestra o fluxo por operacao
@@ -321,10 +354,12 @@ config/
   operations.py         # cadastro das operacoes
 ui/
   index.html             # login + painel + configuracoes
-  css/01-base.css ... 18-configuracoes.css
-                         # estilos, na ordem do numero (a ordem decide
-                         # qual regra vale)
-  js/01-base.js ... 12-configuracoes.js
+  css/00-tokens.css ... 19-movimento.css
+                         # 00 = medidas e cores (tokens); um arquivo por
+                         # componente ou aba; no fim animacoes, tema claro,
+                         # densidade e movimento (a ordem decide qual
+                         # regra vale)
+  js/01-base.js ... 15-imagem.js
                          # um arquivo por aba ou assunto; todos dividem o
                          # mesmo escopo e rodam na ordem do numero
 tests/
@@ -345,6 +380,13 @@ tests/
   test_lancador.py       # app dentro do .exe, descompactado uma vez
   test_infra.py          # gravacao segura e log sem credenciais
   test_instancia_unica.py  # segunda abertura so traz a janela
+  test_manutencao.py     # backup, migracoes, aviso de versao e saude da pasta
+  test_build.py          # build que nao apaga o dist e o autoteste
+  test_navegadores.py    # ordem Edge -> Chrome -> Chromium
+  test_cache_de_telas.py # tela guardada ate os dados mudarem
+  test_observador.py     # aviso de mudanca na pasta
+  test_explicacoes.py    # a conta mostrada na dica de cada indicador
+  test_novidades.py      # novidades, tour, imagem da tabela e rodizio da apresentacao
 requirements.txt
 requirements-dev.txt      # o de cima + pytest
 build.spec               # config do PyInstaller (app + lancador)
@@ -369,5 +411,9 @@ quem roda o programa:
 - **Acesso a pasta do SharePoint/OneDrive**: a pasta escolhida nas
   configuracoes precisa estar sincronizada/acessivel no computador.
 
-Tudo o resto (Python, as bibliotecas, o Chromium usado pela automacao,
-o HTML/CSS/JS da interface) ja vai embutido dentro do `ScoreCard.exe`.
+- **Microsoft Edge** (ou Google Chrome): o navegador que a automacao
+  usa no `.exe` padrao. O Edge vem com o Windows. Para maquina sem
+  nenhum dos dois, gere o `.exe` com `SCORECARD_BUILD_COM_CHROMIUM=1`.
+
+Tudo o resto (Python, as bibliotecas, o HTML/CSS/JS da interface) ja vai
+embutido dentro do `ScoreCard.exe`.

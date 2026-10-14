@@ -144,6 +144,8 @@
 /* Linha abaixo da meta: fundo e numero marcados, pra saltar na leitura
    sem precisar comparar com a meta de cabeca. */
 .hc-tabela tr.abaixo td { background: rgba(244, 63, 94, 0.07); }
+/* A primeira coluna fica fixa (opaca): o tom da linha vai por cima do fundo. */
+.hc-tabela tr.abaixo td:first-child { background: linear-gradient(rgba(244, 63, 94, 0.07), rgba(244, 63, 94, 0.07)), var(--card-bg); }
 
 .hc-tabela tr.abaixo .hc-resultado { color: var(--erro-tx); }
 
@@ -246,7 +248,7 @@
   display: flex;
   align-items: center;
   margin: 0;
-  background: #0d1120;
+  background: var(--surface-3);
   border: 1px solid var(--card-border);
   border-radius: var(--raio-m);
   padding: var(--esp-4);
@@ -283,7 +285,7 @@
 
 .hc-drop-icone {
   width: 38px; height: 38px;
-  fill: none; stroke: var(--yellow); stroke-width: 1.8;
+  fill: none; stroke: var(--yellow); stroke-width: 2;
   stroke-linecap: round; stroke-linejoin: round;
 }
 
@@ -373,6 +375,7 @@ button.acao {
 /* A linha em edicao fica marcada, para nao haver duvida de quem esta
    sendo alterado ou excluido. */
 .hc-tabela tbody tr.em-edicao td { background: rgba(255, 204, 0, 0.06); }
+.hc-tabela tbody tr.em-edicao td:first-child { background: linear-gradient(rgba(255, 204, 0, 0.06), rgba(255, 204, 0, 0.06)), var(--card-bg); }
 
 .hc-tabela tbody tr.em-edicao td:first-child { box-shadow: inset 3px 0 0 var(--yellow); }
 

@@ -408,3 +408,17 @@
 .carregando-barra.ativa { opacity: 1; animation: barra-carrega 2.4s cubic-bezier(0.1, 0.6, 0.3, 1) forwards; }
 
 .carregando-barra.terminando { width: 100% !important; animation: none; opacity: 0; transition: width 220ms ease, opacity 300ms 160ms ease; }
+
+
+/* ---------- Telas baixas (notebook com escala de 125% ou 150%) ---------- */
+/* O menu rola em vez de espremer: os titulos das secoes nao encavalam
+   nos itens. */
+.sidebar > * { flex-shrink: 0; }
+@media (max-height: 680px) {
+  .sidebar { padding-top: var(--esp-35); }
+  .nav-item { height: 36px; }
+  .nav-secao { margin-top: var(--esp-25); }
+  .sidebar-footer { padding-top: var(--esp-25); }
+  .page-heading { font-size: var(--letra-3xl); }
+  .content-area { padding-top: var(--esp-5); }
+}

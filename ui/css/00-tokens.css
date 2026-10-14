@@ -14,7 +14,7 @@
   --red: #d40511;
   /* Superficies e textos que mudam com o tema (o claro redefine estes
      mesmos nomes dentro do app; login e abertura ficam sempre escuros). */
-  --text-faint: #667085;
+  --text-faint: #8b95a9; /* 4,5:1 sobre o card e o menu */
   --line: #1e2438;
   --surface-2: #1b2135;
   --surface-3: #121729;
@@ -34,6 +34,19 @@
   --azul-tx: #7dd3fc;
   --amarelo-tx: #ffcc00;
   --sombra-card: 0 4px 20px rgba(0, 0, 0, 0.25);
+
+  /* Graficos (os mesmos papeis nos dois temas; conferidos com o
+     validador de paleta contra o fundo do card): estado da faixa, a
+     linha da meta, a linha do acumulado, barra comum e a de destaque. */
+  --grafico-bom: #22c55e;
+  --grafico-atencao: #facc15;
+  --grafico-critico: #ef4444;
+  --grafico-meta: #a78bfa;
+  --grafico-linha: #38bdf8;
+  --grafico-neutro: #6b7799;
+  --grafico-destaque: #ffcc00;
+  --grafico-grade: var(--line);
+  --grafico-eixo: var(--eixo);
 
   /* Espaco: multiplos de 4 px (com meios passos). */
   --esp-05: 2px;

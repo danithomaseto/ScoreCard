@@ -22,6 +22,7 @@ import datetime
 
 import coverage_store
 import coverage_tela
+import explicacoes
 import grupos_store
 import headcount
 import settings_store
@@ -77,14 +78,19 @@ def _coverage(operacao, coluna, cobertura):
     digitados = coverage_store.manuais(operacao, coverage_store.chave(coluna["periodo"], coluna["chave"]))
     linhas = [coverage.linha(usuario, horas, digitados.get(usuario), dias)
               for usuario, horas in cobertura.items()]
-    return coverage.total(linhas)["coverage"]
+    return coverage.total(linhas)
 
 
-def _celula(indicador, valor, nao_se_aplica=False):
+def _celula(indicador, valores, nao_se_aplica=False, periodo="week"):
     if nao_se_aplica:
         # A copia guarda a posicao vazia: o valor de baixo nao sobe.
         return {"texto": "", "cor": "", "nao_se_aplica": True, "copia_vazia": True}
-    return {"texto": limits.formatar(valor), "cor": limits.cor(indicador, valor)}
+    valor = (valores or {}).get(indicador)
+    celula = {"texto": limits.formatar(valor), "cor": limits.cor(indicador, valor)}
+    dica = explicacoes.explicar(indicador, valores, periodo)
+    if dica:
+        celula["dica"] = dica
+    return celula
 
 
 def _tabela(dimensao, operacao, nome, colunas, presenteismo):
@@ -96,24 +102,32 @@ def _tabela(dimensao, operacao, nome, colunas, presenteismo):
             valores_por_coluna.append(None)
             continue
         pres = None
+        vivo = None
         if presenteismo is not None:
             vivo = presenteismo[coluna["periodo"]].get(coluna["chave"])
             pres = vivo["presenteismo"] if vivo else None
+        cobertura = _coverage(operacao, coluna, totais.get("cobertura"))
         valores_por_coluna.append({
+            **{campo: totais.get(campo) for campo in (
+                "soma_goal", "soma_measured_direct", "soma_signon_direct", "soma_insert_direct",
+                "soma_total", "soma_pd_brk", "dentro", "fora")},
             "efetividade": totais.get("efetividade"),
             "hora_direta": totais.get("hora_direta"),
             "dispersao": totais.get("dispersao"),
             "presenteismo": pres,
+            "_presenteismo_partes": vivo or {},
             "cubo": calcular_cubo(totais.get("efetividade"), totais.get("hora_direta"), pres),
-            "coverage": _coverage(operacao, coluna, totais.get("cobertura")),
+            "coverage": cobertura["coverage"] if cobertura else None,
+            "_coverage_partes": cobertura or {},
             "usuarios": totais.get("linhas", 0),
+            "_periodo": coluna["periodo"],
         })
     sem_presenteismo = dimensao == "turno"
     for indicador in limits.ORDEM:
         celulas = []
         for valores in valores_por_coluna:
             fora = sem_presenteismo and indicador in ("presenteismo", "cubo")
-            celulas.append(_celula(indicador, (valores or {}).get(indicador), fora))
+            celulas.append(_celula(indicador, valores, fora, (valores or {}).get("_periodo", "week")))
         linhas.append({
             "chave": indicador,
             "rotulo": limits.ROTULOS[indicador],
