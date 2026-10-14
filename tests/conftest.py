@@ -10,6 +10,7 @@ Se voce tiver um Chromium em outro lugar, aponte a variavel de ambiente
 PLAYWRIGHT_CHROMIUM_EXECUTABLE para ele.
 """
 
+import os
 import sys
 import types
 from pathlib import Path
@@ -20,6 +21,16 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 sys.path.insert(0, str(REPO_ROOT))
+
+# Os testes trocam o HOME por uma pasta temporaria (dados_do_app_isolados).
+# No Linux e no Mac o Playwright procura os navegadores dentro do HOME, entao
+# o caminho de verdade fica fixado antes da troca. No Windows eles ficam no
+# LOCALAPPDATA, que os testes nao mexem.
+if not os.environ.get("PLAYWRIGHT_BROWSERS_PATH"):
+    if sys.platform.startswith("linux"):
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.expanduser("~/.cache/ms-playwright")
+    elif sys.platform == "darwin":
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.expanduser("~/Library/Caches/ms-playwright")
 
 # O pywebview so e usado pra abrir a janela do app e nao esta disponivel
 # fora do Windows; um stub deixa api.py importavel nos testes.
