@@ -7,3 +7,6 @@ screenshots/
 build/
 dist/
 *.spec.bak
+dist_novo/
+dist_antigo/
+build.log

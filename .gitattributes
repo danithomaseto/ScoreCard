@@ -1,0 +1,3 @@
+# Arquivos .bat com CRLF no Windows: com so LF o CMD as vezes nao acha o
+# rotulo de um "goto".
+*.bat text eol=crlf

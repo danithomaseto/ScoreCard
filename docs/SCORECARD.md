@@ -914,9 +914,15 @@ python tools/subir_versao.py      :: só quando for uma versão nova
 build.bat
 ```
 
-O `build.bat` cria o ambiente Python, instala as dependências, baixa o
-Chromium, empacota com o PyInstaller e junta tudo em
-`dist\ScoreCard.exe`.
+O `build.bat` acha o Python (de preferência o 3.12, instalado com
+"tcl/tk and IDLE"), cria ou refaz o ambiente Python e chama o
+`tools/build.py`, que instala as dependências, baixa o Chromium,
+empacota com o PyInstaller e junta tudo em `dist\ScoreCard.exe`.
+
+**Se o build der erro**, ele para no passo que falhou e mostra a causa
+provável e o que fazer; tudo fica em `build.log` (é o arquivo para
+mandar ao suporte). O `.exe` novo é gerado em `dist_novo` e só no fim
+vira o `dist`, então um build que falha não apaga o `.exe` anterior.
 
 ### 9.4 Avisar todo mundo da versão nova
 

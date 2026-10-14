@@ -147,16 +147,28 @@ executavel pro sistema operacional em que ele roda — nao da pra gerar
 um .exe a partir de Linux/Mac).
 
 Na pasta do projeto, de duplo-clique em `build.bat` (ou rode pelo
-terminal). Ele:
-1. Cria um ambiente virtual Python (se ainda nao existir).
-2. Instala as dependencias.
-3. Baixa o Chromium (`playwright install chromium`).
-4. Limpa builds anteriores (`build/`, `dist/`).
-5. Empacota tudo com o PyInstaller e junta num **arquivo unico**.
+terminal, de qualquer pasta). Ele:
+1. Acha o Python (pelo lancador `py`, preferindo o 3.12; sem ele, o
+   `python` do PATH).
+2. Cria o ambiente virtual `venv` — e refaz, se estiver quebrado ou for
+   de uma versao do Python fora da faixa testada.
+3. Chama `tools/build.py`, que instala as dependencias, baixa o
+   Chromium (`playwright install chromium`) e empacota tudo com o
+   PyInstaller num **arquivo unico**.
 
-Comando equivalente, se preferir rodar direto:
+**Se der erro:** o build para no passo que falhou e mostra a causa
+provavel e o que fazer (Python sem Tcl/Tk, pythonnet que nao instala na
+versao do Python, Chromium que nao baixou, proxy/SSL, arquivo preso pelo
+ScoreCard.exe aberto, OneDrive ou antivirus, disco cheio). Tudo o que
+aparece na tela fica em **`build.log`**, na pasta do projeto — e esse o
+arquivo para mandar ao suporte. O `.exe` novo e gerado em `dist_novo` e
+so no fim vira o `dist`: um build que falha **nao apaga** o
+`dist\ScoreCard.exe` anterior.
+
+Comando equivalente, se preferir rodar direto (com o venv ativado):
 ```powershell
-pyinstaller build.spec --noconfirm
+python tools\build.py                 # instala as dependencias e gera
+python tools\build.py --sem-instalar  # so gera
 ```
 
 Ao final, o executavel fica em **`dist\ScoreCard.exe`** — um arquivo
@@ -181,7 +193,10 @@ Propriedades > Detalhes dele aparecem o nome, a versao (a do arquivo
 
 ### Pre-requisitos na maquina que gera o .exe
 
-- Python 3.10+ instalado.
+- Python 3.10 a 3.13 (de preferencia o **3.12**), instalado com
+  "tcl/tk and IDLE" marcado (o PyInstaller usa o Tcl/Tk na tela de
+  abertura do .exe). O pythonnet, de que o pywebview precisa no
+  Windows, ainda nao instala no Python mais novo que o 3.13.
 - Windows 10/11 com o **Microsoft Edge WebView2 Runtime** (ja vem
   instalado por padrao nas versoes atuais do Windows; se faltar, o
   pywebview avisa e da o caminho pra instalar).
@@ -333,6 +348,7 @@ tests/
 requirements.txt
 requirements-dev.txt      # o de cima + pytest
 build.spec               # config do PyInstaller (app + lancador)
+tools/build.py            # o build passo a passo, com build.log e a causa de cada erro
 tools/empacotar.py        # poe o app dentro do lancador, no fim do build
 tools/publicar_versao.py  # copia o .exe novo para <pasta>\_ScoreCard (aviso no app)
 .github/workflows/testes.yml  # testes e checagens a cada push
