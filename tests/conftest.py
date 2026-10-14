@@ -22,6 +22,10 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 sys.path.insert(0, str(REPO_ROOT))
 
+# A automacao usa o Edge/Chrome da maquina quando existem (navegadores.py);
+# os testes ficam no Chromium do Playwright, igual em toda maquina e no CI.
+os.environ.setdefault("SCORECARD_NAVEGADOR", "chromium")
+
 # Os testes trocam o HOME por uma pasta temporaria (dados_do_app_isolados).
 # No Linux e no Mac o Playwright procura os navegadores dentro do HOME, entao
 # o caminho de verdade fica fixado antes da troca. No Windows eles ficam no

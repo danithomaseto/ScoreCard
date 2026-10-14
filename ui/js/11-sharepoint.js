@@ -9,9 +9,12 @@
 // arquivo).
 
 const ABAS_COM_DADOS = new Set(['home', 'gestor', 'turno', 'coverage', 'indiretas', 'headcount']);
-const SP_INTERVALO = 60000;         // leitura automatica
+// Com o observador da pasta ligado (o Python avisa quando algo muda), a
+// leitura periodica e so uma rede de seguranca; sem ele, le a cada minuto.
+const SP_INTERVALO = 60000;
+const SP_INTERVALO_OBSERVANDO = 5 * 60000;
 const SP_INTERVALO_MINIMO = 15000;  // trocar de aba nao le de novo antes disto
-const sp = { lendo: false, ultima: 0, estado: null, hora: '', relogio: null, pedidos: 0 };
+const sp = { lendo: false, ultima: 0, estado: null, hora: '', relogio: null, pedidos: 0, observando: false, pendente: false };
 const seloSp = document.getElementById('topbar-sp');
 
 function desenharSeloSp() {
@@ -26,9 +29,17 @@ function desenharSeloSp() {
   }[sp.estado] || `SharePoint · ${sp.hora}`;
 }
 
-async function sincronizarSharePoint({ forcar = false } = {}) {
-  if (sp.lendo || appView.hidden) return null;
-  if (!forcar && Date.now() - sp.ultima < SP_INTERVALO_MINIMO) return null;
+// porAviso: o observador da pasta avisou que algo mudou (le mesmo dentro
+// do intervalo minimo, sem o aviso "Nada novo"). Com a janela minimizada
+// ou lendo, fica pendente e le quando der.
+async function sincronizarSharePoint({ forcar = false, porAviso = false } = {}) {
+  if (appView.hidden) return null;
+  if (sp.lendo || (janelaEscondida() && !forcar)) {
+    if (porAviso || janelaEscondida()) sp.pendente = true;
+    return null;
+  }
+  if (!forcar && !porAviso && Date.now() - sp.ultima < SP_INTERVALO_MINIMO) return null;
+  sp.pendente = false;
   sp.lendo = true;
   // So mostra "lendo" se demorar: o normal e levar milissegundos.
   const mostrarLendo = setTimeout(() => { sp.estado = 'lendo'; desenharSeloSp(); }, forcar ? 0 : 500);
@@ -42,6 +53,11 @@ async function sincronizarSharePoint({ forcar = false } = {}) {
   clearTimeout(mostrarLendo);
   sp.lendo = false;
   sp.ultima = Date.now();
+  if (Boolean(resposta.observando) !== sp.observando) {
+    sp.observando = Boolean(resposta.observando);
+    agendarLeitura();
+  }
+  if (sp.pendente) setTimeout(() => sincronizarSharePoint({ porAviso: true }), 0);
   if (resposta.sem_pasta) sp.estado = 'sem-pasta';
   else if (resposta.erro) sp.estado = 'erro';
   else if (resposta.ocupado) sp.estado = antes || 'ok'; // extraindo: le na proxima
@@ -141,11 +157,21 @@ function destacarNovos(antes) {
 
 function iniciarLeituraDoSharePoint() {
   sincronizarSharePoint();
-  if (sp.relogio) return;
-  sp.relogio = setInterval(() => {
-    if (!document.hidden) sincronizarSharePoint();
-  }, SP_INTERVALO);
+  if (!sp.relogio) agendarLeitura();
 }
+
+// A leitura periodica: a cada minuto, ou a cada 5 com o observador ligado.
+function agendarLeitura() {
+  clearInterval(sp.relogio);
+  sp.relogio = setInterval(() => sincronizarSharePoint(),
+    sp.observando ? SP_INTERVALO_OBSERVANDO : SP_INTERVALO);
+}
+
+// O Python avisa quando algo muda na pasta (observador_de_pasta.py).
+window.pastaMudou = () => sincronizarSharePoint({ porAviso: true });
+document.addEventListener('janelavoltou', () => {
+  if (sp.pendente || Date.now() - sp.ultima > SP_INTERVALO) sincronizarSharePoint({ porAviso: true });
+});
 
 seloSp.addEventListener('click', () => {
   if (sp.estado === 'sem-pasta') { showPage('settings'); return; }

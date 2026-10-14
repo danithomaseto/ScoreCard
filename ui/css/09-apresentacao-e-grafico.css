@@ -100,6 +100,10 @@ body.apresentacao .legend-item { font-size: 14px; }
   .apresentacao-barra { transition: none; }
 }
 
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .apresentacao-barra { transition: none; }
+
+
 /* ---------- Pente fino: telas de notebook (1280 px ou menos) ---------- */
 
 /* Colunas da Inicio um pouco mais justas abaixo de 1400 px: num

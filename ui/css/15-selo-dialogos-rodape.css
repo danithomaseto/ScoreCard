@@ -176,6 +176,14 @@
   .topbar-extracao, .topbar-extracao-icone, .dialogo-fundo, .dialogo-caixa, .status-dot.extraindo { animation: none; }
 }
 
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .topbar-extracao,
+  :root.modo-leve .topbar-extracao-icone,
+  :root.modo-leve .dialogo-fundo,
+  :root.modo-leve .dialogo-caixa,
+  :root.modo-leve .status-dot.extraindo { animation: none; }
+
+
 /* Simbolo e numero sempre na mesma linha, mesmo em coluna estreita. */
 .indicator-value,
 .cv-coverage,

@@ -1,7 +1,7 @@
 """Pacote de diagnostico para mandar a quem da suporte.
 
 Um zip com o que explica um problema numa maquina: o log, a versao, o
-ambiente (Windows, pastas, Chromium) e as ultimas extracoes. **Nao
+ambiente (Windows, pastas, navegador) e as ultimas extracoes. **Nao
 leva credenciais nem dados das pessoas**: dos arquivos de dados vao so
 tamanhos e contagens — nada de nomes de gestores, matriculas ou
 faltas. O log ja e gravado sem usuario e senha (ver registro.py), e o
@@ -53,7 +53,7 @@ def _navegadores():
     for raiz in raizes:
         if os.path.isdir(raiz):
             achados += [f"{raiz}: {nome}" for nome in sorted(os.listdir(raiz)) if nome.startswith("chromium")]
-    return achados or ["nenhum Chromium encontrado"]
+    return achados or ["nenhum (o .exe leve usa o Edge da maquina)"]
 
 
 def resumo():
@@ -131,7 +131,14 @@ def resumo():
     for operacao, celulas in sorted((estado_lancamentos.get("operacoes") or {}).items()):
         linhas.append(f"  {operacao}: {len(celulas)}")
 
-    linhas += ["", "Chromium:"] + [f"  {n}" for n in _navegadores()]
+    import navegadores
+
+    usado = navegadores.descricao()
+    linhas += ["", "Navegador da automacao: " + (
+        f"{usado['nome']} {usado['caminho']}".strip() if usado else "nenhum encontrado")]
+    linhas += ["Navegadores disponiveis, na ordem de tentativa:"] + [
+        f"  {n['nome']} {n['caminho']}".rstrip() for n in navegadores.disponiveis()]
+    linhas += ["Chromium do Playwright:"] + [f"  {n}" for n in _navegadores()]
 
     historico = _ler_json("history.json") or []
     linhas += ["", "Ultimas extracoes:"]

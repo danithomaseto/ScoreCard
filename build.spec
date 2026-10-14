@@ -29,11 +29,16 @@ sys.path.insert(0, SPECPATH)
 # so pra diagnosticar problemas. A versao final/normal fica sem console.
 SHOW_CONSOLE = os.environ.get("SCORECARD_BUILD_CONSOLE") == "1"
 
-# Por padrao vai embutido so o chromium-headless-shell, feito pra rodar
-# sem janela, com mais ou menos metade do tamanho do Chromium completo.
-# SCORECARD_BUILD_FULL_CHROMIUM=1 embute o completo tambem — so e
+# A automacao usa o Edge (ou o Chrome) da maquina (navegadores.py), entao
+# por padrao o .exe vai SEM navegador proprio: bem menor e mais rapido na
+# primeira abertura de cada versao.
+# SCORECARD_BUILD_COM_CHROMIUM=1 gera a versao completa, com o
+# chromium-headless-shell embutido de reserva (para maquina sem Edge ou
+# com o Edge bloqueado pela TI).
+# SCORECARD_BUILD_FULL_CHROMIUM=1 embute tambem o Chromium completo — so e
 # preciso pra ver a automacao na tela (SCORECARD_HEADLESS=0).
 FULL_CHROMIUM = os.environ.get("SCORECARD_BUILD_FULL_CHROMIUM") == "1"
+COM_CHROMIUM = FULL_CHROMIUM or os.environ.get("SCORECARD_BUILD_COM_CHROMIUM") == "1"
 
 ICONE = "ui/assets/scorecard.ico"
 
@@ -44,6 +49,11 @@ hiddenimports = []
 # Garante que o driver interno do Playwright (usado pra controlar o
 # Chromium) vai junto no pacote.
 pw_datas, pw_binaries, pw_hiddenimports = collect_all("playwright")
+# Do pacote do driver ficam de fora as telas de relatorio, gravacao e
+# trace (lib/vite) e os tipos do TypeScript: a automacao nao usa nenhum.
+PLAYWRIGHT_SEM_USO = ("driver/package/lib/vite", "driver/package/types")
+pw_datas = [(origem, destino) for origem, destino in pw_datas
+            if not any(trecho in destino.replace("\\", "/") for trecho in PLAYWRIGHT_SEM_USO)]
 datas += pw_datas
 binaries += pw_binaries
 hiddenimports += pw_hiddenimports
@@ -108,7 +118,8 @@ def find_playwright_chromium():
     return entries
 
 
-datas += find_playwright_chromium()
+if COM_CHROMIUM:
+    datas += find_playwright_chromium()
 
 
 def gravar_versao():
@@ -141,6 +152,16 @@ def info_windows(nome_do_arquivo):
     destino = os.path.join(workpath, f"versao-{os.path.splitext(nome_do_arquivo)[0]}.txt")
     return versao.gerar_info_windows(destino, nome_do_arquivo)
 
+# Modulos que o PyInstaller levaria mas o app nao usa (a API assincrona
+# do Playwright, testes, documentacao, Tcl/Tk, e-mail por SMTP...). O
+# autoteste no fim do passo 1 confere que nada que o app usa saiu junto.
+EXCLUIDOS = [
+    "tkinter", "_tkinter", "turtle", "turtledemo", "idlelib",
+    "unittest", "doctest", "pydoc", "pydoc_data", "test", "lib2to3", "ensurepip", "venv",
+    "xmlrpc", "smtplib", "ftplib", "imaplib", "poplib", "mailbox",
+    "_pydecimal", "playwright.async_api",
+]
+
 # ---------------- 1. O app, em pasta ----------------
 
 a = Analysis(
@@ -152,7 +173,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=EXCLUIDOS,
     noarchive=False,
 )
 pyz = PYZ(a.pure)
@@ -186,6 +207,39 @@ app_pasta = COLLECT(
     upx=False,
     name="ScoreCardApp",
 )
+
+
+def autoteste_do_app():
+    """Abre o app recem-gerado com --autoteste (ver main.autoteste): se um
+    modulo, a planilha, o driver do Playwright ou um arquivo da tela
+    faltar, o build para aqui, e nao na maquina de quem usa."""
+    import glob
+    import subprocess
+    import tempfile
+
+    if os.environ.get("SCORECARD_BUILD_SEM_AUTOTESTE") == "1":
+        return
+    pasta = os.path.join(DISTPATH, "ScoreCardApp")
+    executavel = (glob.glob(os.path.join(pasta, "ScoreCardApp.exe")) or
+                  glob.glob(os.path.join(pasta, "ScoreCardApp")))[0]
+    with tempfile.TemporaryDirectory() as temporaria:
+        relatorio = os.path.join(temporaria, "autoteste.txt")
+        ambiente = {**os.environ, "APPDATA": temporaria, "LOCALAPPDATA": temporaria}
+        try:
+            subprocess.run([executavel, "--autoteste", relatorio], env=ambiente, timeout=180, check=False)
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise SystemExit(f"Autoteste do app nao rodou: {exc}")
+        try:
+            with open(relatorio, encoding="utf-8") as fh:
+                resultado = fh.read().strip()
+        except OSError:
+            resultado = "AUTOTESTE FALHOU\no app fechou sem responder"
+    print(f"[autoteste] {resultado}", flush=True)
+    if not resultado.startswith("AUTOTESTE OK"):
+        raise SystemExit(resultado)
+
+
+autoteste_do_app()
 
 # ---------------- 2. O lancador, arquivo unico ----------------
 

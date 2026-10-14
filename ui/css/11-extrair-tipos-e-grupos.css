@@ -98,3 +98,8 @@
   .step.entrando,
   .grupo-entrando { animation: none; }
 }
+
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .step.entrando,
+  :root.modo-leve .grupo-entrando { animation: none; }
+

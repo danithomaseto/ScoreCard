@@ -470,3 +470,41 @@ button.secondary .onda { background: rgba(255, 204, 0, 0.25); }
   .period-option:hover,
   .ops-item:hover { transform: none; }
 }
+
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .abertura,
+  :root.modo-leve .cortina { display: none !important; }
+:root.modo-leve #login-view::before,
+  :root.modo-leve #login-view::after,
+  :root.modo-leve .login-card::before,
+  :root.modo-leve #login-btn::before,
+  :root.modo-leve .login-card.entrando,
+  :root.modo-leve .login-card.entrando > *,
+  :root.modo-leve .login-card.entrando form > *,
+  :root.modo-leve .login-card.tremendo,
+  :root.modo-leve .login-card.confirmado,
+  :root.modo-leve .app-entrando .topbar-dhl,
+  :root.modo-leve .app-entrando .sidebar > *,
+  :root.modo-leve .app-entrando .content-area,
+  :root.modo-leve .pagina-entrando .page-wide-wrap > *,
+  :root.modo-leve .pagina-entrando .hc-cards > *,
+  :root.modo-leve .linha-entrando .indicator-value,
+  :root.modo-leve .copy-btn.copiado,
+  :root.modo-leve .step.active .step-number,
+  :root.modo-leve .step.done .step-number,
+  :root.modo-leve .status-dot,
+  :root.modo-leve .status:not([hidden]),
+  :root.modo-leve .onda,
+  :root.modo-leve .nav-item.active .nav-icon { animation: none !important; }
+:root.modo-leve .hc-card:hover,
+  :root.modo-leve .ind-quadro:hover,
+  :root.modo-leve .period-option:hover,
+  :root.modo-leve .ops-item:hover { transform: none; }
+
+
+/* Janela minimizada: nenhuma animacao gasta processador por tras. */
+html.janela-escondida *,
+html.janela-escondida *::before,
+html.janela-escondida *::after {
+  animation-play-state: paused !important;
+}

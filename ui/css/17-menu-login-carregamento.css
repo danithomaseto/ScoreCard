@@ -43,6 +43,13 @@ body.apresentacao .menu-alca { display: none; }
   .menu-alca, .menu-alca svg, .nav-item, .nav-item span { transition: none; }
 }
 
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .menu-alca,
+  :root.modo-leve .menu-alca svg,
+  :root.modo-leve .nav-item,
+  :root.modo-leve .nav-item span { transition: none; }
+
+
 /* ---------- Login: senha com olho, VPN e rodape ---------- */
 .campo-senha { position: relative; }
 .campo-senha input { padding-right: 46px; }
@@ -102,6 +109,10 @@ body.apresentacao .menu-alca { display: none; }
 #login-saudacao { transition: opacity 300ms ease; }
 @media (prefers-reduced-motion: reduce) { .login-vpn[data-estado="verificando"] .login-vpn-ponto { animation: none; } }
 
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .login-vpn[data-estado="verificando"] .login-vpn-ponto { animation: none; }
+
+
 /* ---------- Barra de carregamento no topo ---------- */
 .carregando-barra {
   position: fixed;
@@ -159,6 +170,16 @@ body.apresentacao .menu-alca { display: none; }
   .toast-tempo { display: none; }
 }
 
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .carregando-barra.ativa { animation: none; width: 60%; }
+:root.modo-leve .distribuicao-barra,
+  :root.modo-leve .distribuicao-meta,
+  :root.modo-leve .distribuicao-valor,
+  :root.modo-leve .distribuicao-meta-valor,
+  :root.modo-leve .distribuicao-meta-ponto { animation: none; }
+:root.modo-leve .toast-tempo { display: none; }
+
+
 /* ---------- Apresentacao automatica e capa da operacao ---------- */
 .apresentacao-barra { overflow: hidden; }
 .apresentacao-auto { gap: 6px; }
@@ -215,3 +236,10 @@ body.apresentacao .menu-alca { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .apresentacao-capa.entrando, .apresentacao-capa.entrando *, .apresentacao-capa.saindo, .apresentacao-tempo.correndo { animation: none; }
 }
+
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .apresentacao-capa.entrando,
+  :root.modo-leve .apresentacao-capa.entrando *,
+  :root.modo-leve .apresentacao-capa.saindo,
+  :root.modo-leve .apresentacao-tempo.correndo { animation: none; }
+

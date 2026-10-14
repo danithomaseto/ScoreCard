@@ -180,4 +180,5 @@ function desenharRodape() {
   document.getElementById('sidebar-status').title = `${titulo.textContent} — ${sub.textContent}`;
 }
 // O "há 5 min" anda sozinho.
-setInterval(() => { if (!appView.hidden) desenharRodape(); }, 60000);
+setInterval(() => { if (!appView.hidden && !janelaEscondida()) desenharRodape(); }, 60000);
+document.addEventListener('janelavoltou', () => { if (!appView.hidden) desenharRodape(); });

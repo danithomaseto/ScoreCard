@@ -102,6 +102,13 @@ button.acao {
   .esqueleto { animation: none; }
 }
 
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .page:not([hidden]),
+  :root.modo-leve .hc-inline:not([hidden]),
+  :root.modo-leve .hc-funcoes:not([hidden]),
+  :root.modo-leve .esqueleto { animation: none; }
+
+
 
 /* ---------- Configuracoes: diagnostico ---------- */
 

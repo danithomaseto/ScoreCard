@@ -316,11 +316,13 @@ def test_preferencias_de_tela_ficam_guardadas():
     import settings_store
 
     assert settings_store.get_preferencias() == {
-        "tema": "escuro", "densidade": "confortavel", "menu_recolhido": False}
+        "tema": "escuro", "densidade": "confortavel", "menu_recolhido": False, "animacoes": "completas"}
     settings_store.set_preferencia("tema", "claro")
     settings_store.set_preferencia("menu_recolhido", True)
+    settings_store.set_preferencia("animacoes", "leves")
     assert settings_store.get_preferencias()["tema"] == "claro"
     assert settings_store.get_preferencias()["menu_recolhido"] is True
+    assert settings_store.get_preferencias()["animacoes"] == "leves"
     assert settings_store.get_sharepoint_folder() is None, "nao mexe no resto das configuracoes"
 
 

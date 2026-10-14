@@ -14,6 +14,7 @@ from datetime import datetime
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 import arquivos_sharepoint
+import navegadores
 
 
 SCREENSHOT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "screenshots")
@@ -48,34 +49,13 @@ def _click_first_match(target, selectors, timeout=4000):
 
 
 def _lancar(playwright, headless):
-    """Abre o Chromium mais leve que estiver disponivel.
-
-    Sem janela (o normal), a preferencia e o chromium-headless-shell:
-    feito so pra rodar sem tela, tem mais ou menos metade do tamanho do
-    Chromium completo — e e ele que vai embutido no .exe (build.spec).
-    Se ele nao estiver instalado, cai no completo, que e o que ja se
-    usava antes: um "playwright install" antigo pode nao ter trazido o
-    headless shell, e isso ja causou "Executable doesn't exist".
-
-    Com janela (SCORECARD_HEADLESS=0, so pra diagnostico) o headless
-    shell nao serve, entao vai direto no completo.
-    """
-    if os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE"):
-        return playwright.chromium.launch(
-            headless=headless,
-            executable_path=os.environ["PLAYWRIGHT_CHROMIUM_EXECUTABLE"],
-        )
-    if headless:
-        try:
-            return playwright.chromium.launch(headless=True)
-        except Exception as exc:  # noqa: BLE001
-            if "Executable doesn't exist" not in str(exc):
-                raise
-    return playwright.chromium.launch(headless=headless, channel="chromium")
+    """Abre o navegador da automacao: o Edge da maquina, o Chrome ou o
+    Chromium embutido, nessa ordem (ver navegadores.py)."""
+    return navegadores.lancar(playwright, headless)
 
 
 class Navegador:
-    """Playwright e Chromium abertos uma vez e reaproveitados.
+    """Playwright e o navegador abertos uma vez e reaproveitados.
 
     Na fila do Extrair Multiplos, abrir um navegador novo para cada
     operacao custava alguns segundos por operacao so de subir processo.

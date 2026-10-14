@@ -16,6 +16,10 @@ import os
 import tempfile
 import time
 
+# Quantas gravacoes este processo ja fez: as telas guardadas em memoria
+# (cache_de_telas.py) valem so enquanto este numero nao muda.
+gravacoes = 0
+
 
 def gravar_json(caminho, dados, compacto=False):
     """compacto=True grava sem indentacao: para os arquivos grandes (a
@@ -33,6 +37,8 @@ def gravar_json(caminho, dados, compacto=False):
             fh.flush()
             os.fsync(fh.fileno())
         _substituir(temporario, caminho)
+        global gravacoes
+        gravacoes += 1
     except BaseException:
         try:
             os.remove(temporario)

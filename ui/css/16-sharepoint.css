@@ -66,3 +66,11 @@
   .card, .grupos-tabelas, #rg-tabelas, #rt-tabelas { transition: none; }
   .indicator-value.valor-novo { animation: none; }
 }
+
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .card,
+  :root.modo-leve .grupos-tabelas,
+  :root.modo-leve #rg-tabelas,
+  :root.modo-leve #rt-tabelas { transition: none; }
+:root.modo-leve .indicator-value.valor-novo { animation: none; }
+

@@ -70,6 +70,11 @@ async function carregarSaude() {
     `${saude.leitura.lidos} lido(s)${naoLidos.length ? ` · ${naoLidos.length} não lido(s), veja abaixo` : ''}`,
     sp.hora ? `Última leitura às ${sp.hora}` : ''));
 
+  const nav = saude.navegador;
+  lista.appendChild(itemDeSaude(nav ? 'ok' : 'erro', 'Navegador da automação',
+    nav ? nav.nome : 'Nenhum encontrado: instale ou repare o Microsoft Edge',
+    nav ? (nav.reserva.length ? `Reserva: ${nav.reserva.join(', ')}` : 'Sem reserva') : ''));
+
   const v = saude.versao;
   lista.appendChild(itemDeSaude(v.nova ? 'alerta' : 'ok', 'Versão do app',
     v.nova ? `${v.versao} · a ${v.nova} está na pasta do SharePoint` : `${v.versao}${v.publicada ? ' · a mais nova publicada' : ''}`,

@@ -9,6 +9,10 @@ dist: um build que falha nao apaga o .exe que ja estava la.
 
     python tools\\build.py                 instala as dependencias e gera
     python tools\\build.py --sem-instalar  so gera (dependencias ja instaladas)
+
+O .exe padrao usa o Edge da maquina na automacao (navegadores.py). Com
+SCORECARD_BUILD_COM_CHROMIUM=1 sai a versao completa, com um Chromium
+embutido de reserva (maior).
 """
 
 import datetime
@@ -32,6 +36,10 @@ PYTHON_MAXIMO = (3, 13)
 # (trecho da mensagem de erro, causa provavel e o que fazer). A primeira
 # que aparecer na saida do passo que falhou e a mostrada.
 DICAS = [
+    ("autoteste falhou",
+     "O app gerado nao passou no autoteste (falta um modulo ou arquivo da tela no pacote). Se alguem "
+     "mexeu na lista EXCLUIDOS do build.spec, tire de la o modulo citado acima; senao apague a pasta "
+     "venv e rode de novo."),
     ("pythonnet",
      "O pywebview (a janela do app) precisa do pythonnet, que nao instala nesta versao do Python. "
      "Instale o Python 3.12 (python.org, marcando \"Add python.exe to PATH\"), apague a pasta venv "
@@ -121,6 +129,10 @@ def rodar(passo, comando):
     return "".join(saida)
 
 
+def com_chromium():
+    return "1" in (os.environ.get("SCORECARD_BUILD_COM_CHROMIUM"), os.environ.get("SCORECARD_BUILD_FULL_CHROMIUM"))
+
+
 def conferir_python():
     versao = sys.version_info[:2]
     registrar(f"Python {sys.version.split()[0]} em {sys.executable}")
@@ -162,13 +174,16 @@ def main(argumentos):
     with open(LOG, "w", encoding="utf-8") as fh:
         fh.write(f"Build do Score Card - {datetime.datetime.now():%d/%m/%Y %H:%M:%S}\n")
     registrar(f"Pasta do projeto: {RAIZ}")
+    registrar("Versao: " + ("completa, com Chromium embutido" if com_chromium()
+                            else "leve, usa o Edge da maquina (SCORECARD_BUILD_COM_CHROMIUM=1 gera a completa)"))
     conferir_python()
 
     if "--sem-instalar" not in argumentos:
         rodar("Instalando as dependencias (pip)",
               [sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "-r", "requirements.txt"])
-        rodar("Baixando o Chromium da automacao (Playwright)",
-              [sys.executable, "-m", "playwright", "install", "chromium"])
+        if com_chromium():
+            rodar("Baixando o Chromium de reserva (Playwright)",
+                  [sys.executable, "-m", "playwright", "install", "chromium"])
 
     remover(NOVO, "limpar o build anterior")
     remover(TRABALHO, "limpar o build anterior")

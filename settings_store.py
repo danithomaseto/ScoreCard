@@ -72,6 +72,9 @@ PREFERENCIAS = {
     "tema": ("escuro", ("escuro", "claro")),
     "densidade": ("confortavel", ("confortavel", "compacta")),
     "menu_recolhido": (False, (False, True)),
+    # "leves" desliga as animacoes que so enfeitam (modo leve): notebook
+    # fraco, Citrix/area de trabalho remota e projetor.
+    "animacoes": ("completas", ("completas", "leves")),
 }
 
 

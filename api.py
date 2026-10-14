@@ -23,6 +23,7 @@ from config.operations import (
 import arquivos_sharepoint
 import atualizacao
 import backup
+import cache_de_telas
 import conexao
 import coverage_store
 import coverage_tela
@@ -39,6 +40,8 @@ from indicators import coverage, grupos, indiretas, limits, periodos, pico, read
 import indicators_store
 import lancamentos
 import migracoes
+import navegadores
+import observador_de_pasta
 import registro
 import settings_store
 import versao
@@ -93,6 +96,10 @@ class Api:
         self._trava_publicacao = threading.Lock()
         self._lancamentos_de_fora = set()
         self._lancamentos_estado = {"quando": None, "erros": []}
+        # Observa a pasta do SharePoint e avisa a tela quando algo muda
+        # (observador_de_pasta.py); trocar de pasta troca o observador.
+        self._observador = None
+        self._trava_observador = threading.Lock()
         # Senha recusada pelo Summary seguidas vezes: na segunda, o app
         # para de tentar ate um novo login (senao a fila tentaria a senha
         # errada em todas as operacoes e bloquearia o usuario).
@@ -102,12 +109,14 @@ class Api:
         # para a saida da tela cheia voltar do jeito que estava.
         self._tela_cheia = False
         self._maximizada = True
+        self._minimizada = False
 
     def set_window(self, window):
         self._window = window
         try:
             window.events.maximized += self._ficou_maximizada
             window.events.restored += self._ficou_restaurada
+            window.events.minimized += self._ficou_minimizada
         except Exception:  # noqa: BLE001 - so perde o "voltar maximizada"
             log.debug("sem eventos de maximizar/restaurar nesta janela")
 
@@ -115,7 +124,17 @@ class Api:
         if not self._tela_cheia:
             self._maximizada = True
 
+    def _ficou_minimizada(self):
+        # Minimizada, a tela pausa as animacoes e as leituras periodicas.
+        self._minimizada = True
+        self._emit_js("janelaMinimizada", True)
+
     def _ficou_restaurada(self):
+        if self._minimizada:
+            # Voltou da barra de tarefas: nao e "deixou de estar maximizada".
+            self._minimizada = False
+            self._emit_js("janelaMinimizada", False)
+            return
         if not self._tela_cheia:
             self._maximizada = False
 
@@ -437,8 +456,10 @@ class Api:
         ainda nao tem (extraidos por qualquer um) e junta os lancamentos
         de Headcount e Coverage com os da pasta. A tela chama ao entrar,
         ao trocar de aba e de tempos em tempos."""
+        self._observar_a_pasta()
         if self._extracoes_em_andamento:
-            return {"atualizados": [], "ignorados": [], "lancamentos": [], "ocupado": True}
+            return {"atualizados": [], "ignorados": [], "lancamentos": [], "ocupado": True,
+                    "observando": self._observando()}
         try:
             resposta = arquivos_sharepoint.sincronizar(
                 settings_store.get_sharepoint_folder(), self._calcular_indicadores)
@@ -452,7 +473,26 @@ class Api:
             {"operacao": op, "operacao_rotulo": OPERATIONS[op]["label"]}
             for op in sorted(self._juntar_lancamentos(), key=list(OPERATIONS).index)
         ]
+        resposta["observando"] = self._observando()
         return resposta
+
+    def _observar_a_pasta(self):
+        """Liga o observador da pasta configurada (uma vez; de novo so se a
+        pasta mudar ou ele parar)."""
+        base = settings_store.get_sharepoint_folder()
+        with self._trava_observador:
+            atual = self._observador
+            if atual and atual.base == base and atual.ativo:
+                return
+            if atual:
+                atual.parar()
+            self._observador = None
+            if base and os.path.isdir(base):
+                self._observador = observador_de_pasta.Observador(
+                    base, lambda: self._emit_js("pastaMudou", {})).iniciar()
+
+    def _observando(self):
+        return bool(self._observador and self._observador.ativo)
 
     # ---------------- Lancamentos compartilhados (Headcount, Coverage) ----------------
 
@@ -535,6 +575,7 @@ class Api:
         ultimo_backup = backup.ultimo()
         app = versao.info()
         compartilhados = lancamentos.resumo(base)
+        navegador = navegadores.descricao()
         juncao = self._lancamentos_estado
         return {
             "servidores": self._servidores(),
@@ -542,6 +583,9 @@ class Api:
             "leitura": {"lidos": arquivos_sharepoint.lidos(base), "nao_lidos": nao_lidos},
             "versao": {**app, **atualizacao.verificar(base, app["versao"])},
             "dados": {"versao": migracoes.versao_dos_dados(), "atual": migracoes.VERSAO_ATUAL},
+            "navegador": ({"nome": navegador["nome"], "caminho": navegador["caminho"],
+                           "reserva": [n["nome"] for n in navegadores.disponiveis()[1:]]}
+                          if navegador else None),
             "lancamentos": {
                 "operacoes": compartilhados["operacoes"],
                 "gravado": (datetime.datetime.fromisoformat(compartilhados["atualizado_em"]).strftime("%d/%m/%Y %H:%M")
@@ -585,6 +629,7 @@ class Api:
                 feito = backup.restaurar(identificador)
                 # Backup de antes de uma mudanca no formato dos dados.
                 migracoes.migrar()
+                cache_de_telas.limpar()
         except (OSError, ValueError) as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True, **feito, **self.get_backups()}
@@ -961,6 +1006,7 @@ class Api:
 
     # ---------------- Indicadores ----------------
 
+    @cache_de_telas.guardada
     def get_indicator_table(self, operation_key, mes=None):
         """Monta a tabela da aba Inicio ja pronta pra desenhar: os seis
         indicadores nas linhas, as semanas nas colunas e os meses no
@@ -1134,6 +1180,7 @@ class Api:
 
     # ---------------- Headcount / presenteismo ----------------
 
+    @cache_de_telas.guardada
     def get_headcount(self, operacao=None, visualizacao="semanal", mes=None, periodo_id=None):
         """O estado inteiro da tela de Headcount, pronto pra desenhar.
 
@@ -1198,15 +1245,18 @@ class Api:
 
     # ---------------- Coverage ----------------
 
+    @cache_de_telas.guardada
     def get_indiretas(self, operacao=None, mes=None, semana_id=None):
         """A aba Horas Indiretas montada (ver indiretas_tela.py)."""
         return indiretas_tela.montar(operacao, mes, semana_id)
 
+    @cache_de_telas.guardada
     def get_coverage(self, operacao=None, visualizacao="semanal", mes=None, periodo_id=None, gestor=None):
         return coverage_tela.montar(operacao or "todas", visualizacao, mes, periodo_id, gestor=gestor)
 
     # ---------------- Resultado Gestor / Turno ----------------
 
+    @cache_de_telas.guardada
     def get_resultado_grupo(self, dimensao, operacao=None, mes=None):
         """A aba Resultado Gestor ("gestor") ou Resultado Turno ("turno")
         montada (ver grupos_tela.py)."""

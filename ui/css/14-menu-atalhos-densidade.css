@@ -331,6 +331,16 @@ kbd {
   .sidebar, .topbar-icone .seta-menu, .grupo-alternar svg { transition: none; }
 }
 
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .toast,
+  :root.modo-leve .toast.saindo,
+  :root.modo-leve .atalhos-fundo,
+  :root.modo-leve .atalhos-caixa { animation: none; }
+:root.modo-leve .sidebar,
+  :root.modo-leve .topbar-icone .seta-menu,
+  :root.modo-leve .grupo-alternar svg { transition: none; }
+
+
 /* Troca de tema: as cores passam suavemente em vez de piscar. */
 :root.trocando-tema #app-view,
 :root.trocando-tema #app-view * {
@@ -344,6 +354,10 @@ kbd {
   100% { box-shadow: var(--sombra-card); }
 }
 @media (prefers-reduced-motion: reduce) { .grupo-destacado { animation: none; } }
+
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .grupo-destacado { animation: none; }
+
 
 /* Botoes de apoio com fundo proprio: o "button:hover" global pintava de
    amarelo, com o texto claro em cima (Copiar e os tipos de extracao). */

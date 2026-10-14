@@ -4,7 +4,7 @@
 // Guardadas pelo Python (settings.json): a janela do app nao guarda o
 // localStorage de uma abertura para a outra. So aparencia.
 
-let preferencias = { tema: 'escuro', densidade: 'confortavel', menu_recolhido: false };
+let preferencias = { tema: 'escuro', densidade: 'confortavel', menu_recolhido: false, animacoes: 'completas' };
 const navRecolher = document.getElementById('nav-recolher');
 
 async function carregarPreferencias() {
@@ -18,6 +18,7 @@ async function carregarPreferencias() {
 
 function aplicarPreferencias(comTransicao = true) {
   const raiz = document.documentElement;
+  definirModoLeve(preferencias.animacoes === 'leves');
   const trocouTema = raiz.dataset.tema !== preferencias.tema;
   if (comTransicao && trocouTema && !SEM_ANIMACAO) {
     // As cores trocam suavemente em vez de piscar.
@@ -40,6 +41,7 @@ function aplicarPreferencias(comTransicao = true) {
   marcar('pref-tema', preferencias.tema);
   marcar('pref-densidade', preferencias.densidade);
   marcar('pref-menu', preferencias.menu_recolhido ? 'recolhido' : 'aberto');
+  marcar('pref-animacoes', preferencias.animacoes);
   // Larguras e alturas mudaram: o destaque do menu e dos seletores
   // acompanha, e a lista do Coverage recalcula a altura.
   moverIndicadorDoMenu();
@@ -71,6 +73,10 @@ document.getElementById('pref-tema').addEventListener('click', (evento) => {
 document.getElementById('pref-densidade').addEventListener('click', (evento) => {
   const botao = evento.target.closest('.seg-opcao');
   if (botao) mudarPreferencia('densidade', botao.dataset.valor);
+});
+document.getElementById('pref-animacoes').addEventListener('click', (evento) => {
+  const botao = evento.target.closest('.seg-opcao');
+  if (botao) mudarPreferencia('animacoes', botao.dataset.valor);
 });
 document.getElementById('pref-menu').addEventListener('click', (evento) => {
   const botao = evento.target.closest('.seg-opcao');

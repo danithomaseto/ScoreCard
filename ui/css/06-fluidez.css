@@ -115,3 +115,12 @@ button.secondary.carregando::after { border-color: rgba(255, 255, 255, 0.2); bor
   button.carregando::after { transition: none; animation: none; }
   button:active:not(:disabled) { transform: none; }
 }
+
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .nav-indicador.pronto,
+  :root.modo-leve .segmentado.pronto::before,
+  :root.modo-leve button,
+  :root.modo-leve .linha-entrando,
+  :root.modo-leve button.carregando::after { transition: none; animation: none; }
+:root.modo-leve button:active:not(:disabled) { transform: none; }
+

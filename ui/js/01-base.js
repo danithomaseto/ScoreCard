@@ -50,6 +50,19 @@ const multiProgressPercentEl = document.getElementById('multi-progress-percent')
 const multiStepsEl = document.getElementById('multi-progress-steps');
 const multiHistoryTableBody = document.getElementById('multi-history-table-body');
 
+// Janela minimizada (aviso do Python) ou escondida: as animacoes pausam
+// (classe no <html>) e as leituras periodicas esperam a volta.
+const janela = { minimizada: false };
+function janelaEscondida() {
+  return janela.minimizada || document.hidden;
+}
+window.janelaMinimizada = (minimizada) => {
+  janela.minimizada = Boolean(minimizada);
+  document.documentElement.classList.toggle('janela-escondida', janelaEscondida());
+  if (!janelaEscondida()) document.dispatchEvent(new Event('janelavoltou'));
+};
+document.addEventListener('visibilitychange', () => window.janelaMinimizada(janela.minimizada));
+
 // Esqueleto de carregamento: linhas cinza no formato da tabela enquanto
 // o Python responde. So aparece se a resposta passar de 150 ms — abaixo
 // disso ele so piscaria na tela, o que parece mais lento, nao menos.
@@ -522,9 +535,19 @@ window.addEventListener('unhandledrejection', (evento) => registrarErro('promess
 // ---------------------------------------------------------------
 // So apresentacao: nada aqui muda o que e calculado ou mostrado.
 
-const SEM_ANIMACAO = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const TEM_VIEW_TRANSITION = typeof document.startViewTransition === 'function' && !SEM_ANIMACAO;
+// Sem animacao: "reduzir movimento" do Windows ou o modo leve
+// (Configuracoes > Aparencia > Animacoes leves; ver definirModoLeve).
+const SISTEMA_REDUZ_MOVIMENTO = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let SEM_ANIMACAO = SISTEMA_REDUZ_MOVIMENTO;
+let TEM_VIEW_TRANSITION = typeof document.startViewTransition === 'function' && !SEM_ANIMACAO;
 if (TEM_VIEW_TRANSITION) document.documentElement.classList.add('vt');
+
+function definirModoLeve(leve) {
+  SEM_ANIMACAO = SISTEMA_REDUZ_MOVIMENTO || Boolean(leve);
+  TEM_VIEW_TRANSITION = typeof document.startViewTransition === 'function' && !SEM_ANIMACAO;
+  document.documentElement.classList.toggle('vt', TEM_VIEW_TRANSITION);
+  document.documentElement.classList.toggle('modo-leve', Boolean(leve));
+}
 
 const contentArea = document.querySelector('.content-area');
 const navIndicador = document.getElementById('nav-indicador');

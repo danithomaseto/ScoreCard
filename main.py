@@ -28,6 +28,7 @@ import webview  # noqa: E402 - depois do log, para registrar erro de import
 from api import Api  # noqa: E402
 import backup  # noqa: E402
 import migracoes  # noqa: E402
+import navegadores  # noqa: E402
 
 
 def resource_path(relative_path):
@@ -39,59 +40,11 @@ def resource_path(relative_path):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
 
 
-# Nomes do executavel dentro da pasta de cada navegador ("chrome-win",
-# "chrome-win64", "chrome-headless-shell-win64"...), que mudam conforme
-# a versao do Playwright.
-EXECUTAVEIS_DO_CHROMIUM = (
-    "chrome.exe", "headless_shell.exe", "chrome-headless-shell.exe",
-    "chrome", "headless_shell", "chrome-headless-shell",
-)
-
-
-def _chromium_ja_esta_no_pacote():
-    """O .exe leva o Chromium embutido (ver build.spec). Esta funcao so
-    confere se o binario esta no lugar, olhando o disco.
-
-    Antes daqui saia um navegador de verdade, aberto e fechado so pra
-    testar — o que custava alguns segundos em TODA abertura do
-    programa, mesmo com o Chromium ali do lado. Ler o disco responde a
-    mesma pergunta sem pagar esse preco.
-    """
-    if os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE"):
-        return os.path.isfile(os.environ["PLAYWRIGHT_CHROMIUM_EXECUTABLE"])
-
-    raizes = []
-    if hasattr(sys, "_MEIPASS"):
-        raizes.append(os.path.join(sys._MEIPASS, "playwright", "driver", "package",
-                                   ".local-browsers"))
-    local = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
-    if local:
-        raizes.append(local)
-    if os.environ.get("LOCALAPPDATA"):
-        raizes.append(os.path.join(os.environ["LOCALAPPDATA"], "ms-playwright"))
-
-    for raiz in raizes:
-        if not os.path.isdir(raiz):
-            continue
-        for nome in os.listdir(raiz):
-            # O .exe leva o chromium_headless_shell (mais leve); rodando do
-            # codigo-fonte pode haver so o Chromium completo.
-            if not nome.startswith(("chromium-", "chromium_headless_shell-")):
-                continue
-            pasta = os.path.join(raiz, nome)
-            for sub in os.listdir(pasta):
-                caminho = os.path.join(pasta, sub)
-                if os.path.isdir(caminho) and any(
-                        os.path.isfile(os.path.join(caminho, exe)) for exe in EXECUTAVEIS_DO_CHROMIUM):
-                    return True
-    return False
-
-
 def ensure_browser_installed():
-    """Garante que o Chromium existe. No .exe ele vem embutido, entao
-    isso e so uma conferencia de disco; rodando do codigo-fonte sem
-    'playwright install chromium', baixa uma vez."""
-    if _chromium_ja_esta_no_pacote():
+    """A automacao usa o Edge (ou o Chrome) da maquina; o .exe completo
+    leva tambem um Chromium (ver navegadores.py). So rodando do
+    codigo-fonte, sem nenhum dos tres, baixa o Chromium uma vez."""
+    if getattr(sys, "frozen", False) or navegadores.descricao():
         return
 
     print("Preparando o aplicativo pela primeira vez (baixando componentes)...")
@@ -186,5 +139,68 @@ def main():
     webview.start()
 
 
+def autoteste(destino=None):
+    """ScoreCardApp --autoteste [arquivo]: confere, sem abrir janela, que o
+    pacote tem tudo o que o app usa (o build roda isto antes de juntar o
+    app ao lancador; ver build.spec). Importa os modulos que so carregam
+    na hora de extrair ou ler um relatorio, faz uma planilha de ida e
+    volta e confere os arquivos da tela e o driver do Playwright.
+    Devolve 0 se esta tudo certo."""
+    import importlib
+    import re
+    import tempfile
+
+    problemas = []
+    modulos = ("api", "automation.generic", "automation.base", "indicators.reader", "indicators.faltas",
+               "indicators.pico", "indicators.coverage", "indicators.grupos", "indicators.indiretas",
+               "lancamentos", "arquivos_sharepoint", "diagnostico", "navegadores", "openpyxl", "xlrd",
+               "concurrent.futures", "playwright.sync_api", "webview")
+    for nome in modulos:
+        try:
+            importlib.import_module(nome)
+        except Exception as exc:  # noqa: BLE001
+            problemas.append(f"import {nome}: {exc}")
+    try:
+        import openpyxl
+
+        with tempfile.TemporaryDirectory() as pasta:
+            caminho = os.path.join(pasta, "teste.xlsx")
+            planilha = openpyxl.Workbook()
+            planilha.active["A1"] = "ok"
+            planilha.save(caminho)
+            if openpyxl.load_workbook(caminho, read_only=True).active["A1"].value != "ok":
+                problemas.append("openpyxl: ida e volta da planilha")
+    except Exception as exc:  # noqa: BLE001
+        problemas.append(f"openpyxl: {exc}")
+    try:
+        from playwright._impl._driver import compute_driver_executable
+
+        driver = compute_driver_executable()
+        for caminho in (driver if isinstance(driver, tuple) else (driver,)):
+            if not os.path.isfile(caminho):
+                problemas.append(f"driver do Playwright sem {caminho}")
+    except Exception as exc:  # noqa: BLE001
+        problemas.append(f"driver do Playwright: {exc}")
+    pagina = resource_path(os.path.join("ui", "index.html"))
+    try:
+        with open(pagina, encoding="utf-8") as fh:
+            html = fh.read()
+        for arquivo in re.findall(r'(?:src|href)="((?:js|css|assets)/[^"]+)"', html):
+            if not os.path.isfile(resource_path(os.path.join("ui", arquivo))):
+                problemas.append(f"tela sem ui/{arquivo}")
+    except OSError as exc:
+        problemas.append(f"tela: {exc}")
+
+    texto = "AUTOTESTE OK" if not problemas else "AUTOTESTE FALHOU\n" + "\n".join(problemas)
+    if destino:
+        with open(destino, "w", encoding="utf-8") as fh:
+            fh.write(texto + "\n")
+    print(texto)
+    return 0 if not problemas else 1
+
+
 if __name__ == "__main__":
+    if "--autoteste" in sys.argv:
+        resto = sys.argv[sys.argv.index("--autoteste") + 1:]
+        sys.exit(autoteste(resto[0] if resto else None))
     main()

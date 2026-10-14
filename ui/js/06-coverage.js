@@ -63,6 +63,7 @@ function ajustarAlturaCv() {
     cvWrap.style.maxHeight = `${Math.max(ALTURA_MINIMA_DA_LISTA, cvWrap.clientHeight - sobra)}px`;
   }
   cvWrap.classList.toggle('com-rolagem', cvWrap.scrollHeight > cvWrap.clientHeight);
+  pedirJanelaCv();
 }
 window.addEventListener('resize', ajustarAlturaCv);
 
@@ -140,7 +141,11 @@ async function redesenharCoverageMantendoFoco() {
   const foco = document.activeElement;
   const destino = foco && foco.dataset && foco.dataset.usuario
     ? { usuario: foco.dataset.usuario, operacao: foco.dataset.operacao, campo: foco.dataset.campo } : null;
+  const rolagem = cvWrap.scrollTop;
   await carregarCoverage();
+  // A lista volta para onde estava (e, se for longa, desenha ali na hora).
+  cvWrap.scrollTop = rolagem;
+  desenharJanelaCv();
   if (destino) {
     // Linhas de usuario e a linha TOTAL (sinergia da operacao).
     const alvo = Array.from(document.querySelectorAll('#cv-tabela-wrap input')).find((i) =>
@@ -148,6 +153,191 @@ async function redesenharCoverageMantendoFoco() {
       && i.dataset.campo === destino.campo);
     if (alvo) { alvo.focus(); alvo.select(); }
   }
+}
+
+function criarLinhaCv(item) {
+  const tr = document.createElement('tr');
+  if (item.grupo !== undefined) {
+    tr.className = 'cv-grupo';
+    const td = document.createElement('td');
+    td.colSpan = 11;
+    // O nome fica parado a esquerda mesmo com a tabela rolada de lado.
+    const rotulo = document.createElement('div');
+    rotulo.className = 'cv-grupo-rotulo';
+    rotulo.textContent = item.grupo === '—' ? 'Sem gestor na extração' : item.grupo;
+    const quantos = document.createElement('span');
+    quantos.textContent = plural(item.quantos, 'usuário', 'usuários');
+    rotulo.appendChild(quantos);
+    td.appendChild(rotulo);
+    tr.appendChild(td);
+    return tr;
+  }
+  const linha = item.linha;
+  if (linha.cor === 'vermelho') tr.classList.add('abaixo');
+  const usuario = document.createElement('strong');
+  usuario.className = 'cv-usuario';
+  usuario.textContent = linha.usuario;
+  tr.appendChild(celulaCv(usuario));
+  tr.appendChild(celulaCv(linha.operacao));
+  tr.appendChild(celulaCv(linha.gestor_rotulo, 'cv-gestor-celula'));
+  tr.appendChild(celulaCv(num(linha.lms), 'num'));
+  tr.appendChild(celulaCv(num(linha.diretas_sem_meta), 'num'));
+  tr.appendChild(celulaCv(campoCoverage(linha, 'dias', '1'), 'num'));
+  tr.appendChild(celulaCv(campoCoverage(linha, 'horas', '0.25'), 'num'));
+  tr.appendChild(celulaCv(num(linha.metrics), 'num cv-metrics'));
+  tr.appendChild(celulaCv(campoCoverage(linha, 'cedida', '0.25'), 'num'));
+  tr.appendChild(celulaCv(campoCoverage(linha, 'recebida', '0.25'), 'num'));
+  tr.appendChild(celulaCv(seloCoverage(linha.coverage, linha.cor), 'num'));
+  return tr;
+}
+
+// Muitos usuarios (todas as operacoes, mes inteiro): so as linhas que
+// aparecem na lista, mais uma folga em cima e embaixo, ficam desenhadas;
+// dois espacadores fazem a barra de rolagem ter o tamanho de todas. As
+// linhas que ja estao na tela nunca sao recriadas nem movidas (o campo
+// em que se esta digitando nao perde o foco): so entram e saem nas pontas.
+const CV_VIRTUAL_A_PARTIR = 150;
+const CV_FOLGA = 20;
+const cvVirtual = { ativo: false, itens: [], linhas: new Map(), ini: 0, fim: 0, alturas: null, topo: null, base: null };
+
+function montarListaCv(itens) {
+  cvVirtual.itens = itens;
+  cvVirtual.linhas = new Map();
+  cvVirtual.ativo = itens.length > CV_VIRTUAL_A_PARTIR;
+  if (!cvVirtual.ativo) {
+    const pedaco = document.createDocumentFragment();
+    itens.forEach((item) => pedaco.appendChild(criarLinhaCv(item)));
+    cvCorpo.appendChild(pedaco);
+    return;
+  }
+  cvVirtual.topo = espacadorCv();
+  cvVirtual.base = espacadorCv();
+  cvCorpo.append(cvVirtual.topo, cvVirtual.base);
+  cvVirtual.ini = cvVirtual.fim = 0;
+  cvVirtual.alturas = null;
+  desenharJanelaCv();
+}
+
+function espacadorCv() {
+  const tr = document.createElement('tr');
+  tr.className = 'cv-espaco';
+  tr.setAttribute('aria-hidden', 'true');
+  const td = document.createElement('td');
+  td.colSpan = 11;
+  tr.appendChild(td);
+  return tr;
+}
+
+// Altura de cada item (linha ou titulo de gestor), medida uma vez.
+function alturasCv() {
+  if (cvVirtual.alturas) return cvVirtual.alturas;
+  const medir = (item) => {
+    const tr = criarLinhaCv(item);
+    cvCorpo.insertBefore(tr, cvVirtual.base);
+    const altura = tr.getBoundingClientRect().height || 44;
+    tr.remove();
+    return altura;
+  };
+  const primeiraLinha = cvVirtual.itens.find((i) => i.linha);
+  const primeiroGrupo = cvVirtual.itens.find((i) => i.grupo !== undefined);
+  const linha = primeiraLinha ? medir(primeiraLinha) : 44;
+  const grupo = primeiroGrupo ? medir(primeiroGrupo) : linha;
+  cvVirtual.alturas = { linha, grupo, calibrada: false, inicio: somarAlturasCv(linha, grupo) };
+  return cvVirtual.alturas;
+}
+
+function somarAlturasCv(linha, grupo) {
+  const inicio = [0];
+  cvVirtual.itens.forEach((item, i) => inicio.push(inicio[i] + (item.linha ? linha : grupo)));
+  return inicio;
+}
+
+// Depois do primeiro desenho, a altura media de verdade das linhas (a
+// medida de uma so pode diferir em fracao de pixel, que somada em
+// centenas de linhas faz a barra de rolagem pular).
+function calibrarAlturasCv() {
+  const a = cvVirtual.alturas;
+  if (!a || a.calibrada) return;
+  const medidas = [...cvVirtual.linhas.entries()]
+    .filter(([i]) => cvVirtual.itens[i].linha)
+    .map(([, tr]) => tr.getBoundingClientRect().height);
+  if (medidas.length < 10) return;
+  a.calibrada = true;
+  const media = medidas.reduce((x, y) => x + y, 0) / medidas.length;
+  if (Math.abs(media - a.linha) < 0.05) return;
+  a.linha = media;
+  a.inicio = somarAlturasCv(a.linha, a.grupo);
+  cvVirtual.topo.firstChild.style.height = `${a.inicio[cvVirtual.ini]}px`;
+  cvVirtual.base.firstChild.style.height = `${a.inicio[cvVirtual.itens.length] - a.inicio[cvVirtual.fim]}px`;
+}
+
+function indiceNaAltura(inicio, y) {
+  let baixo = 0;
+  let alto = inicio.length - 1;
+  while (baixo < alto) {
+    const meio = (baixo + alto + 1) >> 1;
+    if (inicio[meio] <= y) baixo = meio; else alto = meio - 1;
+  }
+  return Math.min(baixo, cvVirtual.itens.length - 1);
+}
+
+function desenharJanelaCv() {
+  if (!cvVirtual.ativo || !cvVirtual.base.isConnected) return;
+  const { inicio } = alturasCv();
+  const cabecalho = cvWrap.querySelector('thead')?.getBoundingClientRect().height || 0;
+  const topo = Math.max(0, cvWrap.scrollTop - cabecalho);
+  // Antes de a lista ganhar a altura dela (ajustarAlturaCv), conta no
+  // maximo a janela inteira: senao desenharia todas as linhas.
+  const altura = Math.min(cvWrap.clientHeight || window.innerHeight, window.innerHeight);
+  const total = cvVirtual.itens.length;
+  let ini = Math.max(0, indiceNaAltura(inicio, topo) - CV_FOLGA);
+  let fim = Math.min(total, indiceNaAltura(inicio, topo + altura) + 1 + CV_FOLGA);
+  // A linha do campo com foco continua desenhada mesmo rolada para longe:
+  // quem esta digitando nao perde o que digitou.
+  for (const [i, tr] of cvVirtual.linhas) {
+    if (tr.contains(document.activeElement)) {
+      ini = Math.min(ini, i);
+      fim = Math.max(fim, i + 1);
+    }
+  }
+  if (ini === cvVirtual.ini && fim === cvVirtual.fim) return;
+
+  // Sai o que ficou de fora.
+  for (const [i, tr] of cvVirtual.linhas) {
+    if (i >= ini && i < fim) continue;
+    tr.remove();
+    cvVirtual.linhas.delete(i);
+  }
+  // Entra o que faltava, nas pontas (sem nenhuma em comum, tudo depois).
+  const desenhadas = [...cvVirtual.linhas.keys()];
+  const primeira = desenhadas.length ? Math.min(...desenhadas) : ini;
+  const ultima = desenhadas.length ? Math.max(...desenhadas) : ini - 1;
+  const antes = document.createDocumentFragment();
+  for (let i = ini; i < primeira; i += 1) {
+    const tr = criarLinhaCv(cvVirtual.itens[i]);
+    cvVirtual.linhas.set(i, tr);
+    antes.appendChild(tr);
+  }
+  cvCorpo.insertBefore(antes, cvVirtual.topo.nextSibling);
+  const depois = document.createDocumentFragment();
+  for (let i = Math.max(ultima + 1, ini); i < fim; i += 1) {
+    const tr = criarLinhaCv(cvVirtual.itens[i]);
+    cvVirtual.linhas.set(i, tr);
+    depois.appendChild(tr);
+  }
+  cvCorpo.insertBefore(depois, cvVirtual.base);
+  cvVirtual.ini = ini;
+  cvVirtual.fim = fim;
+  cvVirtual.topo.firstChild.style.height = `${inicio[ini]}px`;
+  cvVirtual.base.firstChild.style.height = `${inicio[total] - inicio[fim]}px`;
+  calibrarAlturasCv();
+}
+
+let cvJanelaPedida = false;
+function pedirJanelaCv() {
+  if (!cvVirtual.ativo || cvJanelaPedida) return;
+  cvJanelaPedida = true;
+  requestAnimationFrame(() => { cvJanelaPedida = false; desenharJanelaCv(); });
 }
 
 function celulaCv(conteudo, classe) {
@@ -237,43 +427,18 @@ function desenharTabelaCv(tela) {
     ? [...tela.linhas].sort((a, b) => a.gestor_rotulo.localeCompare(b.gestor_rotulo, 'pt-BR')
       || a.operacao.localeCompare(b.operacao, 'pt-BR') || a.usuario.localeCompare(b.usuario, 'pt-BR'))
     : tela.linhas;
+  const porGrupo = new Map();
+  linhas.forEach((l) => porGrupo.set(l.gestor_rotulo, (porGrupo.get(l.gestor_rotulo) || 0) + 1));
+  const itens = [];
   let grupoAtual = null;
   for (const linha of linhas) {
     if (agrupar && linha.gestor_rotulo !== grupoAtual) {
       grupoAtual = linha.gestor_rotulo;
-      const titulo = document.createElement('tr');
-      titulo.className = 'cv-grupo';
-      const td = document.createElement('td');
-      td.colSpan = 11;
-      // O nome fica parado a esquerda mesmo com a tabela rolada de lado.
-      const rotulo = document.createElement('div');
-      rotulo.className = 'cv-grupo-rotulo';
-      rotulo.textContent = grupoAtual === '—' ? 'Sem gestor na extração' : grupoAtual;
-      const quantos = document.createElement('span');
-      quantos.textContent = plural(linhas.filter((l) => l.gestor_rotulo === grupoAtual).length, 'usuário', 'usuários');
-      rotulo.appendChild(quantos);
-      td.appendChild(rotulo);
-      titulo.appendChild(td);
-      cvCorpo.appendChild(titulo);
+      itens.push({ grupo: grupoAtual, quantos: porGrupo.get(grupoAtual) });
     }
-    const tr = document.createElement('tr');
-    if (linha.cor === 'vermelho') tr.classList.add('abaixo');
-    const usuario = document.createElement('strong');
-    usuario.className = 'cv-usuario';
-    usuario.textContent = linha.usuario;
-    tr.appendChild(celulaCv(usuario));
-    tr.appendChild(celulaCv(linha.operacao));
-    tr.appendChild(celulaCv(linha.gestor_rotulo, 'cv-gestor-celula'));
-    tr.appendChild(celulaCv(num(linha.lms), 'num'));
-    tr.appendChild(celulaCv(num(linha.diretas_sem_meta), 'num'));
-    tr.appendChild(celulaCv(campoCoverage(linha, 'dias', '1'), 'num'));
-    tr.appendChild(celulaCv(campoCoverage(linha, 'horas', '0.25'), 'num'));
-    tr.appendChild(celulaCv(num(linha.metrics), 'num cv-metrics'));
-    tr.appendChild(celulaCv(campoCoverage(linha, 'cedida', '0.25'), 'num'));
-    tr.appendChild(celulaCv(campoCoverage(linha, 'recebida', '0.25'), 'num'));
-    tr.appendChild(celulaCv(seloCoverage(linha.coverage, linha.cor), 'num'));
-    cvCorpo.appendChild(tr);
+    itens.push({ linha });
   }
+  montarListaCv(itens);
 
   cvTotal.innerHTML = '';
   if (vazio) return;
@@ -308,7 +473,9 @@ cvAgrupar.addEventListener('change', () => { if (cvTela) desenharTabelaCv(cvTela
 // Rolando a tabela para o lado, a coluna do usuario (parada) ganha sombra.
 document.getElementById('cv-tabela-wrap').addEventListener('scroll', (evento) => {
   evento.currentTarget.classList.toggle('rolado-lado', evento.currentTarget.scrollLeft > 0);
+  pedirJanelaCv();
 }, { passive: true });
+window.addEventListener('resize', pedirJanelaCv);
 cvGestor.addEventListener('change', async () => {
   cvEstado.gestor = cvGestor.value;
   await carregarCoverage();
