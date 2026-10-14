@@ -21,6 +21,11 @@ function encerrarAbertura() {
   }
   const falta = Math.max(0, DURACAO_DA_ABERTURA - (performance.now() - INICIO_DA_ABERTURA));
   setTimeout(() => {
+    const texto = document.getElementById('abertura-carregando');
+    if (texto) texto.textContent = 'Pronto';
+    abertura.classList.add('pronta');
+  }, Math.max(0, falta - 350));
+  setTimeout(() => {
     abertura.classList.add('saindo');
     // O card do login entra enquanto a abertura sobe.
     setTimeout(animarEntradaDoLogin, 260);

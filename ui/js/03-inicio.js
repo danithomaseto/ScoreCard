@@ -77,6 +77,7 @@ async function loadIndicators() {
   );
   if (!pedidoVale('inicio', pedido)) return null;
   preencherSelect(homeMes, tabela.meses || [], tabela.mes);
+  marcarOperacoesComDados(tabela.mes);
   const temDados = tabela.colunas.length > 0;
 
   indicatorsEmpty.hidden = temDados;
@@ -101,6 +102,24 @@ async function loadIndicators() {
   // primeiro, e numa janela estreita eles ficariam escondidos a direita.
   indicatorsWrap.scrollLeft = indicatorsWrap.scrollWidth;
   return tabela;
+}
+
+// Na lista de operacoes, um ponto verde nas que tem dados no mes da tela
+// (o desenho fica no CSS; num WebView2 sem o seletor novo, nao aparece).
+async function marcarOperacoesComDados(mes) {
+  let lista;
+  try {
+    lista = await pywebview.api.operacoes_com_dados(mes);
+  } catch (erro) {
+    return;
+  }
+  if (!Array.isArray(lista) || homeMes.value !== mes) return;
+  const rotulo = homeMes.selectedOptions[0]?.text || mes;
+  for (const opcao of homeOperationSelect.options) {
+    const tem = lista.includes(opcao.value);
+    opcao.dataset.dados = tem ? 'sim' : 'nao';
+    opcao.title = tem ? `Tem dados em ${rotulo}` : `Sem extração em ${rotulo}`;
+  }
 }
 
 // ---------------------------------------------------------------

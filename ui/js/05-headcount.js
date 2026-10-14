@@ -60,11 +60,15 @@ async function carregarHeadcount() {
 
 function preencherSelect(select, itens, selecionado, chave = 'id', rotulo = 'rotulo') {
   select.innerHTML = '';
+  const hoje = new Date();
+  const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
   for (const item of itens) {
     const opt = document.createElement('option');
     opt.value = item[chave];
     opt.textContent = item[rotulo];
     if (item[chave] === selecionado) opt.selected = true;
+    // Etiqueta "atual" no mes corrente das listas de meses (no CSS).
+    if (opt.value === mesAtual) opt.dataset.atual = '1';
     select.appendChild(opt);
   }
 }

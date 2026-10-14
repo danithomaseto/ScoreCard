@@ -180,6 +180,13 @@ mês vê o resultado mesmo sem ter extraído.
   - O arquivo tem os **nomes dos gestores**; fica na mesma pasta do
     SharePoint que os relatórios do Summary, com o mesmo acesso.
 
+**Abertura:** enquanto o app carrega, a marca DHL entra com um reflexo,
+as seis barras sobem com a linha de tendência (o ponto do fim acende),
+o título aparece e a barra mostra **Carregando o sistema…** (vira
+"Pronto" antes de sair). Antes disso, o próprio `ScoreCard.exe` mostra
+uma imagem com o mesmo desenho e, na primeira abertura de cada versão, o
+andamento da preparação no rodapé.
+
 ### 4.1.1 Menu, topo e atalhos
 
 - **Menu em grupos:** *Resultados* (Início, Resultado Gestor, Resultado
@@ -290,10 +297,25 @@ mês vê o resultado mesmo sem ter extraído.
   sincronizada pelo OneDrive onde ficam as subpastas das operações).
   Ela fica guardada e pode ser trocada em Configurações.
 
+**Visual do login:** a foto da marca DHL aparece clara (só à noite um véu
+leve nas bordas), com o cartão de vidro escuro no centro: ícone do app e
+marca DHL no topo, a saudação, os campos com ícone (usuário e cadeado), o
+botão **Entrar** largo com a seta (mostra um giro enquanto confere) e, no
+pé da tela, "DHL Supply Chain · Score Card <versão> · Criado por Daniel
+Thomaseto".
+
 ### 4.3 Início (o painel)
 
 É a tela principal e a que se apresenta.
 
+- **Seletores:** a lista que abre segue o visual do app nos dois temas
+  (cantos redondos, sombra, a opção escolhida em amarelo com ✓). Na lista
+  de operações da Início, um **ponto verde** marca as operações que têm
+  dados no mês escolhido (contorno = sem extração no mês); nas listas de
+  mês, o mês corrente tem a etiqueta **ATUAL**. Teclado: Espaço ou setas
+  abrem a lista, Enter escolhe, letras procuram. Cada rótulo de filtro tem
+  um ícone (operação, mês, semana, gestor, visualização, última extração,
+  SharePoint).
 - **Filtros:** operação e mês (abre no mês atual), e ao lado a última
   extração da operação. O seletor de mês deixa voltar ao mês anterior —
   no começo do mês é ali que está o fechamento. Os filtros têm o mesmo

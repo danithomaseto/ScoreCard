@@ -66,7 +66,7 @@ function desenharIndiretas() {
   if (t.periodos.length) {
     preencherSelect(indSemana, t.periodos, t.semana_id);
   } else {
-    preencherSelect(indSemana, [{ id: '', rotulo: 'Nenhuma semana extraída neste mês' }], '');
+    preencherSelect(indSemana, [{ id: '', rotulo: 'Sem semana extraída' }], '');
   }
   indSemana.disabled = !t.periodos.length;
 

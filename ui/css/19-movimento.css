@@ -201,3 +201,50 @@
   :root.modo-leve .apresentacao-capa.entrando *,
   :root.modo-leve .apresentacao-capa.saindo,
   :root.modo-leve .apresentacao-tempo.correndo { animation: none; }
+
+/* Lista aberta dos seletores, tour e Procurar (Ctrl+K). */
+@media (prefers-reduced-motion: reduce) {
+  .tour-recorte, .tour-caixa, .tour-pontos i { transition: none; }
+  .tour-caixa.entrando, .paleta-fundo, .paleta-caixa { animation: none; }
+  select::picker-icon { transition: none; }
+}
+
+/* O mesmo com o modo leve ligado (Configuracoes > Aparencia). */
+:root.modo-leve .tour-recorte,
+  :root.modo-leve .tour-caixa,
+  :root.modo-leve .tour-pontos i { transition: none; }
+
+:root.modo-leve .tour-caixa.entrando,
+  :root.modo-leve .paleta-fundo,
+  :root.modo-leve .paleta-caixa { animation: none; }
+
+@supports (appearance: base-select) {
+  @media (prefers-reduced-motion: reduce) {
+    ::picker(select) { transition: none; translate: none; }
+    option { transition: none; }
+  }
+
+  :root.modo-leve select::picker-icon,
+    :root.modo-leve option { transition: none; }
+
+  :root.modo-leve ::picker(select) { transition: none; translate: none; }
+}
+
+/* Abertura: halo, reflexo e o ponto da tendencia. */
+@media (prefers-reduced-motion: reduce) {
+  .abertura-centro::before, .abertura-marca::after, .abertura-ponto-anel { animation: none; opacity: 0; }
+  .abertura-ponto { animation: none; opacity: 1; }
+}
+
+:root.modo-leve .abertura-centro::before,
+  :root.modo-leve .abertura-marca::after,
+  :root.modo-leve .abertura-ponto-anel { animation: none; opacity: 0; }
+
+:root.modo-leve .abertura-ponto { animation: none; opacity: 1; }
+
+/* Icone do titulo da pagina. */
+@media (prefers-reduced-motion: reduce) {
+  .pagina-entrando .page-icone { animation: none; }
+}
+
+:root.modo-leve .pagina-entrando .page-icone { animation: none; }

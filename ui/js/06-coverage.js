@@ -74,7 +74,7 @@ function desenharFiltrosCv(tela) {
   if (noMes) {
     preencherSelect(cvPeriodo, [{ id: '', rotulo: 'Não se aplica ao resultado do mês' }], '');
   } else if (!tela.periodos.length) {
-    preencherSelect(cvPeriodo, [{ id: '', rotulo: 'Nenhuma semana extraída neste mês' }], '');
+    preencherSelect(cvPeriodo, [{ id: '', rotulo: 'Sem semana extraída' }], '');
   } else {
     preencherSelect(cvPeriodo, tela.periodos, tela.periodo_id);
   }

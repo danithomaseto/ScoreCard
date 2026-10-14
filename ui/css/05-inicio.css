@@ -286,3 +286,25 @@
 .distribuicao-meta { stroke-dasharray: 1200; animation: meta-desenha 1s 300ms ease-out both; }
 
 .distribuicao-valor, .distribuicao-meta-valor, .distribuicao-meta-ponto { animation: surgir 400ms 520ms ease both; }
+
+/* ---------- Acabamento da tabela ---------- */
+/* Copiar: pilula discreta com o icone; nao disputa com o titulo da coluna. */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 var(--esp-25);
+  border-color: transparent;
+  border-radius: var(--raio-pilula);
+  background: var(--overlay-1);
+}
+
+.copy-btn::before { content: ""; width: 12px; height: 12px; background-color: currentColor; mask: var(--icone-copiar) center / contain no-repeat; }
+
+.copy-btn:hover:where(:not(:disabled)) { border-color: transparent; background: var(--overlay-2); color: var(--text); }
+
+.copy-btn.copiado { border-color: transparent; background: rgba(34, 197, 94, 0.14); }
+
+/* A linha sob o mouse fica marcada (sem apagar o fundo da coluna fixa). */
+.indicators-table tbody tr:hover > :is(th, td) { box-shadow: inset 0 0 0 100vmax var(--linha-hover); }

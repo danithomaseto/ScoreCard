@@ -1460,3 +1460,39 @@ sempre no visual claro, em dobro de resolucao. Copia com
 dentro do clique); senao, `Api.salvar_imagem` grava em Downloads
 (`exportar_imagem.py`: so PNG pela assinatura, ate 20 MB, nome so com
 letras, numeros, `_` e `-`).
+
+## 32. Filtros, login, abertura e acabamento (14/10/2026)
+
+So visual: nenhuma conta mudou.
+
+**Seletores (`ui/css/03-componentes.css`).** `appearance: base-select`
+dentro de `@supports`: a lista aberta (`::picker(select)`) e as opcoes
+(`option`, `option::checkmark`) ganham o desenho do app e a abertura
+suave (`@starting-style`). O `<select>` continua nativo: `value`,
+`change`, teclado e busca por letra iguais. Sem suporte (WebView2 antigo)
+fica a lista do Windows com a seta de reserva (`--seta-reserva`). A barra
+do modo apresentacao foi centralizada sem `transform` (a lista aberta se
+posiciona pela barra e abria deslocada).
+
+**Ponto de dados por operacao.** `Api.operacoes_com_dados(mes)` (a mesma
+da apresentacao automatica, agora guardada no cache de telas) marca as
+opcoes da Inicio com `data-dados="sim|nao"`. `preencherSelect` marca o mes
+corrente com `data-atual`.
+
+**Login.** A foto da marca com veu leve (`--veu-topo`, `--veu-base`,
+`--vinheta`, mais forte so a noite), cartao de vidro, campos com icone
+(`.campo-icone`) e o botao com estado `carregando` (giro) no lugar do texto
+"Entrando...".
+
+**Abertura e splash.** Halo, reflexo no logo, ponto da tendencia e o texto
+"Carregando o sistema..." sob a barra. `tools/gerar_icone.py` redesenha o
+`ui/assets/splash.png` (520 x 300, desenhado em dobro e reduzido) e o
+`build.spec` escreve o andamento em `text_pos=(18, 286)`.
+
+**Acabamento.** Fundo com brilho leve nos cantos (`--fundo-brilho-*`),
+fio de luz no topo dos cards (`--card-brilho`), DHL em italico na barra,
+icone do menu no titulo de cada pagina (`.page-icone`, copiado do menu no
+01-base.js), Copiar como pilula com icone, linha da tabela marcada no
+hover (`--linha-hover`), icone por secao em Configuracoes
+(`data-icone` + `--icone-*`) e a bolinha de cor em cada tema. Tudo tem a
+versao sem movimento (reduzir movimento do Windows e modo leve).

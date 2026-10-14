@@ -482,6 +482,21 @@ loginPassword.addEventListener('keydown', avisarCapsLock);
 loginPassword.addEventListener('keyup', avisarCapsLock);
 loginPassword.addEventListener('blur', () => { document.getElementById('login-caps').hidden = true; });
 
+// O titulo de cada pagina leva o icone do item do menu (um so desenho
+// para os dois lugares).
+document.querySelectorAll('.nav-item[data-page]').forEach((item) => {
+  const titulo = document.querySelector(`#page-${item.dataset.page} .page-heading`);
+  const icone = item.querySelector('svg');
+  if (!titulo || !icone || titulo.querySelector('.page-icone')) return;
+  const caixa = document.createElement('span');
+  caixa.className = 'page-icone';
+  caixa.setAttribute('aria-hidden', 'true');
+  const copia = icone.cloneNode(true);
+  copia.removeAttribute('class');
+  caixa.appendChild(copia);
+  titulo.prepend(caixa);
+});
+
 async function showApp() {
   loginView.hidden = true;
   appView.hidden = false;

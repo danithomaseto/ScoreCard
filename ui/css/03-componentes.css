@@ -36,7 +36,7 @@ input,
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--raio-xl);
-  box-shadow: var(--sombra-card);
+  box-shadow: var(--sombra-card), inset 0 1px 0 var(--card-brilho);
   padding: var(--esp-7);
   width: 100%;
   max-width: 360px;
@@ -243,7 +243,7 @@ th.peak-col .col-title { color: var(--amarelo-tx); }
 
 .filtro-campo select { margin-bottom: 0; }
 
-.filtro-campo select:disabled { opacity: 0.45; cursor: not-allowed; }
+.filtro-campo select:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* Mesma altura dos selects ao lado (46px) e opcoes dividindo a largura
    toda: o estilo global de botao dava 46px a cada opcao e o conjunto
@@ -779,4 +779,182 @@ button.perigo:hover:where(:not(:disabled)),
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* ================================================================
+   Seletores: o campo fechado e a lista que abre
+   ================================================================ */
+/* Com o seletor personalizavel do Chromium (Edge/WebView2 135 ou mais
+   novo) a lista que abre deixa de ser a caixa cinza do Windows: cantos
+   redondos, sombra, as cores do tema, a opcao escolhida em amarelo com
+   o check e uma entrada suave. Continua sendo um <select> de verdade:
+   teclado, busca por letra, value e o evento change nao mudam. Num
+   WebView2 antigo fica a lista do Windows, com a seta nova no campo. */
+@supports (appearance: base-select) {
+  select,
+  ::picker(select) { appearance: base-select; }
+
+  /* Texto longo numa linha so, com reticencias (o seletor novo quebrava
+     "Nenhuma semana extraida neste mes" em duas linhas). */
+  select {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    font-weight: var(--peso-medio);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  select::picker-icon {
+    content: "";
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-left: auto;
+    background-color: var(--text-muted);
+    mask: var(--icone-seta) center / contain no-repeat;
+    transition: rotate var(--tempo-curto) ease, background-color var(--tempo-curto) ease;
+  }
+
+  select:hover:where(:not(:disabled)) { border-color: color-mix(in srgb, var(--yellow) 40%, var(--input-border)); }
+
+  select:hover:where(:not(:disabled))::picker-icon { background-color: var(--text); }
+
+  select:open { border-color: var(--yellow); box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.16); }
+
+  select:open::picker-icon { rotate: 180deg; background-color: var(--amarelo-tx); }
+
+  select:disabled { border-style: dashed; }
+
+  select:disabled::picker-icon { opacity: 0.35; }
+
+  ::picker(select) {
+    margin-block: 6px;
+    padding: var(--esp-15);
+    border: 1px solid var(--card-border);
+    border-radius: var(--raio-l);
+    background: var(--card-bg);
+    color: var(--text);
+    box-shadow: var(--sombra-flutuante);
+    max-block-size: min(360px, 70vh);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    opacity: 0;
+    translate: 0 -4px;
+    transition: opacity var(--tempo-rapido) ease, translate var(--tempo-rapido) ease,
+                overlay var(--tempo-rapido) allow-discrete, display var(--tempo-rapido) allow-discrete;
+  }
+
+  select:open::picker(select) { opacity: 1; translate: 0 0; }
+
+  @starting-style {
+    select:open::picker(select) { opacity: 0; translate: 0 -4px; }
+  }
+
+  option {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    min-height: 36px;
+    padding: 0 var(--esp-25);
+    border-radius: var(--raio-m);
+    font-size: var(--letra-m);
+    font-weight: var(--peso-medio);
+    color: var(--text);
+    cursor: pointer;
+    transition: background-color var(--tempo-rapido) ease;
+  }
+
+  option:hover,
+  option:focus-visible { background: var(--input-bg); outline: none; }
+
+  option:checked { background: rgba(255, 204, 0, 0.12); color: var(--amarelo-tx); font-weight: var(--peso-semi); }
+
+  option:checked:focus-visible { box-shadow: inset 0 0 0 1px rgba(255, 204, 0, 0.55); }
+
+  option::checkmark { order: 1; margin-left: auto; padding-left: var(--esp-3); font-weight: var(--peso-forte); }
+
+  option:disabled { opacity: 0.5; cursor: default; }
+
+  /* Lista de operacoes da Inicio: ponto verde nas que tem dados no mes
+     escolhido, contorno nas que nao tem (data-dados, ver 03-inicio.js). */
+  option[data-dados]::before {
+    content: "";
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  option[data-dados="sim"]::before { background: var(--grafico-bom); }
+
+  option[data-dados="nao"]::before { box-shadow: inset 0 0 0 1.5px var(--text-faint); }
+
+  option[data-dados="nao"]:not(:checked) { color: var(--text-muted); }
+
+  /* Mes corrente na lista de meses. */
+  option[data-atual]::after {
+    content: "atual";
+    padding: 1px var(--esp-15);
+    border-radius: var(--raio-pilula);
+    background: var(--input-bg);
+    color: var(--text-muted);
+    font-size: var(--letra-2xs);
+    font-weight: var(--peso-forte);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  option[data-atual]:hover::after,
+  option[data-atual]:focus-visible::after { background: var(--card-bg); }
+}
+
+/* Sem o seletor novo: o campo ganha a mesma seta (a lista e a do Windows). */
+@supports not (appearance: base-select) {
+  #app-view select,
+  .camada-do-app select {
+    appearance: none;
+    padding-right: 36px;
+    background-image: var(--seta-reserva);
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+  }
+}
+
+/* ---------- Barra de filtros: rotulo com icone e as informacoes ---------- */
+.filtro-campo > label { display: flex; align-items: center; gap: var(--esp-15); }
+
+.filtro-campo > label::before {
+  content: "";
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  opacity: 0.8;
+  mask: var(--icone-do-campo, var(--icone-filtro)) center / contain no-repeat;
+}
+
+.filtro-campo > label:is([for$="operacao"], [for$="operation"]) { --icone-do-campo: var(--icone-operacao); }
+
+.filtro-campo > label:is([for$="-mes"], [for$="-de"], [for$="-ate"]) { --icone-do-campo: var(--icone-mes); }
+
+.filtro-campo > label:is([for$="periodo"], [for$="semana"]) { --icone-do-campo: var(--icone-semana); }
+
+.filtro-campo > label[for$="gestor"] { --icone-do-campo: var(--icone-gestor); }
+
+.filtro-campo:has(> .segmentado) > label { --icone-do-campo: var(--icone-visao); }
+
+.filtro-info > label { --icone-do-campo: var(--icone-relogio); }
+
+.filtro-info.filtro-sp > label { --icone-do-campo: var(--icone-nuvem); }
+
+/* Ultima extracao e No SharePoint: so informam, entao nao parecem campo.
+   Sem a borda tracejada; um fundo suave da a altura dos seletores. */
+.filtro-nota {
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--input-bg) 55%, transparent);
+  color: var(--text-muted);
 }

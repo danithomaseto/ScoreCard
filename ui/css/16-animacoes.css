@@ -152,3 +152,12 @@
 @keyframes capa-item { from { opacity: 0; transform: translateY(18px) scale(0.98); filter: blur(4px); } }
 
 @keyframes capa-sai { to { opacity: 0; transform: scale(1.03); filter: blur(4px); } }
+
+/* Abertura: halo, reflexo no logo e o ponto da tendencia. */
+@keyframes halo-acende { 0% { opacity: 0; transform: scale(0.6); } 55% { opacity: 1; } 100% { opacity: 0.75; transform: scale(1); } }
+
+@keyframes reflexo-passa { from { left: -60%; } to { left: 130%; } }
+
+@keyframes ponto-acende { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+
+@keyframes ponto-pulsa { 0% { opacity: 0.9; transform: scale(1); } 100% { opacity: 0; transform: scale(3.2); } }

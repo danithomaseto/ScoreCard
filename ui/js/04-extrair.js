@@ -560,7 +560,8 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
   }
 
   loginBtn.disabled = true;
-  loginBtn.textContent = 'Entrando...';
+  loginBtn.classList.add('carregando');
+  loginBtn.setAttribute('aria-busy', 'true');
   try {
     const result = await pywebview.api.login(username, password);
     if (!result.success) {
@@ -576,7 +577,8 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
     await ensureFolderConfigured();
   } finally {
     loginBtn.disabled = false;
-    loginBtn.textContent = 'Entrar';
+    loginBtn.classList.remove('carregando');
+    loginBtn.removeAttribute('aria-busy');
   }
 });
 
@@ -774,6 +776,8 @@ async function carregarVersao() {
   const el = document.getElementById('app-versao');
   el.textContent = info.versao;
   el.title = info.build ? `Build ${info.build}${info.commit ? ' · ' + info.commit : ''}` : '';
+  const doLogin = document.getElementById('login-versao');
+  if (doLogin) doLogin.textContent = info.versao;
 }
 
 chooseFolderBtn.addEventListener('click', async () => {

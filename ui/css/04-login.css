@@ -10,11 +10,46 @@
     url("../assets/dhl-login-bg.png") center / cover no-repeat;
 }
 
+/* Entrar ocupa a largura do card, com a seta que anda no hover. */
 #login-btn {
   display: flex;
-  width: fit-content;
-  margin: 0 auto;
+  width: 100%;
+  margin: var(--esp-15) 0 0;
+  gap: var(--esp-2);
+  font-size: var(--letra-l);
+  box-shadow: 0 8px 22px rgba(255, 204, 0, 0.22);
 }
+
+#login-btn:hover:where(:not(:disabled)) { box-shadow: 0 10px 28px rgba(255, 204, 0, 0.32); }
+
+.login-btn-seta { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--tempo-curto) ease; }
+
+#login-btn:hover:where(:not(:disabled)) .login-btn-seta { transform: translateX(3px); }
+
+/* Campos com icone a esquerda (usuario e cadeado). */
+.campo-icone { position: relative; }
+
+.campo-icone-svg {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+  transition: stroke var(--tempo-rapido) ease;
+}
+
+.campo-icone input { padding-left: 44px; }
+
+.campo-icone:focus-within .campo-icone-svg { stroke: var(--yellow); }
+
+.login-card input::placeholder { color: rgba(148, 163, 184, 0.55); }
 
 #login-view:not([hidden]) { display: flex; }
 
@@ -188,6 +223,60 @@
   animation: progresso-enche 1.9s 250ms cubic-bezier(0.6, 0, 0.3, 1) both, progresso-brilha 0.9s linear infinite;
 }
 
+/* Halo de luz atras da marca, que acende e assenta. */
+.abertura-centro::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 40px;
+  z-index: -1;
+  width: 520px;
+  height: 320px;
+  margin-left: -260px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 204, 0, 0.22), rgba(255, 204, 0, 0.06) 55%, transparent);
+  filter: blur(6px);
+  animation: halo-acende 1.8s 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  pointer-events: none;
+}
+
+/* Um reflexo atravessa o logo depois que as letras caem. */
+.abertura-marca { position: relative; overflow: hidden; }
+
+.abertura-marca::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -60%;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  transform: skewX(-18deg);
+  animation: reflexo-passa 900ms 1150ms ease-in-out both;
+  pointer-events: none;
+}
+
+/* Brilho no topo de cada barra. */
+.abertura-grafico i { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55); }
+
+/* O ponto no fim da tendencia acende e solta um pulso. */
+.abertura-ponto { fill: #fff; opacity: 0; transform-box: fill-box; transform-origin: center; animation: ponto-acende 360ms 1880ms cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+
+.abertura-ponto-anel { fill: none; stroke: rgba(255, 255, 255, 0.85); stroke-width: 1.5; opacity: 0; transform-box: fill-box; transform-origin: center; animation: ponto-pulsa 900ms 1950ms ease-out forwards; }
+
+/* Texto sob a barra: o que a barra esta fazendo. */
+.abertura-carregando {
+  margin-top: var(--esp-25);
+  font-size: var(--letra-xs);
+  font-weight: var(--peso-semi);
+  letter-spacing: 0.08em;
+  color: rgba(148, 163, 184, 0.85);
+  animation: sub-aparece 700ms 500ms ease-out both;
+  transition: color var(--tempo-medio) ease;
+}
+
+.abertura.pronta .abertura-carregando { color: var(--yellow); }
+
 /* Saida: a abertura sobe como uma cortina, com a borda amarela. */
 .abertura.saindo { animation: abertura-sobe 760ms cubic-bezier(0.76, 0, 0.24, 1) forwards; pointer-events: none; }
 
@@ -202,14 +291,18 @@
   isolation: isolate;
   background: #0b0e1a;
   /* O fundo muda com o horario (classe posta pelo app.js). */
-  --veu-topo: rgba(11, 14, 26, 0.25);
-  --veu-base: rgba(11, 14, 26, 0.45);
-  --brilho-login: rgba(255, 204, 0, 0.16);
+  /* A foto da marca e amarela e clara: e assim que ela fica bonita. O veu
+     escuro forte de antes deixava o amarelo marrom; agora ele so escurece
+     um pouco as bordas (vinheta) e, a noite, um pouco mais. */
+  --veu-topo: rgba(11, 14, 26, 0);
+  --veu-base: rgba(11, 14, 26, 0.10);
+  --vinheta: rgba(11, 14, 26, 0.28);
+  --brilho-login: rgba(255, 255, 255, 0.22);
 }
 
-#login-view.periodo-manha { --veu-topo: rgba(255, 214, 102, 0.06); --veu-base: rgba(11, 14, 26, 0.38); --brilho-login: rgba(255, 224, 130, 0.26); }
+#login-view.periodo-manha { --veu-topo: rgba(255, 255, 255, 0.06); --veu-base: rgba(11, 14, 26, 0.04); --vinheta: rgba(11, 14, 26, 0.2); --brilho-login: rgba(255, 255, 255, 0.3); }
 
-#login-view.periodo-noite { --veu-topo: rgba(5, 8, 22, 0.66); --veu-base: rgba(5, 8, 22, 0.82); --brilho-login: rgba(110, 140, 255, 0.14); }
+#login-view.periodo-noite { --veu-topo: rgba(11, 14, 26, 0.08); --veu-base: rgba(11, 14, 26, 0.22); --vinheta: rgba(11, 14, 26, 0.4); --brilho-login: rgba(255, 236, 170, 0.18); }
 
 /* A foto aproxima devagar (Ken Burns) atras do card. */
 #login-view::before {
@@ -218,6 +311,7 @@
   inset: 0;
   z-index: -2;
   background:
+    radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, var(--vinheta)),
     linear-gradient(180deg, var(--veu-topo), var(--veu-base)),
     url("../assets/dhl-login-bg.png") center / cover no-repeat;
   animation: foto-respira 26s ease-in-out infinite alternate;
@@ -237,17 +331,24 @@
 
 .login-card {
   position: relative;
-  background: rgba(22, 27, 46, 0.86);
-  backdrop-filter: blur(14px) saturate(1.2);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  max-width: 384px;
+  padding: var(--esp-8) var(--esp-7) var(--esp-6);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(26, 32, 54, 0.9), rgba(16, 20, 36, 0.92));
+  backdrop-filter: blur(16px) saturate(1.3);
+  box-shadow: 0 40px 90px rgba(40, 24, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
+
+.login-card h2 { margin: 0 0 var(--esp-1); font-size: 26px; letter-spacing: -0.01em; }
+
+.login-card .subtitle { margin-bottom: var(--esp-6); }
 
 .login-card::before {
   content: "";
   position: absolute;
   inset: -1px;
   padding: 1.5px;
-  border-radius: 13px;
+  border-radius: 19px;
   background: conic-gradient(from var(--giro), transparent 0 62%, rgba(255, 204, 0, 0.0) 64%,
     rgba(255, 204, 0, 0.95) 76%, rgba(212, 5, 17, 0.8) 82%, transparent 90%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -257,18 +358,74 @@
   pointer-events: none;
 }
 
-.login-marca { display: flex; align-items: center; gap: var(--esp-25); margin-bottom: var(--esp-45); }
+/* Cabecalho do card: o icone do app, o nome e a marca DHL a direita. */
+.login-marca {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  margin: 0 0 var(--esp-6);
+  padding-bottom: var(--esp-45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.login-icone { width: 44px; height: 44px; border-radius: 12px; box-shadow: 0 6px 18px rgba(255, 204, 0, 0.25); }
+
+.login-marca-nome { display: flex; flex-direction: column; gap: 1px; }
+
+.login-marca-nome strong { font-size: 17px; font-weight: var(--peso-extra); letter-spacing: -0.01em; color: var(--text); }
+
+.login-marca-nome span { font-size: var(--letra-s); color: var(--text-muted); }
 
 .login-marca .dhl-logo {
+  margin-left: auto;
   padding: 3px var(--esp-25);
   border-radius: var(--raio-xs);
   background: var(--yellow);
-  font-size: var(--letra-l);
+  font-size: var(--letra-m);
   font-style: italic;
   letter-spacing: 1.5px;
 }
 
-.login-marca-texto { font-size: var(--letra-m); font-weight: var(--peso-forte); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+/* Campos e botao do login: mais altos e arredondados. */
+.login-card input { height: 48px; border-radius: 12px; background: rgba(9, 12, 24, 0.55); border-color: rgba(255, 255, 255, 0.09); }
+
+.login-card .campo-icone-svg { top: 15px; }
+
+.login-card .senha-olho { height: 48px; }
+
+.login-card label { font-size: var(--letra-s); letter-spacing: 0.02em; }
+
+#login-btn { height: 50px; border-radius: 12px; background: linear-gradient(180deg, #ffd84d, #ffc400); }
+
+#login-btn:hover:where(:not(:disabled)) { background: linear-gradient(180deg, #ffe066, #ffcc00); transform: translateY(-1px); }
+
+/* Assinatura no pe da tela: de quem e o sistema e a versao. */
+#login-view { flex-direction: column; }
+
+.login-assinatura {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-25);
+  padding: 7px var(--esp-4);
+  border-radius: var(--raio-pilula);
+  background: rgba(11, 14, 26, 0.62);
+  backdrop-filter: blur(8px);
+  color: rgba(228, 231, 236, 0.82);
+  font-size: var(--letra-xs);
+  font-weight: var(--peso-semi);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  translate: -50% 0;
+}
+
+.login-assinatura i { width: 3px; height: 3px; border-radius: 50%; background: var(--yellow); }
+
+.login-assinatura b { color: var(--yellow); font-weight: var(--peso-forte); }
+
+@media (max-height: 640px) { .login-assinatura { display: none; } }
 
 /* Entrada do card: sobe, desfoca e cada campo vem depois do outro. */
 .login-card.entrando { animation: card-entra 720ms cubic-bezier(0.2, 0.9, 0.2, 1) both; }

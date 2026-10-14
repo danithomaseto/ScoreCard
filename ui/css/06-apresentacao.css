@@ -40,14 +40,18 @@ body.apresentacao .legend-item { font-size: clamp(12px, 1.5vh, 17px); }
 /* Discreta ate o mouse chegar perto: nao pode competir com a tabela. */
 .apresentacao-barra {
   position: fixed;
-  left: 50%;
+  /* Centrada sem transform: a lista aberta do intervalo se posiciona
+     pela barra, e com translate ela abria deslocada para a direita. */
+  left: 0;
+  right: 0;
+  width: max-content;
+  margin-inline: auto;
   bottom: 18px;
   z-index: 50;
   display: flex;
   align-items: center;
   gap: var(--esp-4);
   padding: var(--esp-2) var(--esp-2) var(--esp-2) var(--esp-45);
-  transform: translateX(-50%);
   border: 1px solid var(--card-border);
   border-radius: var(--raio-xl);
   background: rgba(18, 23, 43, 0.92);

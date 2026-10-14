@@ -21,6 +21,9 @@ import versao
 # Versao -> lista de (titulo, texto). Curto: a janela mostra tudo de uma vez.
 NOVIDADES = {
     "V.01.1": [
+        ("Visual novo",
+         "Filtros com a lista no visual do app (com ponto verde nas operações que têm dados no mês), "
+         "login e abertura redesenhados, ícone em cada página e Configurações organizadas por seção."),
         ("Arquivos do SharePoint para todo mundo",
          "A Início mostra o relatório que já está na pasta do SharePoint, mesmo que você não "
          "tenha extraído, com a data do arquivo mais novo ao lado da última extração."),

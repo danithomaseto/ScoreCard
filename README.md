@@ -65,6 +65,18 @@ Detalhes de uso:
 - **Dica com a conta:** parando o mouse (ou o foco do teclado) num numero
   da tabela aparece a formula e a conta daquele periodo ("302,0 h ÷
   267,6 h = 112,88%").
+- **Filtros:** a lista que abre nos seletores segue o visual do app (cantos
+  redondos, a opcao escolhida em amarelo com check, os dois temas); na
+  Inicio, um ponto verde marca as operacoes com dados no mes escolhido e o
+  mes corrente leva a etiqueta "atual". Usa o seletor personalizavel do
+  Edge/WebView2 (135 ou mais novo); num mais antigo fica a lista do
+  Windows, so com a seta nova.
+- **Login e abertura:** a foto da marca aparece clara, com o cartao de
+  vidro escuro, icones nos campos, botao largo e a assinatura com a versao
+  no pe da tela; a abertura tem halo, reflexo no logo e a barra
+  "Carregando o sistema...". A tela que o .exe mostra antes da janela
+  (`ui/assets/splash.png`, gerada por `tools/gerar_icone.py`) tem o mesmo
+  desenho.
 - **O que ha de novo e tour:** na primeira vez, um tour de cinco passos
   pela Inicio; a cada versao nova, a janela com as novidades. Os dois
   reabrem em Configuracoes > Ajuda.

@@ -273,7 +273,7 @@ splash = Splash(
     "ui/assets/splash.png",
     binaries=lanc.binaries,
     datas=lanc.datas,
-    text_pos=(16, 250),
+    text_pos=(18, 286),
     text_size=9,
     text_color="#8a93a8",
     text_default="",

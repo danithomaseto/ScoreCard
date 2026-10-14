@@ -1039,6 +1039,7 @@ class Api:
 
     # ---------------- Indicadores ----------------
 
+    @cache_de_telas.guardada
     def operacoes_com_dados(self, mes):
         """Operacoes com alguma coluna (semana, mes ou pico) no mes, na
         ordem do menu. A apresentacao automatica passa so por elas: antes
