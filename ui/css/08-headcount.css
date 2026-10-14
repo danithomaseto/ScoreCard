@@ -1,0 +1,449 @@
+/* Headcount: Aba Headcount (calculo de presenteismo).
+   (ui/css: um arquivo por componente ou aba, na ordem do numero.) */
+
+.hc-cards { display: flex; gap: var(--esp-35); margin-bottom: var(--esp-5); flex-wrap: wrap; }
+
+.hc-card {
+  flex: 1 1 170px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--raio-xl);
+  padding: var(--esp-4) var(--esp-45);
+}
+
+.hc-card-label {
+  font-size: var(--letra-xs);
+  font-weight: var(--peso-forte);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--esp-2);
+}
+
+.hc-card-valor { font-size: var(--letra-4xl); font-weight: var(--peso-forte); color: var(--text); line-height: 1.2; }
+
+/* Nome e periodo sao texto, nao numero: no tamanho dos numeros eles
+   quebravam em ate tres linhas e esticavam os cinco cards juntos. */
+.hc-card-valor.texto {
+  font-size: 17px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hc-card-valor.vermelho { color: var(--erro-tx); }
+
+.hc-card-nota { font-size: var(--letra-xs); color: var(--text-faint); margin-top: var(--esp-15); }
+
+/* O presenteismo e o numero que a tela existe pra produzir. */
+.hc-card.destaque { background: var(--yellow); border-color: var(--yellow); }
+
+.hc-card.destaque .hc-card-label { color: rgba(21, 21, 21, 0.65); }
+
+.hc-card.destaque .hc-card-valor { color: #151515; }
+
+.hc-card.destaque .hc-card-nota { color: rgba(21, 21, 21, 0.75); font-weight: var(--peso-semi); }
+
+.hc-tabela-card, .hc-formula-card, .hc-arquivo-card { width: 100%; max-width: none; margin-bottom: var(--esp-5); }
+
+.hc-tabela-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--esp-4);
+}
+
+.hc-contador { font-size: var(--letra-s); color: var(--text-faint); margin-left: var(--esp-25); }
+
+.hc-acoes { display: flex; gap: var(--esp-25); flex-wrap: wrap; }
+
+.hc-acoes button { width: auto; height: 40px; padding: 0 var(--esp-4); font-size: var(--letra-m); margin: 0; }
+
+.hc-acoes .perigo { color: var(--perigo-tx); border-color: rgba(249, 112, 102, 0.4); }
+
+/* IMPORTANTE: o display entra via :not([hidden]). Fixo aqui, ele
+   sobrescreveria o [hidden] do navegador e a faixa ficaria sempre
+   aberta - o mesmo bug que ja aconteceu no painel web. */
+.hc-inline {
+  align-items: center;
+  gap: var(--esp-3);
+  flex-wrap: wrap;
+  background: rgba(255, 204, 0, 0.08);
+  border: 1px solid rgba(255, 204, 0, 0.35);
+  border-radius: var(--raio-m);
+  padding: var(--esp-35) var(--esp-4);
+  margin-bottom: var(--esp-4);
+}
+
+.hc-inline:not([hidden]) { display: flex; }
+
+.hc-inline label { margin: 0; font-size: var(--letra-s); font-weight: var(--peso-semi); color: var(--text); }
+
+.hc-inline input { margin: 0; width: 280px; }
+
+.hc-inline select { margin: 0; width: 220px; }
+
+.hc-inline button { width: auto; height: 38px; padding: 0 var(--esp-35); margin: 0; font-size: var(--letra-m); }
+
+/* A nota vai numa linha propria, embaixo: dividindo a linha com os
+   campos, ela empurrava o Cancelar para uma segunda linha sozinho. */
+.hc-inline-nota { font-size: var(--letra-xs); color: var(--text-muted); flex: 1 1 100%; order: 10; }
+
+.hc-funcoes { gap: var(--esp-2); flex-wrap: wrap; margin-bottom: var(--esp-4); }
+
+.hc-funcoes:not([hidden]) { display: flex; }
+
+.hc-funcao-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--raio-pilula);
+  padding: 5px var(--esp-3);
+  font-size: var(--letra-s);
+  color: var(--text-muted);
+}
+
+.hc-funcao-op {
+  font-size: var(--letra-2xs);
+  font-weight: var(--peso-forte);
+  color: var(--amarelo-tx);
+  border-left: 1px solid var(--input-border);
+  padding-left: var(--esp-2);
+}
+
+.hc-funcao-chip button {
+  width: auto; height: auto; margin: 0; padding: 0;
+  background: none; border: none; color: var(--perigo-tx);
+  font-size: var(--letra-base); line-height: 1; cursor: pointer;
+}
+
+.hc-tabela { width: 100%; border-collapse: collapse; font-size: var(--letra-m); }
+
+.hc-tabela th {
+  text-align: left;
+  font-size: var(--letra-xs);
+  font-weight: var(--peso-forte);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 var(--esp-3) var(--esp-3);
+  border-bottom: 1px solid var(--card-border);
+  white-space: nowrap;
+}
+
+.hc-tabela th.num, .hc-tabela td.num { text-align: right; }
+
+.hc-tabela td { padding: var(--esp-3); border-bottom: 1px solid var(--line); vertical-align: middle; }
+
+.hc-tabela tbody tr:last-child td { border-bottom: none; }
+
+/* Linha abaixo da meta: fundo e numero marcados, pra saltar na leitura
+   sem precisar comparar com a meta de cabeca. */
+.hc-tabela tr.abaixo td { background: rgba(244, 63, 94, 0.07); }
+
+.hc-tabela tr.abaixo .hc-resultado { color: var(--erro-tx); }
+
+.hc-gestor { display: flex; align-items: center; gap: var(--esp-25); }
+
+.hc-avatar {
+  width: 32px; height: 32px; flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--input-bg);
+  color: var(--amarelo-tx);
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--letra-xs); font-weight: var(--peso-forte);
+}
+
+.hc-gestor-nome { font-size: var(--letra-m); font-weight: var(--peso-forte); color: var(--text); }
+
+.hc-gestor-nota { font-size: var(--letra-xs); color: var(--text-faint); }
+
+.hc-operacao { font-size: var(--letra-m); color: var(--text); }
+
+.hc-periodo { font-size: var(--letra-xs); color: var(--text-faint); }
+
+.hc-tabela input[type="number"] {
+  width: 84px; margin: 0; padding: 7px 9px;
+  font-size: var(--letra-m); text-align: right;
+}
+
+.hc-faltas { display: inline-flex; align-items: center; gap: var(--esp-2); justify-content: flex-end; }
+
+/* Faltas nao se digita: o selo e o aviso de que o numero veio do
+   arquivo e nao da pessoa. */
+.hc-faltas-valor {
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  border-radius: var(--raio-s);
+  padding: var(--esp-15) var(--esp-3);
+  font-weight: var(--peso-forte);
+  color: var(--erro-tx);
+  min-width: 46px;
+  text-align: center;
+}
+
+.hc-selo {
+  font-size: var(--letra-2xs); font-weight: var(--peso-forte); letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border: 1px solid var(--input-border);
+  border-radius: var(--raio-xs);
+  padding: 3px 5px;
+}
+
+.hc-resultado { display: inline-flex; align-items: center; gap: var(--esp-2); font-weight: var(--peso-forte); color: var(--ok-tx); }
+
+.hc-bolinha { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+
+.hc-tabela tr.abaixo .hc-bolinha { background: #f87171; }
+
+.hc-tabela tfoot td {
+  border-top: 2px solid var(--text);
+  border-bottom: none;
+  padding-top: var(--esp-35);
+  font-weight: var(--peso-forte);
+  color: var(--text);
+}
+
+.hc-total-pill {
+  display: inline-block;
+  background: var(--yellow);
+  color: #151515;
+  border-radius: var(--raio-s);
+  padding: 5px var(--esp-3);
+  font-weight: var(--peso-forte);
+}
+
+.hc-ajuda {
+  width: 16px; height: 16px; margin-left: var(--esp-15); padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--input-border);
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--letra-2xs); font-weight: var(--peso-forte); line-height: 1;
+  cursor: pointer;
+}
+
+.hc-status {
+  margin-top: var(--esp-45); padding-top: var(--esp-35);
+  border-top: 1px solid var(--line);
+  font-size: var(--letra-s); color: var(--text-faint);
+}
+
+.hc-formula-topo { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--esp-35); }
+
+.hc-formula-corpo { gap: var(--esp-6); flex-wrap: wrap; }
+
+.hc-formula-corpo:not([hidden]) { display: flex; }
+
+/* O bloco de codigo estica ate a altura da memoria ao lado; o texto
+   fica centralizado nele em vez de colado no topo com um vazio embaixo. */
+.hc-formula {
+  flex: 1 1 380px;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  background: #0d1120;
+  border: 1px solid var(--card-border);
+  border-radius: var(--raio-m);
+  padding: var(--esp-4);
+  overflow-x: auto;
+}
+
+.hc-formula,
+.hc-formula code { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.hc-formula code { color: var(--amarelo-tx); font-size: var(--letra-s); font-family: Consolas, "Courier New", monospace; }
+
+.hc-memoria { flex: 1 1 260px; margin: 0; display: flex; flex-direction: column; gap: var(--esp-25); }
+
+.hc-memoria > div { display: flex; justify-content: space-between; gap: var(--esp-4); font-size: var(--letra-m); }
+
+.hc-memoria dt { color: var(--text-muted); }
+
+.hc-memoria dd { margin: 0; font-weight: var(--peso-forte); color: var(--text); }
+
+.hc-arquivo-colunas { display: flex; gap: var(--esp-5); margin-top: var(--esp-4); flex-wrap: wrap; }
+
+.hc-arquivo-colunas > div { flex: 1 1 320px; }
+
+.hc-dropzone {
+  min-height: 250px;
+  border: 2px dashed var(--input-border);
+  border-radius: var(--raio-xl);
+  background: var(--input-bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--esp-2); padding: var(--esp-6); text-align: center; cursor: pointer;
+}
+
+.hc-dropzone:hover, .hc-dropzone.arrastando { border-color: var(--yellow); background: rgba(255, 204, 0, 0.06); }
+
+.hc-drop-icone {
+  width: 38px; height: 38px;
+  fill: none; stroke: var(--yellow); stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+.hc-drop-titulo { margin: var(--esp-2) 0 0; font-size: var(--letra-base); font-weight: var(--peso-semi); color: var(--text); }
+
+.hc-drop-nota { margin: 0; font-size: var(--letra-s); color: var(--text-muted); }
+
+.hc-chips { display: flex; gap: var(--esp-15); flex-wrap: wrap; justify-content: center; margin-top: var(--esp-3); }
+
+.hc-chip {
+  font-size: var(--letra-2xs); font-weight: var(--peso-semi); letter-spacing: 0.03em;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--raio-pilula);
+  padding: var(--esp-1) var(--esp-25);
+  color: var(--text-muted);
+}
+
+.hc-arquivo-vazio { font-size: var(--letra-m); color: var(--text-muted); line-height: 1.7; margin: 0; }
+
+.hc-arquivo-nome { font-size: var(--letra-base); font-weight: var(--peso-forte); color: var(--text); }
+
+.hc-arquivo-meta { font-size: var(--letra-s); color: var(--text-faint); margin-top: var(--esp-1); }
+
+.hc-contadores { display: flex; gap: var(--esp-45); flex-wrap: wrap; margin: var(--esp-4) 0; }
+
+.hc-contador-item { font-size: var(--letra-s); color: var(--text-muted); }
+
+.hc-contador-item strong { display: block; font-size: var(--letra-2xl); color: var(--text); }
+
+.hc-cobertura { display: flex; flex-direction: column; gap: var(--esp-15); margin-top: var(--esp-2); }
+
+.hc-cobertura-item {
+  display: flex; justify-content: space-between; gap: var(--esp-3);
+  font-size: var(--letra-s); color: var(--text-muted);
+  border: 1px solid var(--card-border);
+  border-radius: var(--raio-s);
+  padding: var(--esp-2) var(--esp-25);
+}
+
+.hc-cobertura-item.selecionado { border-color: var(--yellow); color: var(--text); }
+
+.hc-descartadas { font-size: var(--letra-xs); color: var(--text-faint); margin-top: var(--esp-25); line-height: 1.6; }
+
+/* Botoes de acao secundarios: uma altura so no sistema todo. Antes
+   havia 38px (Abrir pasta, Remover) e 40px (acoes da Headcount). */
+.run-actions button,
+.hc-inline button,
+button.acao {
+  height: 40px;
+  padding: 0 var(--esp-4);
+  font-size: var(--letra-m);
+}
+
+.hc-inline:not([hidden]),
+.hc-funcoes:not([hidden]) { animation: surgir 120ms ease-out; }
+
+.hc-varia { color: var(--text-muted); font-style: italic; }
+
+.period-option,
+.source-option,
+.multi-operation,
+.hc-funcao-chip { transition: border-color var(--tempo-curto) ease, background-color var(--tempo-curto) ease, transform 90ms ease; }
+
+/* Os numeros dos cards do Headcount trocam suavemente. */
+.hc-card strong,
+.hc-card .hc-card-valor { transition: color 200ms ease; }
+
+/* ---------- Headcount: editar e excluir gestor ---------- */
+.hc-gestor { position: relative; }
+
+/* Os icones ficam discretos e acendem ao passar na linha (ou ao chegar
+   neles pelo teclado). */
+.hc-gestor-acoes {
+  display: flex;
+  gap: var(--esp-05);
+  margin-left: auto;
+  padding-left: var(--esp-2);
+  opacity: 0.35;
+  transition: opacity var(--tempo-rapido) ease;
+}
+
+.hc-tabela tbody tr:hover .hc-gestor-acoes,
+.hc-gestor-acoes:focus-within,
+.hc-tabela tbody tr.em-edicao .hc-gestor-acoes { opacity: 1; }
+
+/* A linha em edicao fica marcada, para nao haver duvida de quem esta
+   sendo alterado ou excluido. */
+.hc-tabela tbody tr.em-edicao td { background: rgba(255, 204, 0, 0.06); }
+
+.hc-tabela tbody tr.em-edicao td:first-child { box-shadow: inset 3px 0 0 var(--yellow); }
+
+.hc-inline-perigo {
+  background: rgba(249, 112, 102, 0.08);
+  border-color: rgba(249, 112, 102, 0.4);
+}
+
+.hc-inline-pergunta { font-size: var(--letra-m); color: var(--text); }
+
+.hc-inline-pergunta strong { font-weight: var(--peso-forte); }
+
+/* ---------- Faltas digitadas ---------- */
+/* Faltas: neutro com zero; com falta, borda e numero em tom de alerta. */
+.hc-faltas-input { font-weight: var(--peso-forte); }
+
+.hc-faltas-input.tem-falta { border-color: rgba(249, 112, 102, 0.55); color: var(--erro-tx); }
+
+.hc-faltas-input:focus { border-color: #f97066; }
+
+.hc-faltas-input:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* ---------- Quadro por semana ---------- */
+/* Valor herdado (semana anterior, cadastro ou calendario): esmaecido e
+   em italico, ate ser digitado para o periodo. */
+.hc-tabela input.valor-herdado { color: var(--text-muted); font-style: italic; }
+
+.hc-tabela input.valor-herdado:focus { color: var(--text); font-style: normal; }
+
+.hc-faltas-input.valor-herdado { color: var(--erro-tx); }
+
+.hc-card-valor.verde { color: var(--ok-tx); }
+
+.hc-card.destaque .hc-card-valor.verde,
+.hc-card.destaque .hc-card-valor.vermelho { color: #151515; }
+
+.hc-card.destaque.alerta { background: #ef4444; border-color: #ef4444; }
+
+.hc-card.destaque.alerta .hc-card-label,
+.hc-card.destaque.alerta .hc-card-nota,
+.hc-card.destaque.alerta .hc-card-valor { color: #fff; }
+
+/* Os blocos da pagina entram um depois do outro ao abrir a aba. */
+.pagina-entrando .page-wide-wrap > *,
+.pagina-entrando .hc-cards > * {
+  animation: bloco-entra 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.pagina-entrando .hc-cards > :nth-child(2) { animation-delay: 160ms; }
+
+.pagina-entrando .hc-cards > :nth-child(3) { animation-delay: 200ms; }
+
+.pagina-entrando .hc-cards > :nth-child(4) { animation-delay: 240ms; }
+
+.pagina-entrando .hc-cards > :nth-child(5) { animation-delay: 280ms; }
+
+.hc-card.destaque:hover { box-shadow: 0 12px 32px rgba(255, 204, 0, 0.22); }
+
+/* ---------- Headcount: ligacao com o Summary ---------- */
+.hc-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+  margin-top: 3px;
+  padding: 1px 7px;
+  border-radius: var(--raio-pilula);
+  font-size: var(--letra-2xs);
+  font-weight: var(--peso-forte);
+  white-space: nowrap;
+}
+
+.hc-summary.ligado { background: rgba(34, 197, 94, 0.14); color: var(--ok-tx); }
+
+.hc-summary.sem_par { background: rgba(251, 191, 36, 0.14); color: var(--alerta-tx); }

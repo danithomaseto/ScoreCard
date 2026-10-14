@@ -1,0 +1,89 @@
+/* Tokens: Medidas padrao (espaco, letra, borda, sombra, tempo) e cores do tema escuro.
+   (ui/css: um arquivo por componente ou aba, na ordem do numero.) */
+
+:root {
+  --bg: #0b0e1a;
+  --card-bg: #161b2e;
+  --card-border: #262c44;
+  --text: #e4e7ec;
+  --text-muted: #94a3b8;
+  --input-bg: #1f2438;
+  --input-border: #2f3650;
+  --yellow: #ffcc00;
+  --yellow-dark: #e6b800;
+  --red: #d40511;
+  /* Superficies e textos que mudam com o tema (o claro redefine estes
+     mesmos nomes dentro do app; login e abertura ficam sempre escuros). */
+  --text-faint: #667085;
+  --line: #1e2438;
+  --surface-2: #1b2135;
+  --surface-3: #121729;
+  --sidebar-bg: #12172b;
+  --sidebar-tx: #c9d2de;
+  --eixo: #344054;
+  --barra-neutra: #5a6688;
+  --trilho: #3c4766;
+  --overlay-0: rgba(255, 255, 255, 0.012);
+  --overlay-1: rgba(255, 255, 255, 0.045);
+  --overlay-2: rgba(255, 255, 255, 0.08);
+  --overlay-3: rgba(255, 255, 255, 0.11);
+  --ok-tx: #6ee7a0;
+  --erro-tx: #fca5a5;
+  --perigo-tx: #f97066;
+  --alerta-tx: #fbbf24;
+  --azul-tx: #7dd3fc;
+  --amarelo-tx: #ffcc00;
+  --sombra-card: 0 4px 20px rgba(0, 0, 0, 0.25);
+
+  /* Espaco: multiplos de 4 px (com meios passos). */
+  --esp-05: 2px;
+  --esp-1: 4px;
+  --esp-15: 6px;
+  --esp-2: 8px;
+  --esp-25: 10px;
+  --esp-3: 12px;
+  --esp-35: 14px;
+  --esp-4: 16px;
+  --esp-45: 18px;
+  --esp-5: 20px;
+  --esp-6: 24px;
+  --esp-7: 28px;
+  --esp-8: 32px;
+
+  /* Bordas arredondadas. */
+  --raio-xs: 4px;
+  --raio-s: 6px;
+  --raio-m: 8px;
+  --raio-l: 10px;
+  --raio-xl: 12px;
+  --raio-pilula: 999px;
+
+  /* Tamanhos de letra. */
+  --letra-2xs: 10px;
+  --letra-xs: 11px;
+  --letra-s: 12px;
+  --letra-m: 13px;
+  --letra-base: 14px;
+  --letra-l: 15px;
+  --letra-xl: 16px;
+  --letra-2xl: 18px;
+  --letra-3xl: 20px;
+  --letra-4xl: 22px;
+  --letra-5xl: 24px;
+
+  /* Pesos de letra. */
+  --peso-medio: 500;
+  --peso-semi: 600;
+  --peso-forte: 700;
+  --peso-extra: 800;
+
+  /* Tempos de transicao. */
+  --tempo-rapido: 150ms;
+  --tempo-curto: 180ms;
+  --tempo-medio: 240ms;
+  --tempo-lento: 320ms;
+
+  /* Sombras alem da do card (--sombra-card). */
+  --sombra-flutuante: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --sombra-dialogo: 0 30px 80px rgba(0, 0, 0, 0.45);
+}

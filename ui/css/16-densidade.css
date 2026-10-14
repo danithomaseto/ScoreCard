@@ -1,0 +1,64 @@
+/* Densidade: Densidade compacta.
+   (ui/css: um arquivo por componente ou aba, na ordem do numero.) */
+
+/* ---------- 12: densidade compacta ---------- */
+:root[data-densidade="compacta"] .content-area { padding: var(--esp-5) var(--esp-45); }
+
+:root[data-densidade="compacta"] #app-view .card { padding: var(--esp-45) var(--esp-5); }
+
+:root[data-densidade="compacta"] #app-view select,
+:root[data-densidade="compacta"] #app-view input:not([type="checkbox"]):not([type="radio"]) { height: 38px; font-size: var(--letra-m); margin-bottom: var(--esp-3); }
+
+:root[data-densidade="compacta"] #app-view .filtro-campo select,
+:root[data-densidade="compacta"] #app-view .historico-filtros select { margin-bottom: 0; }
+
+:root[data-densidade="compacta"] #app-view button:not(.nav-item):not(.link-btn):not(.copy-btn):not(.topbar-botao):not(.grupo-chip):not(.grupo-alternar) { height: 38px; font-size: var(--letra-m); }
+
+:root[data-densidade="compacta"] .segmentado { height: 38px; }
+
+:root[data-densidade="compacta"] .filtro-nota { min-height: 38px; }
+
+:root[data-densidade="compacta"] .nav-item { height: 36px; font-size: var(--letra-m); }
+
+:root[data-densidade="compacta"] .nav-indicador { height: 36px; }
+
+:root[data-densidade="compacta"] .sidebar { padding-top: var(--esp-35); }
+
+:root[data-densidade="compacta"] .nav-secao { margin: var(--esp-25) 0 var(--esp-05); }
+
+:root[data-densidade="compacta"] .page-heading { font-size: 21px; }
+
+:root[data-densidade="compacta"] #app-view .subtitle { margin-bottom: var(--esp-35); }
+
+:root[data-densidade="compacta"] .filtros-card { margin-bottom: var(--esp-35); padding-top: var(--esp-4); }
+
+:root[data-densidade="compacta"] .hc-cards { gap: var(--esp-25); margin-bottom: var(--esp-35); }
+
+:root[data-densidade="compacta"] .hc-card { padding: var(--esp-3) var(--esp-35); }
+
+:root[data-densidade="compacta"] .hc-card-valor { font-size: 19px; }
+
+:root[data-densidade="compacta"] .indicators-table th,
+:root[data-densidade="compacta"] .indicators-table td { padding: var(--esp-2) var(--esp-25); }
+
+:root[data-densidade="compacta"] .indicators-table { font-size: var(--letra-base); }
+
+:root[data-densidade="compacta"] .indicator-value { min-width: 76px; padding: var(--esp-1) var(--esp-25); font-size: var(--letra-base); }
+
+:root[data-densidade="compacta"] .indicator-label { font-size: var(--letra-base); }
+
+:root[data-densidade="compacta"] .hc-tabela th,
+:root[data-densidade="compacta"] .hc-tabela td { padding: 7px var(--esp-25); }
+
+:root[data-densidade="compacta"] .history-table th,
+:root[data-densidade="compacta"] .history-table td { padding-top: 7px; padding-bottom: 7px; }
+
+:root[data-densidade="compacta"] .ops-item { padding: 7px var(--esp-25); }
+
+:root[data-densidade="compacta"] .period-escolha .period-option { min-height: 38px; padding: var(--esp-15) var(--esp-25); }
+
+:root[data-densidade="compacta"] .source-option { height: 38px; }
+
+:root[data-densidade="compacta"] .step { padding-bottom: var(--esp-3); }
+
+:root[data-densidade="compacta"] .grupos-tabelas { gap: var(--esp-25); }

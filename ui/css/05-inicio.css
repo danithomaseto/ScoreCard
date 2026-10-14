@@ -1,0 +1,286 @@
+/* Inicio: Aba Inicio: tabela de indicadores, legenda e grafico de distribuicao.
+   (ui/css: um arquivo por componente ou aba, na ordem do numero.) */
+
+/* ---------- Aba Inicio: tabela de indicadores ---------- */
+.indicators-card { width: 100%; max-width: none; }
+
+.indicators-empty {
+  margin: 0;
+  padding: 40px var(--esp-5);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--letra-m);
+  line-height: 1.7;
+}
+
+.indicators-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--letra-l);
+}
+
+.indicators-table th,
+.indicators-table td {
+  border-bottom: 1px solid var(--line);
+  padding: var(--esp-35) var(--esp-3);
+}
+
+.indicators-table tbody tr:last-child th,
+.indicators-table tbody tr:last-child td { border-bottom: none; }
+
+/* A primeira coluna fica fixa: com muitas semanas a tabela rola pro
+   lado, e sem isso perde-se a referencia de qual linha e qual. */
+.indicator-corner,
+.indicator-name {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--card-bg);
+  text-align: left;
+  width: 240px;
+  min-width: 240px;
+  padding-left: 0;
+}
+
+.indicator-corner { vertical-align: bottom; border-bottom-color: var(--card-border); }
+
+/* Sombra na borda da coluna fixa: mostra que as semanas passam por
+   baixo dela ao rolar. */
+.indicator-corner::after,
+.indicator-name::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -12px;
+  bottom: 0;
+  width: 12px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.25), transparent);
+  pointer-events: none;
+}
+
+@media (max-width: 1100px) {
+  .indicator-corner,
+  .indicator-name { width: 170px; min-width: 170px; }
+  .corner-operation { font-size: var(--letra-xl); }
+}
+
+.corner-label {
+  font-size: var(--letra-xs);
+  font-weight: var(--peso-semi);
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.corner-operation { font-size: var(--letra-2xl); font-weight: var(--peso-forte); color: var(--amarelo-tx); padding-top: 3px; }
+
+.indicator-col {
+  text-align: center;
+  /* Alinhado por baixo pra que o botao Copiar fique na mesma altura em
+     todas as colunas, inclusive nas que ganham o aviso de semana
+     incompleta e ficam com uma linha a mais. */
+  vertical-align: bottom;
+  border-bottom-color: var(--card-border);
+  min-width: 132px;
+}
+
+.col-title { font-size: var(--letra-base); font-weight: var(--peso-forte); color: var(--text); }
+
+.col-subtitle { font-size: var(--letra-xs); font-weight: var(--peso-medio); color: var(--text-muted); padding-top: var(--esp-05); }
+
+.col-warning { font-size: var(--letra-xs); font-weight: var(--peso-semi); color: var(--alerta-tx); padding-top: 3px; }
+
+.indicator-name { vertical-align: middle; }
+
+.indicator-label { font-size: var(--letra-l); font-weight: var(--peso-forte); color: var(--text); }
+
+.indicator-meta { font-size: var(--letra-xs); font-weight: var(--peso-medio); color: var(--text-faint); padding-top: var(--esp-05); }
+
+.indicator-cell { text-align: center; }
+
+.indicator-cell.sem-numero { color: var(--text-faint); font-size: var(--letra-2xl); }
+
+.indicator-value {
+  display: inline-block;
+  min-width: 86px;
+  padding: var(--esp-15) var(--esp-3);
+  border-radius: var(--raio-s);
+  font-size: var(--letra-xl);
+  font-weight: var(--peso-forte);
+}
+
+.indicator-value.verde { background: rgba(34, 197, 94, 0.14); color: var(--ok-tx); }
+
+.indicator-value.vermelho { background: rgba(244, 63, 94, 0.16); color: var(--erro-tx); }
+
+.indicator-value.azul { background: rgba(56, 189, 248, 0.16); color: var(--azul-tx); }
+
+.copy-btn {
+  margin-top: var(--esp-2);
+  background: none;
+  border: 1px solid var(--input-border);
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-size: var(--letra-xs);
+  font-weight: var(--peso-semi);
+  font-family: inherit;
+  padding: var(--esp-1) var(--esp-25);
+  cursor: pointer;
+}
+
+.copy-btn:hover { border-color: var(--yellow-dark); color: var(--text); }
+
+.copy-btn.copiado { border-color: #22c55e; color: var(--ok-tx); }
+
+.indicators-legend {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-top: var(--esp-45);
+  padding-top: var(--esp-4);
+  border-top: 1px solid var(--line);
+}
+
+.legend-item { display: flex; align-items: center; gap: var(--esp-2); font-size: var(--letra-s); color: var(--text-muted); }
+
+.legend-dot { width: 14px; height: 14px; border-radius: var(--raio-xs); }
+
+.legend-dot.verde { background: rgba(34, 197, 94, 0.35); border: 1px solid #6ee7a0; }
+
+.legend-dot.vermelho { background: rgba(244, 63, 94, 0.35); border: 1px solid #fca5a5; }
+
+.legend-dot.azul { background: rgba(56, 189, 248, 0.35); border: 1px solid #7dd3fc; }
+
+.legend-dash { color: var(--text-faint); font-weight: var(--peso-forte); }
+
+.legend-note { margin-left: auto; font-size: var(--letra-s); color: var(--text-faint); }
+
+/* Copiar e um botao de apoio dentro do cabecalho da tabela; herdava os
+   46px do botao principal e competia com o titulo da coluna. */
+.copy-btn { height: 28px; }
+
+/* ---------- Pente fino: telas de notebook (1280 px ou menos) ---------- */
+/* Colunas da Inicio um pouco mais justas abaixo de 1400 px: num
+   notebook com zoom de 150% (1280 px uteis), um mes de quatro semanas
+   com o mes e o pico cabe sem rolar para o lado. */
+@media (max-width: 1400px) {
+  .indicator-corner,
+  .indicator-name { width: 196px; min-width: 196px; }
+  .indicators-table th,
+  .indicators-table td { padding-left: var(--esp-2); padding-right: var(--esp-2); }
+  .indicator-col { min-width: 108px; }
+  .indicator-value { min-width: 80px; padding: var(--esp-15) var(--esp-25); font-size: var(--letra-l); }
+}
+
+/* ---------- Distribuicao da dispersao do mes (aba Inicio) ---------- */
+.distribuicao-card { width: 100%; max-width: none; margin-top: var(--esp-5); }
+
+.distribuicao-card[hidden] { display: none; }
+
+.distribuicao-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--esp-2);
+}
+
+.distribuicao-topo .section-title { margin-bottom: var(--esp-1); }
+
+.distribuicao-sub { margin: 0; font-size: var(--letra-s); color: var(--text-muted); }
+
+.distribuicao-legenda { display: flex; align-items: center; gap: var(--esp-4); flex-wrap: wrap; }
+
+.legend-dot.amarelo { background: rgba(250, 204, 21, 0.35); border: 1px solid #facc15; }
+
+.distribuicao-linha-meta { display: inline-block; width: 18px; height: 2px; border-radius: 1px; background: #f97316; }
+
+.distribuicao-aviso { margin: var(--esp-3) 0 var(--esp-1); font-size: var(--letra-m); color: var(--text-muted); }
+
+/* Grafico em cima e a tabela sempre embaixo, como na planilha. */
+.distribuicao-corpo { display: flex; flex-direction: column; align-items: center; gap: var(--esp-3); }
+
+.distribuicao-corpo[hidden] { display: none; }
+
+.distribuicao-grafico { width: 100%; max-width: 760px; max-height: 280px; overflow: visible; }
+
+.distribuicao-eixo { stroke: var(--eixo); stroke-width: 1; }
+
+.distribuicao-barra.verde { fill: #22c55e; }
+
+.distribuicao-barra.amarelo { fill: #facc15; }
+
+.distribuicao-barra.vermelho { fill: #ef4444; }
+
+.distribuicao-faixa:hover .distribuicao-barra { filter: brightness(1.15); }
+
+.distribuicao-valor,
+.distribuicao-meta-valor { paint-order: stroke; stroke: var(--card-bg); stroke-width: 5px; stroke-linejoin: round; pointer-events: none; }
+
+.distribuicao-valor { fill: var(--text); font-size: var(--letra-base); font-weight: var(--peso-forte); text-anchor: middle; font-variant-numeric: tabular-nums; }
+
+.distribuicao-rotulo { fill: var(--text-muted); font-size: var(--letra-s); text-anchor: middle; }
+
+.distribuicao-meta { fill: none; stroke: #f97316; stroke-width: 2; stroke-linecap: round; pointer-events: none; }
+
+.distribuicao-meta-ponto { fill: #f97316; stroke: var(--card-bg); stroke-width: 2; pointer-events: none; }
+
+.distribuicao-meta-valor { fill: var(--text); font-size: var(--letra-base); font-weight: var(--peso-forte); }
+
+.distribuicao-tabela { width: 100%; border-collapse: collapse; font-size: var(--letra-s); }
+
+.distribuicao-tabela th,
+.distribuicao-tabela td { padding: var(--esp-2) var(--esp-25); text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+
+.distribuicao-tabela thead th { color: var(--text-muted); font-weight: var(--peso-semi); font-size: var(--letra-xs); }
+
+.distribuicao-tabela tbody th { text-align: left; color: var(--text); font-weight: var(--peso-forte); }
+
+.distribuicao-tabela tbody td { color: var(--text); font-weight: var(--peso-semi); }
+
+.distribuicao-tabela tr.meta td,
+.distribuicao-tabela tr.meta th { color: var(--text-muted); font-weight: var(--peso-medio); }
+
+.distribuicao-tabela tbody tr:last-child th,
+.distribuicao-tabela tbody tr:last-child td { border-bottom: none; }
+
+.corner-nota { margin-top: var(--esp-15); font-size: var(--letra-2xs); font-weight: var(--peso-semi); text-transform: none; letter-spacing: 0; }
+
+.corner-nota.ok { color: var(--ok-tx); }
+
+.corner-nota.alerta { color: var(--alerta-tx); }
+
+/* Valores da tabela de indicadores aparecem com um leve "pop". */
+.linha-entrando .indicator-value { animation: valor-pop 420ms cubic-bezier(0.2, 1.3, 0.4, 1) both; animation-delay: var(--atraso, 0ms); }
+
+/* Copiado: o botao pula de leve. */
+.copy-btn.copiado { animation: copiado-pula 380ms cubic-bezier(0.2, 1.5, 0.4, 1); }
+
+.legend-dot { display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: var(--peso-extra); line-height: 1; }
+
+.legend-dot.verde::after { content: "✓"; color: var(--ok-tx); }
+
+.legend-dot.vermelho::after { content: "▼"; color: var(--erro-tx); font-size: 7px; }
+
+.legend-dot.azul::after { content: "▲"; color: var(--azul-tx); font-size: 7px; }
+
+/* Botoes de apoio com fundo proprio: o "button:hover" global pintava de
+   amarelo, com o texto claro em cima (Copiar e os tipos de extracao). */
+.copy-btn:hover { background: var(--overlay-1); }
+
+/* Dado novo da pasta do SharePoint: o valor que mudou pisca em amarelo. */
+.indicator-value.valor-novo { animation: valor-novo 1.6s ease-out; }
+
+/* ---------- Grafico de distribuicao: barras sobem ---------- */
+.distribuicao-barra {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: barra-cresce 640ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+.distribuicao-meta { stroke-dasharray: 1200; animation: meta-desenha 1s 300ms ease-out both; }
+
+.distribuicao-valor, .distribuicao-meta-valor, .distribuicao-meta-ponto { animation: surgir 400ms 520ms ease both; }

@@ -1,0 +1,199 @@
+/* Coverage: Aba Coverage.
+   (ui/css: um arquivo por componente ou aba, na ordem do numero.) */
+
+/* ---------- Aba Coverage ---------- */
+.cv-todos { display: flex; align-items: center; gap: var(--esp-2); flex-wrap: wrap; }
+
+.cv-todos:is([hidden]) { display: none; }
+
+.cv-todos-rotulo { font-size: var(--letra-s); font-weight: var(--peso-semi); color: var(--text-muted); }
+
+.cv-todos label { margin: 0; font-size: var(--letra-s); color: var(--text); }
+
+.cv-todos input { width: 80px; height: 38px; margin: 0; padding: 0 var(--esp-25); }
+
+.cv-todos button { height: 38px; padding: 0 var(--esp-35); margin: 0; font-size: var(--letra-m); }
+
+.cv-usuario { font-weight: var(--peso-forte); color: var(--text); letter-spacing: 0.01em; }
+
+.cv-tabela td.cv-metrics { font-weight: var(--peso-forte); color: var(--text); }
+
+/* Dez colunas: campos e espacos mais enxutos que os do Headcount, e os
+   titulos longos quebram em duas linhas, para tudo caber sem rolar. */
+.cv-tabela th { padding: 0 var(--esp-2) var(--esp-25); white-space: normal; line-height: 1.25; vertical-align: bottom; }
+
+.cv-tabela td { padding: 7px var(--esp-2); }
+
+.cv-tabela input[type="number"] { width: 64px; height: 34px; padding: 0 var(--esp-2); }
+
+.cv-tabela td:first-child, .cv-tabela th:first-child { padding-left: var(--esp-3); }
+
+.cv-coverage {
+  display: inline-block;
+  min-width: 68px;
+  padding: var(--esp-1) var(--esp-25);
+  border-radius: var(--raio-s);
+  font-weight: var(--peso-forte);
+  text-align: center;
+}
+
+.cv-coverage.verde { background: rgba(34, 197, 94, 0.14); color: var(--ok-tx); }
+
+.cv-coverage.vermelho { background: rgba(249, 112, 102, 0.14); color: var(--erro-tx); }
+
+.cv-coverage.azul { background: rgba(56, 189, 248, 0.14); color: var(--azul-tx); }
+
+.cv-coverage.sem-numero { color: var(--text-muted); }
+
+.cv-coverage-total { outline: 1px solid currentColor; }
+
+/* A formula fica dentro do quadro da tabela, numa linha: um cartao so pra
+   ela fazia a tela inteira rolar. */
+.cv-formula { margin: var(--esp-3) 0 0; font-size: var(--letra-s); color: var(--text-muted); }
+
+.cv-formula code { font-family: ui-monospace, Consolas, monospace; color: var(--amarelo-tx); }
+
+/* Sinergia da operacao na linha TOTAL: campo em destaque (e onde ela e
+   lancada) e a nota do que foi lancado por usuario, se houver. */
+.cv-sinergia-total { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+
+.cv-tabela tfoot input[type="number"] { border-color: rgba(255, 204, 0, 0.45); font-weight: var(--peso-forte); }
+
+.cv-tabela tfoot input[type="number"]:disabled { border-color: var(--input-border); opacity: 0.75; }
+
+.cv-sinergia-nota { font-size: var(--letra-2xs); color: var(--text-muted); white-space: nowrap; }
+
+/* Coverage com muitos usuarios: so a lista rola, dentro do quadro. Os
+   filtros, os cards, o "Para todos", os titulos das colunas e a linha
+   TOTAL ficam no lugar. A altura maxima e calculada no JS para caber na
+   janela (ajustarAlturaCv). */
+#cv-tabela-wrap { overflow: auto; overscroll-behavior: contain; }
+
+#cv-tabela-wrap.com-rolagem { border-bottom: 1px solid var(--card-border); }
+
+.cv-tabela thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--card-bg);
+  padding-top: var(--esp-1);
+}
+
+.cv-tabela tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--card-bg);
+}
+
+/* A linha branca do TOTAL vira sombra interna: borda de celula fixa nao
+   acompanha a rolagem. */
+.cv-tabela tfoot td {
+  border-top: none;
+  box-shadow: inset 0 2px 0 var(--text), 0 -10px 12px -10px rgba(0, 0, 0, 0.6);
+}
+
+/* Espacadores da lista longa (so as linhas visiveis sao desenhadas). */
+#cv-corpo tr.cv-espaco td {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* Coverage: o gestor de cada usuario. */
+.cv-gestor-celula { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: var(--letra-s); }
+
+/* ---------- 5: cor sempre com um simbolo ---------- */
+/* Verde com check, vermelho com seta para baixo (abaixo da meta), azul
+   com seta para cima (acima do teto). Vale no projetor, no print em
+   preto e branco e para quem nao distingue verde de vermelho. O simbolo
+   e so desenho (::before): a copia leva so o numero. */
+.indicator-value.verde::before,
+.cv-coverage.verde::before,
+.ind-pct.verde::before { content: "✓"; }
+
+.indicator-value.vermelho::before,
+.cv-coverage.vermelho::before,
+.ind-pct.vermelho::before,
+.hc-tabela tr.abaixo .hc-resultado::before { content: "▼"; }
+
+.indicator-value.azul::before,
+.cv-coverage.azul::before { content: "▲"; }
+
+.indicator-value::before,
+.cv-coverage::before,
+.ind-pct::before,
+.hc-resultado::before {
+  display: inline-block;
+  margin-right: 5px;
+  font-size: 0.68em;
+  vertical-align: 0.12em;
+  opacity: 0.9;
+}
+
+/* ---------- 7: Coverage com o User ID parado e agrupado ---------- */
+/* Rolando para o lado, o usuario continua a vista. */
+.cv-tabela th:first-child,
+.cv-tabela td:first-child { position: sticky; left: 0; z-index: 1; background: var(--card-bg); }
+
+.cv-tabela thead th:first-child,
+.cv-tabela tfoot td:first-child { z-index: 3; }
+
+.cv-tabela tr.abaixo td:first-child { background: linear-gradient(rgba(244, 63, 94, 0.07), rgba(244, 63, 94, 0.07)), var(--card-bg); }
+
+.cv-tabela td:first-child::after,
+.cv-tabela th:first-child::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -10px;
+  bottom: 0;
+  width: 10px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--tempo-rapido) ease;
+}
+
+#cv-tabela-wrap.rolado-lado .cv-tabela td:first-child::after,
+#cv-tabela-wrap.rolado-lado .cv-tabela th:first-child::after { opacity: 1; }
+
+.cv-agrupar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-15);
+  margin: 0 0 0 var(--esp-35);
+  font-size: var(--letra-s);
+  font-weight: var(--peso-semi);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.cv-agrupar input { width: 15px; height: 15px; margin: 0; accent-color: var(--yellow); }
+
+.cv-agrupar.desligado { opacity: 0.45; cursor: not-allowed; }
+
+.cv-tabela tr.cv-grupo td {
+  padding: var(--esp-35) var(--esp-3) var(--esp-15);
+  border-bottom: 1px solid var(--card-border);
+  background: var(--card-bg);
+  font-size: var(--letra-xs);
+  font-weight: var(--peso-forte);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--amarelo-tx);
+}
+
+.cv-tabela tr.cv-grupo td:first-child { position: static; }
+
+.cv-tabela tr.cv-grupo td:first-child::after { display: none; }
+
+.cv-grupo-rotulo { position: sticky; left: 12px; display: inline-block; }
+
+.cv-tabela tr.cv-grupo td span { font-weight: var(--peso-semi); color: var(--text-faint); text-transform: none; letter-spacing: 0; margin-left: var(--esp-15); }
+
+/* Simbolo e numero sempre na mesma linha, mesmo em coluna estreita. */
+.indicator-value,
+.cv-coverage,
+.ind-pct,
+.hc-resultado { white-space: nowrap; }

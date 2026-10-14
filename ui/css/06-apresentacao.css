@@ -1,0 +1,150 @@
+/* Apresentacao: Modo apresentacao, automatico e capa.
+   (ui/css: um arquivo por componente ou aba, na ordem do numero.) */
+
+body.apresentacao .sidebar,
+body.apresentacao #page-home .page-heading,
+body.apresentacao #page-home .subtitle,
+body.apresentacao #page-home .filtro-info,
+body.apresentacao #home-apresentar,
+body.apresentacao #indicators-extrair,
+body.apresentacao .indicators-table .copy-btn,
+body.apresentacao .legend-note { display: none; }
+
+body.apresentacao .content-area { padding: var(--esp-5) var(--esp-8) 72px; }
+
+body.apresentacao .filtros-card { padding-top: var(--esp-4); padding-bottom: var(--esp-4); margin-bottom: var(--esp-4); }
+
+body.apresentacao .indicators-table th,
+body.apresentacao .indicators-table td { padding-top: var(--esp-4); padding-bottom: var(--esp-4); }
+
+body.apresentacao .corner-operation { font-size: 26px; }
+
+body.apresentacao .col-title { font-size: var(--letra-2xl); }
+
+body.apresentacao .col-subtitle,
+body.apresentacao .col-warning { font-size: var(--letra-m); }
+
+body.apresentacao .indicator-label { font-size: 19px; }
+
+body.apresentacao .indicator-meta { font-size: var(--letra-m); }
+
+body.apresentacao .indicator-value { font-size: var(--letra-4xl); min-width: 124px; padding: 9px var(--esp-4); }
+
+body.apresentacao .indicator-cell.sem-numero { font-size: var(--letra-4xl); }
+
+body.apresentacao .legend-item { font-size: var(--letra-base); }
+
+/* Discreta ate o mouse chegar perto: nao pode competir com a tabela. */
+.apresentacao-barra {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4);
+  padding: var(--esp-2) var(--esp-2) var(--esp-2) var(--esp-45);
+  transform: translateX(-50%);
+  border: 1px solid var(--card-border);
+  border-radius: var(--raio-xl);
+  background: rgba(18, 23, 43, 0.92);
+  box-shadow: var(--sombra-flutuante);
+  opacity: 0.35;
+  transition: opacity 200ms ease;
+}
+
+.apresentacao-barra[hidden] { display: none; }
+
+.apresentacao-barra:hover,
+.apresentacao-barra:focus-within { opacity: 1; }
+
+.apresentacao-dica { display: flex; align-items: center; gap: var(--esp-1); font-size: var(--letra-s); color: var(--text-muted); }
+
+.apresentacao-barra kbd,
+.apresentacao-dica kbd {
+  display: inline-block;
+  min-width: 22px;
+  padding: 1px var(--esp-15);
+  border: 1px solid var(--input-border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: var(--letra-xs);
+  font-weight: var(--peso-forte);
+  text-align: center;
+  color: var(--text);
+}
+
+.apresentacao-dica kbd + kbd { margin-right: var(--esp-1); }
+
+#apresentacao-sair kbd { margin-left: var(--esp-1); }
+
+/* Fica fora do modo apresentacao: la vai so a tabela dos indicadores. */
+body.apresentacao #distribuicao-card { display: none; }
+
+body.apresentacao .menu-alca { display: none; }
+
+/* ---------- Apresentacao automatica e capa da operacao ---------- */
+.apresentacao-barra { overflow: hidden; }
+
+.apresentacao-auto { gap: var(--esp-15); }
+
+.apresentacao-auto .icone-pausa,
+.apresentacao-auto[aria-pressed="true"] .icone-play { display: none; }
+
+.apresentacao-auto[aria-pressed="true"] .icone-pausa { display: block; }
+
+.apresentacao-auto[aria-pressed="true"] { border-color: var(--yellow); color: var(--yellow); }
+
+.apresentacao-intervalo { width: auto; height: 36px; margin: 0; padding: 0 var(--esp-7) 0 var(--esp-25); font-size: var(--letra-s); }
+
+/* Linha amarela embaixo da barra: o tempo ate a proxima operacao. */
+.apresentacao-tempo {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--yellow);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.apresentacao-tempo.correndo { animation: apresentacao-tempo linear forwards; }
+
+.apresentacao-capa {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(900px 500px at 50% 45%, rgba(255, 204, 0, 0.14), transparent 70%),
+    rgba(8, 11, 22, 0.94);
+  backdrop-filter: blur(6px);
+}
+
+.apresentacao-capa[hidden] { display: none; }
+
+.capa-conteudo { display: flex; flex-direction: column; align-items: center; gap: var(--esp-25); text-align: center; }
+
+.capa-logo { padding: var(--esp-1) var(--esp-35); border-radius: 5px; background: var(--yellow); font-size: var(--letra-4xl); font-style: italic; letter-spacing: 2px; }
+
+.capa-operacao { margin-top: var(--esp-25); font-size: clamp(42px, 7vw, 92px); font-weight: var(--peso-extra); letter-spacing: -0.02em; color: #ffffff; line-height: 1.05; }
+
+.capa-mes { font-size: var(--letra-3xl); font-weight: var(--peso-semi); color: var(--yellow); letter-spacing: 0.04em; }
+
+.capa-resumo { min-height: 22px; font-size: var(--letra-xl); color: #cbd5e1; }
+
+.apresentacao-capa.entrando { animation: capa-entra 420ms cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+
+.apresentacao-capa.entrando .capa-logo { animation: capa-item 500ms 80ms cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+
+.apresentacao-capa.entrando .capa-operacao { animation: capa-item 620ms 140ms cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+
+.apresentacao-capa.entrando .capa-mes { animation: capa-item 560ms 230ms cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+
+.apresentacao-capa.entrando .capa-resumo { animation: capa-item 560ms 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+
+.apresentacao-capa.saindo { animation: capa-sai 420ms cubic-bezier(0.6, 0, 0.4, 1) forwards; }

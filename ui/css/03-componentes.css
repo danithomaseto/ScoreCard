@@ -1,0 +1,692 @@
+/* Componentes: Pecas usadas em varias abas: botoes, campos, cards, filtros, seletores, avisos, dialogos, tabelas, esqueleto.
+   (ui/css: um arquivo por componente ou aba, na ordem do numero.) */
+
+* { box-sizing: border-box; }
+
+/* O atributo hidden sempre vence. Sem isto, qualquer regra com "display"
+   (como a global de button, que e inline-flex) sobrescreve o [hidden]
+   do navegador e o elemento aparece mesmo oculto - foi assim que o
+   "Parar apos a atual" ficava visivel sem fila rodando. */
+[hidden] { display: none !important; }
+
+/* Numeros com todos os digitos da mesma largura: nas colunas de
+   percentual e de horas, "100,40%" e "96,57%" ficam alinhados, e o valor
+   nao "danca" quando muda enquanto se digita. */
+table,
+input,
+.hc-card-valor,
+#progress-percent,
+#multi-progress-percent {
+  font-variant-numeric: tabular-nums;
+}
+
+/* IMPORTANTE: nao colocar "display" aqui. Este bloco e usado em
+   elementos escondidos via atributo [hidden]; um "display" fixo aqui
+   sobrescreveria o [hidden] do navegador e o elemento nunca sumiria
+   (ja aconteceu esse bug na versao do painel web). O "display: flex"
+   entra condicionalmente via ":not([hidden])" mais abaixo. */
+.center-wrap {
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--esp-4);
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--raio-xl);
+  box-shadow: var(--sombra-card);
+  padding: var(--esp-7);
+  width: 100%;
+  max-width: 360px;
+}
+
+.card.wide {
+  max-width: 640px;
+}
+
+.subtitle { color: var(--text-muted); font-size: var(--letra-m); margin: 0 0 var(--esp-5); }
+
+label {
+  display: block;
+  font-size: var(--letra-m);
+  font-weight: var(--peso-semi);
+  margin-bottom: var(--esp-15);
+  color: var(--text-muted);
+}
+
+select, input {
+  width: 100%;
+  height: 46px;
+  padding: 0 var(--esp-35);
+  border-radius: var(--raio-m);
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text);
+  margin-bottom: var(--esp-4);
+  font-size: var(--letra-base);
+}
+
+button {
+  height: 46px;
+  padding: 0 var(--esp-5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  border: none;
+  border-radius: var(--raio-m);
+  background: var(--yellow);
+  color: #1d1300;
+  font-size: var(--letra-base);
+  font-weight: var(--peso-forte);
+  cursor: pointer;
+}
+
+button:hover { background: var(--yellow-dark); }
+
+button.secondary {
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+button.secondary:hover { background: var(--input-border); }
+
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.status {
+  margin-top: var(--esp-4);
+  padding: var(--esp-3);
+  border-radius: var(--raio-m);
+  font-size: var(--letra-m);
+  background: var(--input-bg);
+  color: var(--text-muted);
+}
+
+.status.success { background: rgba(34, 197, 94, 0.12); color: var(--ok-tx); }
+
+/* Amarelo, nao verde nem vermelho: o arquivo foi salvo, mas o indicador
+   nao saiu. Sao coisas diferentes e precisam parecer diferentes. */
+.status.warning { background: rgba(251, 191, 36, 0.12); color: var(--alerta-tx); }
+
+.status.error { background: rgba(240, 68, 56, 0.12); color: var(--erro-tx); }
+
+.dhl-logo {
+  color: var(--red);
+  font-size: var(--letra-3xl);
+  font-weight: var(--peso-extra);
+  letter-spacing: 1px;
+}
+
+/* O mes vem de extracao propria, com outro intervalo: separar deixa
+   claro que a ultima coluna nao e a soma das anteriores. */
+.month-col { border-left: 2px solid var(--input-border); background: rgba(255, 204, 0, 0.04); }
+
+/* O pico vem colado no mes dele: mesmo fundo, sem a linha de separacao,
+   e o titulo em amarelo para nao ser lido como um segundo mes. */
+.peak-col { background: rgba(255, 204, 0, 0.04); }
+
+th.peak-col .col-title { color: var(--amarelo-tx); }
+
+.section-title {
+  font-size: var(--letra-l);
+  font-weight: var(--peso-forte);
+  color: var(--text);
+  border-left: 3px solid var(--yellow);
+  padding-left: var(--esp-25);
+  margin-bottom: var(--esp-45);
+}
+
+.field-row { display: flex; gap: var(--esp-3); }
+
+.field-row > div { flex: 1; }
+
+.source-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--input-bg);
+  color: var(--amarelo-tx);
+  font-size: var(--letra-xl);
+}
+
+.source-icon-svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Os dois cards dividem uma coluna que ja e metade do card de
+   parametros, entao sobra pouca largura: a 1280 dava 125px por botao e
+   o texto quebrava. Abaixo do minimo eles empilham em vez de espremer
+   ate quebrar a palavra. */
+/* Com os tres periodos (Week, Month, Dias de Pico), meia coluna nao
+   cabe: a fonte de dados e o periodo ficam um embaixo do outro, e os
+   tres cards dividem a largura toda. */
+.linha-fonte-periodo { display: block; }
+
+.field-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-3);
+}
+
+.field-actions { display: flex; gap: var(--esp-35); }
+
+.link-btn {
+  height: auto;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  color: var(--amarelo-tx);
+  font-size: var(--letra-s);
+  font-weight: var(--peso-semi);
+}
+
+.link-btn:hover { background: none; text-decoration: underline; }
+
+.table-wrap { overflow-x: auto; }
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-15);
+  font-size: var(--letra-s);
+  font-weight: var(--peso-forte);
+  padding: 3px var(--esp-25);
+  border-radius: var(--raio-pilula);
+}
+
+.status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+
+.status-pill.success { background: rgba(34, 197, 94, 0.15); color: var(--ok-tx); }
+
+.status-pill.success::before { background: #4ade80; }
+
+.status-pill.warning { background: rgba(251, 191, 36, 0.15); color: var(--alerta-tx); }
+
+.status-pill.warning::before { background: #fbbf24; }
+
+.status-pill.error { background: rgba(240, 68, 56, 0.15); color: var(--erro-tx); }
+
+.status-pill.error::before { background: #f87171; }
+
+/* ---------- Aba Headcount: calculo de presenteismo ---------- */
+/* Faixa amarela no topo do card de filtros, igual a barra do app. */
+.filtros-card {
+  width: 100%;
+  max-width: none;
+  margin-bottom: var(--esp-5);
+  border-top: 3px solid var(--yellow);
+  padding-top: 22px;
+}
+
+.filtros-linha { display: flex; gap: var(--esp-45); flex-wrap: wrap; align-items: flex-start; }
+
+.filtro-campo { display: flex; flex-direction: column; flex: 1 1 210px; min-width: 190px; }
+
+/* O ciclo da folha ponto tem o texto mais longo dos quatro campos. */
+.filtro-campo.largo { flex-grow: 1.35; }
+
+.filtro-campo select { margin-bottom: 0; }
+
+.filtro-campo select:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Mesma altura dos selects ao lado (46px) e opcoes dividindo a largura
+   toda: o estilo global de botao dava 46px a cada opcao e o conjunto
+   ficava com 56, desalinhado, e com um vazio a direita. */
+.segmentado {
+  display: flex;
+  width: 100%;
+  height: 46px;
+  box-sizing: border-box;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--raio-m);
+  padding: 3px;
+  gap: 3px;
+}
+
+.seg-opcao {
+  flex: 1;
+  height: 100%;
+  margin: 0;
+  padding: 0 var(--esp-25);
+  background: none;
+  border: none;
+  border-radius: var(--raio-s);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: var(--letra-m);
+  font-weight: var(--peso-semi);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.seg-opcao:hover:not(.active) { color: var(--text); background: var(--overlay-1); }
+
+.seg-opcao.active { background: var(--yellow); color: #151515; }
+
+/* ---------- Padronizacao geral (auditoria de layout) ---------- */
+/* Icones de traco dentro de botoes, no mesmo desenho da barra lateral.
+   Substituem os emoji, que cada fonte do Windows desenha de um jeito. */
+.btn-icone {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Links de atalho tinham 14px de altura: area de clique pequena demais. */
+.link-btn { padding: var(--esp-1) 0; }
+
+.card-title { margin: 0 0 var(--esp-1); font-size: var(--letra-xl); color: var(--text); }
+
+/* ---------- Carregamento e transicoes ---------- */
+.esqueleto {
+  display: block;
+  height: 12px;
+  border-radius: var(--raio-s);
+  background: linear-gradient(90deg,
+    var(--overlay-1) 0%,
+    var(--overlay-3) 50%,
+    var(--overlay-1) 100%);
+  background-size: 200% 100%;
+  animation: esqueleto-brilho 1.2s ease-in-out infinite;
+}
+
+.linha-esqueleto .esqueleto { width: 55%; }
+
+.linha-esqueleto td:first-child .esqueleto { width: 75%; }
+
+/* Janela estreita (a padrao e 980 px): os tres periodos continuam numa
+   linha so, sem o icone e com o texto um pouco menor. */
+@container (max-width: 420px) {
+  .period-option { flex: 1 1 0; justify-content: center; padding: var(--esp-3) var(--esp-15); }
+  .period-option .source-icon { display: none; }
+  .period-option strong { font-size: var(--letra-m); white-space: nowrap; }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; }
+
+::view-transition-group(conteudo) { animation-duration: 0s; }
+
+::view-transition-old(conteudo) { animation: vt-sair 110ms ease-in both; }
+
+::view-transition-new(conteudo) { animation: vt-entrar 210ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Seletor Semanal / Resultado do Mes: o fundo amarelo desliza. */
+.segmentado { position: relative; }
+
+.segmentado::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  width: var(--seg-w, 0);
+  transform: translateX(var(--seg-x, 0));
+  border-radius: var(--raio-s);
+  background: var(--yellow);
+  opacity: 0;
+}
+
+.segmentado.com-destaque::before { opacity: 1; }
+
+.segmentado.pronto::before { transition: transform var(--tempo-medio) cubic-bezier(0.2, 0.8, 0.2, 1), width var(--tempo-medio) ease; }
+
+.segmentado.com-destaque .seg-opcao.active { background: transparent; }
+
+.seg-opcao { position: relative; z-index: 1; transition: color var(--tempo-curto) ease, background-color var(--tempo-rapido) ease; }
+
+/* Botoes, campos e cards de opcao respondem ao toque. */
+button {
+  transition: background-color var(--tempo-rapido) ease, color var(--tempo-rapido) ease, border-color var(--tempo-rapido) ease,
+              opacity var(--tempo-rapido) ease, transform 90ms ease;
+}
+
+button:active:not(:disabled) { transform: scale(0.97); }
+
+input, select, textarea { transition: border-color var(--tempo-rapido) ease, box-shadow var(--tempo-rapido) ease, background-color var(--tempo-rapido) ease; }
+
+/* Botao ocupado: o texto some e um giro ocupa o lugar. */
+button.carregando { position: relative; color: transparent !important; transition: none; }
+
+button.carregando > * { visibility: hidden; }
+
+button.carregando::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: #151515;
+  border-radius: 50%;
+  animation: girar 700ms linear infinite;
+}
+
+button.secondary.carregando::after { border-color: rgba(255, 255, 255, 0.2); border-top-color: var(--text); }
+
+/* Linhas da tabela entrando uma apos a outra (so no primeiro desenho). */
+.linha-entrando { animation: linha-entra 260ms ease-out both; }
+
+button.hc-icone {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border-radius: var(--raio-s);
+  color: var(--text-muted);
+}
+
+button.hc-icone svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+button.hc-icone-editar:hover { background: rgba(255, 204, 0, 0.12); color: var(--amarelo-tx); }
+
+button.hc-icone-excluir:hover { background: rgba(249, 112, 102, 0.12); color: var(--perigo-tx); }
+
+button.excluir-definitivo { background: #d92d20; color: #fff; }
+
+button.excluir-definitivo:hover { background: #b42318; }
+
+/* ---------- Telas vazias com atalho para extrair ---------- */
+.estado-vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: 44px var(--esp-5);
+  text-align: center;
+}
+
+.estado-vazio[hidden] { display: none; }
+
+.estado-vazio-icone {
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--esp-1);
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.7;
+}
+
+.estado-vazio strong { font-size: var(--letra-l); color: var(--text); }
+
+.estado-vazio p { margin: 0 0 var(--esp-25); max-width: 460px; font-size: var(--letra-m); line-height: 1.6; color: var(--text-muted); }
+
+/* ---------- Modo apresentacao (aba Inicio) ---------- */
+/* Titulo da pagina com um botao a direita (Modo apresentacao). */
+.cabecalho-com-acao {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--esp-4);
+}
+
+.cabecalho-com-acao > button { flex-shrink: 0; margin-top: var(--esp-05); }
+
+/* Aviso de Caps Lock no login: senha errada repetida pode bloquear o
+   usuario no Summary. */
+.aviso-caps {
+  margin: -8px 0 var(--esp-3);
+  font-size: var(--letra-s);
+  font-weight: var(--peso-semi);
+  color: var(--alerta-tx);
+}
+
+/* ---------- Tipos de extracao: dois grupos de quatro ---------- */
+/* Operacao (Week, Month, Pico, Indiretas) e Por gestor e por turno, cada
+   grupo numa linha de quatro. Numa coluna estreita os icones somem e,
+   mais estreita ainda, ficam dois por linha. */
+.period-escolha { container-type: inline-size; margin-bottom: var(--esp-4); }
+
+@container (max-width: 640px) {
+  .period-escolha .period-option .source-icon { display: none; }
+  .period-escolha .period-option { justify-content: center; text-align: center; }
+}
+
+@container (max-width: 380px) {
+  .period-escolha .period-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.estado-vazio-card { margin-bottom: var(--esp-5); }
+
+/* Borda com um feixe amarelo girando em volta do card. */
+@property --giro { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+
+/* ---------- Transicoes entre telas e dentro delas ---------- */
+/* Troca de aba um pouco mais marcada: a antiga sai para cima e a nova
+   sobe com um leve desfoque que se desfaz. */
+::view-transition-old(conteudo) { animation: vt-sair-2 160ms ease-in both; }
+
+::view-transition-new(conteudo) { animation: vt-entrar-2 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Avisos de status entram deslizando. */
+.status:not([hidden]) { animation: surgir 220ms ease-out; }
+
+/* Ondinha no clique dos botoes principais. */
+button.com-onda { position: relative; overflow: hidden; }
+
+.onda {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  transform: scale(0);
+  animation: onda-abre 520ms ease-out forwards;
+  pointer-events: none;
+}
+
+button.secondary .onda { background: rgba(255, 204, 0, 0.25); }
+
+/* Lua no tema escuro (vai para o escuro... ja esta), sol no claro. */
+#tema-alternar .icone-sol { display: none; }
+
+/* ---------- Filtros iguais em todas as abas ---------- */
+.filtro-info { flex: 1.4 1 240px; }
+
+.filtro-nota {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  margin: 0;
+  padding: var(--esp-15) var(--esp-3);
+  border: 1px dashed var(--input-border);
+  border-radius: var(--raio-m);
+  font-size: var(--letra-s);
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* ---------- 9: avisos rapidos ---------- */
+.avisos {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--esp-2);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-25);
+  min-width: 260px;
+  max-width: 440px;
+  padding: var(--esp-3) var(--esp-4) var(--esp-3) var(--esp-35);
+  border-radius: var(--raio-l);
+  border-left: 4px solid var(--yellow);
+  background: #1f2438;
+  color: #e4e7ec;
+  font-size: var(--letra-m);
+  line-height: 1.4;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  animation: aviso-entra 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.toast.ok { border-left-color: #22c55e; }
+
+.toast.erro { border-left-color: #ef4444; }
+
+.toast-icone { flex-shrink: 0; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+.toast.ok .toast-icone { color: #4ade80; }
+
+.toast.erro .toast-icone { color: #f87171; }
+
+.toast .toast-detalhe { display: block; font-size: var(--letra-xs); color: #94a3b8; }
+
+.toast.saindo { animation: aviso-sai 260ms ease-in forwards; }
+
+/* Botao com posicao propria (absoluta) recebe a ondinha sem mudar de
+   lugar. */
+button.com-onda-livre { overflow: hidden; }
+
+/* ---------- 4: dialogos no visual do app ---------- */
+.dialogo-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 9600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--esp-4);
+  background: rgba(5, 8, 16, 0.55);
+  backdrop-filter: blur(3px);
+  animation: surgir 160ms ease-out;
+}
+
+.dialogo-fundo[hidden] { display: none; }
+
+.dialogo-caixa {
+  width: min(460px, 100%);
+  padding: 26px 26px 22px;
+  border-radius: 14px;
+  border: 1px solid var(--card-border);
+  border-top: 3px solid var(--yellow);
+  background: var(--card-bg);
+  color: var(--text);
+  text-align: center;
+  box-shadow: var(--sombra-dialogo);
+  animation: card-entra 300ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.dialogo-icone {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto var(--esp-3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 204, 0, 0.14);
+  color: var(--amarelo-tx);
+}
+
+.dialogo-icone svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.dialogo-icone.erro { background: rgba(239, 68, 68, 0.14); color: var(--erro-tx); }
+
+.dialogo-caixa h3 { margin: 0 0 var(--esp-2); font-size: var(--letra-2xl); }
+
+.dialogo-caixa p { margin: 0 0 var(--esp-5); font-size: var(--letra-m); line-height: 1.6; color: var(--text-muted); white-space: pre-line; }
+
+.dialogo-botoes { display: flex; justify-content: center; gap: var(--esp-25); flex-wrap: wrap; }
+
+/* ---------- 13: telas vazias no mesmo padrao ---------- */
+.estado-vazio-icone {
+  box-sizing: content-box;
+  padding: var(--esp-35);
+  border-radius: 50%;
+  background: rgba(255, 204, 0, 0.1);
+  stroke: var(--amarelo-tx);
+  opacity: 1;
+}
+
+.estado-vazio-acoes { display: flex; gap: var(--esp-25); flex-wrap: wrap; justify-content: center; }
+
+.estado-vazio-acoes [hidden] { display: none; }
+
+.atualizando { opacity: 0.55; }
+
+/* ---------- Login: senha com olho, VPN e rodape ---------- */
+.campo-senha { position: relative; }
+
+.campo-senha input { padding-right: 46px; }
+
+.senha-olho {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  width: 38px;
+  height: 46px;
+  padding: 0;
+  background: none;
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.senha-olho:hover { background: none; color: var(--yellow); }
+
+.senha-olho:active:not(:disabled) { transform: none; }
+
+.senha-olho svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.senha-olho .olho-fechado,
+.senha-olho[aria-pressed="true"] .olho-aberto { display: none; }
+
+.senha-olho[aria-pressed="true"] .olho-fechado { display: block; }
+
+/* ---------- Avisos: barrinha do tempo ---------- */
+.toast { position: relative; overflow: hidden; }
+
+.toast-tempo {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: currentColor;
+  opacity: 0.35;
+  transform-origin: left;
+  animation: toast-tempo linear forwards;
+}
+
+.toast.ok .toast-tempo { background: #22c55e; opacity: 0.7; }
+
+.toast.erro .toast-tempo { background: #ef4444; opacity: 0.7; }
+
+.toast:hover .toast-tempo { animation-play-state: paused; }

@@ -1,0 +1,410 @@
+/* Layout: Estrutura do app: barra amarela, menu lateral, area de conteudo e paginas.
+   (ui/css: um arquivo por componente ou aba, na ordem do numero.) */
+
+/* Altura travada na viewport (e nao "min-height") de proposito: e o que
+   faz o .content-area ser a unica parte que rola. Com min-height, o
+   app-view crescia junto com o conteudo e quem rolava era a pagina
+   inteira, levando a barra lateral junto. */
+#app-view:not([hidden]) { display: flex; flex-direction: column; height: 100vh; }
+
+.topbar-dhl {
+  background: var(--yellow);
+  padding: var(--esp-35) var(--esp-6);
+  display: flex;
+  align-items: center;
+  gap: var(--esp-35);
+  flex-shrink: 0;
+}
+
+.topbar-title {
+  font-size: var(--letra-l);
+  font-weight: var(--peso-forte);
+  color: #1d1300;
+}
+
+.app-shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-15);
+  padding: 22px var(--esp-3) var(--esp-35);
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  width: 100%;
+  height: 42px;
+  background: none;
+  border: none;
+  border-radius: var(--raio-s);
+  color: var(--sidebar-tx);
+  font-size: var(--letra-base);
+  font-weight: var(--peso-medio);
+  text-align: left;
+  justify-content: flex-start;
+  padding: 0 var(--esp-35);
+  cursor: pointer;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav-item:hover { background: var(--overlay-1); color: var(--text); }
+
+.nav-item.active {
+  background: var(--yellow);
+  color: #151515;
+  font-weight: var(--peso-semi);
+}
+
+.nav-item.active:hover { background: var(--yellow); color: #151515; }
+
+.nav-item-logout {
+  margin-top: auto;
+  color: var(--perigo-tx);
+}
+
+.nav-item-logout:hover { color: var(--perigo-tx); }
+
+.sidebar-footer {
+  padding: var(--esp-4) var(--esp-35) 0;
+  border-top: 1px solid var(--overlay-2);
+  margin-top: var(--esp-25);
+}
+
+.sidebar-status {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-25);
+  margin-bottom: var(--esp-35);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+.status-title { font-size: var(--letra-m); font-weight: var(--peso-forte); color: var(--text); }
+
+.status-sub { font-size: var(--letra-xs); color: var(--text-muted); }
+
+.sidebar-brand-footer {
+  font-size: var(--letra-2xs);
+  color: var(--text-faint);
+}
+
+/* Assinatura de quem criou o sistema, logo abaixo do slogan. */
+.sidebar-autor {
+  margin: var(--esp-2) 0 var(--esp-2);
+  padding: 0 0 0 var(--esp-2);
+  border-left: 2px solid var(--yellow);
+  font-size: var(--letra-2xs);
+  line-height: 1.3;
+  color: var(--text-faint);
+}
+
+.sidebar-versao {
+  padding: 0 0 var(--esp-4) var(--esp-25);
+  font-size: var(--letra-2xs);
+  color: var(--text-faint);
+}
+
+.sidebar-autor strong {
+  display: block;
+  font-size: var(--letra-xs);
+  font-weight: var(--peso-forte);
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+/* Sem "display: flex" aqui de proposito: as <section class="page"> sao
+   filhas diretas e, como itens flex, encolhiam ate a largura do
+   conteudo em vez de ocupar a tela toda. Como bloco normal, cada
+   pagina ja ocupa 100% da largura disponivel. */
+.content-area {
+  flex: 1;
+  padding: var(--esp-8) var(--esp-6);
+  overflow-y: auto;
+}
+
+.page-wide-wrap {
+  width: 100%;
+}
+
+.page-heading { font-size: var(--letra-5xl); margin: 0 0 var(--esp-1); color: var(--text); }
+
+/* Curtas de proposito: a ideia e a tela nao "saltar", nao fazer esperar. */
+.page:not([hidden]) { animation: surgir 140ms ease-out; }
+
+/* ================================================================
+   Fluidez: transicoes entre telas e opcoes (so apresentacao)
+   ================================================================ */
+/* Troca de aba: a pagina antiga esmaece e a nova sobe um pouco. Feito
+   pela View Transitions API; o menu lateral fica parado. */
+.content-area { view-transition-name: conteudo; }
+
+/* Com a View Transitions ativa, a animacao de CSS da pagina sairia
+   dobrada. */
+.vt .page:not([hidden]) { animation: none; }
+
+/* Menu lateral: a barra amarela desliza ate o item ativo. */
+.sidebar { position: relative; }
+
+.nav-item {
+  position: relative;
+  z-index: 1;
+  transition: color var(--tempo-curto) ease, background-color var(--tempo-rapido) ease,
+    padding var(--tempo-medio) cubic-bezier(0.2, 0.8, 0.2, 1), gap var(--tempo-medio) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.nav-item .nav-icon { transition: transform var(--tempo-curto) ease; }
+
+.nav-item:hover .nav-icon { transform: translateX(1px); }
+
+.nav-indicador {
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 42px;
+  border-radius: var(--raio-s);
+  background: var(--yellow);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nav-indicador.visivel { opacity: 1; }
+
+.nav-indicador.pronto { transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), height 260ms ease; }
+
+.nav-indicador.visivel ~ .nav-item.active,
+.nav-indicador.visivel ~ .nav-item.active:hover { background: transparent; }
+
+.nav-item:active:not(:disabled) { transform: none; }
+
+.pagina-entrando .page-wide-wrap > :nth-child(2) { animation-delay: 50ms; }
+
+.pagina-entrando .page-wide-wrap > :nth-child(3) { animation-delay: 100ms; }
+
+.pagina-entrando .page-wide-wrap > :nth-child(4) { animation-delay: 150ms; }
+
+.pagina-entrando .page-wide-wrap > :nth-child(n+5) { animation-delay: 200ms; }
+
+/* "Sistema Online": o ponto verde respira. */
+.status-dot { animation: ponto-respira 2.4s ease-in-out infinite; }
+
+/* Icone do item ativo do menu da um pulinho ao chegar. */
+.nav-item.active .nav-icon { animation: icone-chega 420ms cubic-bezier(0.2, 1.5, 0.4, 1); }
+
+/* ================================================================
+   Tema claro (Configuracoes ou o botao do topo)
+   ================================================================
+   So o app muda: o login e a abertura sao telas da marca e ficam
+   escuros. Os nomes sao os mesmos do :root, redefinidos dentro do app. */
+#app-view { background: var(--bg); color: var(--text); color-scheme: dark; }
+
+/* ================================================================
+   Menu em grupos, topo, avisos, atalhos e densidade
+   ================================================================ */
+/* ---------- Topo: recolher o menu, tema e atalhos ---------- */
+.topbar-acoes { margin-left: auto; display: flex; align-items: center; gap: var(--esp-15); }
+
+.topbar-botao {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: var(--raio-m);
+  background: rgba(29, 19, 0, 0.08);
+  color: #1d1300;
+}
+
+.topbar-botao:hover { background: rgba(29, 19, 0, 0.16); }
+
+.topbar-icone { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.topbar-icone .seta-menu { transition: transform 220ms ease; transform-origin: 14.5px 12px; }
+
+/* ---------- Menu agrupado ---------- */
+.sidebar { gap: var(--esp-05); transition: width 220ms cubic-bezier(0.2, 0.8, 0.2, 1), padding 220ms ease; }
+
+.nav-secao {
+  margin: var(--esp-35) 0 var(--esp-1);
+  padding: 0 var(--esp-35);
+  font-size: var(--letra-2xs);
+  font-weight: var(--peso-forte);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.nav-secao:first-of-type { margin-top: 0; }
+
+.nav-item span {
+  max-width: 170px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity var(--tempo-curto) ease 70ms, max-width var(--tempo-medio) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Troca de tema: as cores passam suavemente em vez de piscar. */
+:root.trocando-tema #app-view,
+:root.trocando-tema #app-view * {
+  transition: background-color var(--tempo-lento) ease, color var(--tempo-lento) ease, border-color var(--tempo-lento) ease, fill var(--tempo-lento) ease, stroke var(--tempo-lento) ease !important;
+}
+
+/* ================================================================
+   Selo da extracao, dialogos, rodape, telas vazias, foco e Coverage
+   ================================================================ */
+/* ---------- 1: extracao em andamento, em qualquer aba ---------- */
+.topbar-extracao {
+  position: relative;
+  height: 34px;
+  max-width: 420px;
+  padding: 0 var(--esp-35) 0 var(--esp-3);
+  gap: var(--esp-2);
+  overflow: hidden;
+  border-radius: var(--raio-pilula);
+  background: #1d1300;
+  color: #ffe680;
+  font-size: var(--letra-s);
+  font-weight: var(--peso-forte);
+  animation: selo-entra 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.topbar-extracao:hover { background: #2e2200; }
+
+.topbar-extracao-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.topbar-extracao-icone {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 230, 128, 0.3);
+  border-top-color: #ffe680;
+  animation: girar 800ms linear infinite;
+}
+
+.topbar-extracao-barra { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 230, 128, 0.15); }
+
+.topbar-extracao-barra span { display: block; height: 100%; width: 0; background: #ffe680; transition: width 400ms ease; }
+
+.topbar-extracao.ok { background: #14532d; color: #bbf7d0; }
+
+.topbar-extracao.aviso { background: #713f12; color: #fde68a; }
+
+.topbar-extracao.erro { background: #7f1d1d; color: #fecaca; }
+
+.topbar-extracao.ok .topbar-extracao-icone,
+.topbar-extracao.aviso .topbar-extracao-icone,
+.topbar-extracao.erro .topbar-extracao-icone { animation: none; border: none; width: auto; height: auto; }
+
+.topbar-extracao.ok .topbar-extracao-icone::before { content: "✓"; }
+
+.topbar-extracao.aviso .topbar-extracao-icone::before { content: "!"; }
+
+.topbar-extracao.erro .topbar-extracao-icone::before { content: "✕"; }
+
+.topbar-extracao.ok .topbar-extracao-barra,
+.topbar-extracao.aviso .topbar-extracao-barra,
+.topbar-extracao.erro .topbar-extracao-barra { display: none; }
+
+/* ---------- 11: rodape do menu ---------- */
+.status-dot.extraindo { background: var(--yellow); animation: ponto-extraindo 1s ease-in-out infinite; }
+
+.status-dot.aviso { background: #f59e0b; }
+
+.status-dot.erro { background: #ef4444; }
+
+.status-sub { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+#app-view .seg-opcao:focus-visible { outline-offset: -2px; }
+
+/* ---------- Alca de recolher o menu (no meio da borda) ---------- */
+.app-shell { position: relative; --menu-largura: 220px; }
+
+.sidebar { transition: width var(--tempo-medio) cubic-bezier(0.2, 0.8, 0.2, 1), padding var(--tempo-medio) cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+.menu-alca {
+  position: absolute;
+  z-index: 40;
+  top: 50%;
+  left: var(--menu-largura);
+  width: 22px;
+  height: 52px;
+  padding: 0;
+  border-radius: var(--raio-pilula);
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  box-shadow: var(--sombra-card);
+  /* Centrada pela margem e nao por transform: o "apertar" global dos
+     botoes (transform: scale) moveria a alca e o clique escaparia. */
+  margin: -26px 0 0 -11px;
+  transition: left var(--tempo-medio) cubic-bezier(0.2, 0.8, 0.2, 1), height var(--tempo-curto) ease, width var(--tempo-curto) ease,
+    margin var(--tempo-curto) ease, background-color var(--tempo-rapido) ease, color var(--tempo-rapido) ease, border-color var(--tempo-rapido) ease;
+}
+
+.menu-alca:active:not(:disabled) { transform: scale(0.94); }
+
+.menu-alca svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--tempo-lento) cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.menu-alca:hover,
+.menu-alca:focus-visible { width: 26px; height: 62px; margin: -31px 0 0 -13px; background: var(--yellow); border-color: var(--yellow); color: #1d1300; }
+
+/* A alca so aparece inteira com o mouse perto do menu; longe, fica discreta. */
+.app-shell:not(:hover) .menu-alca:not(:focus-visible) { opacity: 0.55; }
+
+.menu-alca { transition-property: left, height, width, margin, background-color, color, border-color, opacity, transform; }
+
+/* ---------- Barra de carregamento no topo ---------- */
+.carregando-barra {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9700;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #d40511, #ff4d4d);
+  box-shadow: 0 0 8px rgba(212, 5, 17, 0.5);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.carregando-barra.ativa { opacity: 1; animation: barra-carrega 2.4s cubic-bezier(0.1, 0.6, 0.3, 1) forwards; }
+
+.carregando-barra.terminando { width: 100% !important; animation: none; opacity: 0; transition: width 220ms ease, opacity 300ms 160ms ease; }
