@@ -183,9 +183,17 @@ provavel e o que fazer (Python sem Tcl/Tk, pythonnet que nao instala na
 versao do Python, Chromium que nao baixou, proxy/SSL, arquivo preso pelo
 ScoreCard.exe aberto, OneDrive ou antivirus, disco cheio). Tudo o que
 aparece na tela fica em **`build.log`**, na pasta do projeto — e esse o
-arquivo para mandar ao suporte. O `.exe` novo e gerado em `dist_novo` e
-so no fim vira o `dist`: um build que falha **nao apaga** o
+arquivo para mandar ao suporte. Um build que falha **nao apaga** o
 `dist\ScoreCard.exe` anterior.
+
+**O `dist` fica com um arquivo so:** o PyInstaller trabalha numa pasta
+temporaria fora do projeto (`%TEMP%\ScoreCard_build`, ou a de
+`SCORECARD_BUILD_TEMP`) — assim o OneDrive nao sincroniza os milhares de
+arquivos intermediarios nem prende algum deles. Dali so o `ScoreCard.exe`
+vai para o `dist`, e qualquer outra coisa que estiver la (como a pasta
+`ScoreCardApp` com o `_internal` de um build antigo) e apagada. Para
+mandar a alguem, basta o `dist\ScoreCard.exe` (ou a pasta `dist`
+inteira, que so tem ele).
 
 Comando equivalente, se preferir rodar direto (com o venv ativado):
 ```powershell

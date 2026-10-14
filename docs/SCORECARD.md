@@ -971,13 +971,16 @@ build.bat
 
 O `build.bat` acha o Python (de preferência o 3.12, instalado com
 "tcl/tk and IDLE"), cria ou refaz o ambiente Python e chama o
-`tools/build.py`, que instala as dependências, baixa o Chromium,
-empacota com o PyInstaller e junta tudo em `dist\ScoreCard.exe`.
+`tools/build.py`, que instala as dependências, empacota com o
+PyInstaller numa pasta temporária fora do projeto e põe no `dist` só o
+`ScoreCard.exe` — o `dist` fica com **um arquivo só**, que é o que se
+manda para as outras pessoas. Qualquer sobra no `dist` (como a pasta
+`ScoreCardApp` com o `_internal`) é apagada.
 
 **Se o build der erro**, ele para no passo que falhou e mostra a causa
 provável e o que fazer; tudo fica em `build.log` (é o arquivo para
-mandar ao suporte). O `.exe` novo é gerado em `dist_novo` e só no fim
-vira o `dist`, então um build que falha não apaga o `.exe` anterior.
+mandar ao suporte). Um build que falha não apaga o `.exe` anterior: o
+novo só toma o lugar dele quando está pronto.
 
 ### 9.4 Avisar todo mundo da versão nova
 

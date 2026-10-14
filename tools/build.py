@@ -4,8 +4,13 @@ Cada passo para o build no primeiro erro e diz a causa provavel e o que
 fazer; tudo o que aparece na tela vai tambem para build.log, que e o
 arquivo para mandar a quem da suporte.
 
-O PyInstaller gera numa pasta a parte (dist_novo) e so no fim ela vira o
-dist: um build que falha nao apaga o .exe que ja estava la.
+O PyInstaller trabalha numa pasta temporaria, fora da pasta do projeto
+(que costuma estar no OneDrive: sincronizar milhares de arquivos do app
+em pasta deixava arquivo preso e sobra no dist). Dali, so o
+ScoreCard.exe vai para o dist, e o que mais estiver no dist (a pasta
+ScoreCardApp com o _internal de um build antigo, por exemplo) e apagado:
+no fim o dist tem um arquivo so. Um build que falha nao mexe no .exe que
+ja estava la.
 
     python tools\\build.py                 instala as dependencias e gera
     python tools\\build.py --sem-instalar  so gera (dependencias ja instaladas)
@@ -18,15 +23,23 @@ embutido de reserva (maior).
 import datetime
 import os
 import shutil
+import stat
 import subprocess
 import sys
+import tempfile
+import time
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG = os.path.join(RAIZ, "build.log")
 DIST = os.path.join(RAIZ, "dist")
-NOVO = os.path.join(RAIZ, "dist_novo")
-TRABALHO = os.path.join(RAIZ, "build")
 EXECUTAVEL = "ScoreCard.exe" if os.name == "nt" else "ScoreCard"
+# Fora do projeto (e do OneDrive). SCORECARD_BUILD_TEMP troca o lugar, se o
+# disco do TEMP estiver cheio.
+TEMPORARIA = os.environ.get("SCORECARD_BUILD_TEMP") or os.path.join(tempfile.gettempdir(), "ScoreCard_build")
+TRABALHO = os.path.join(TEMPORARIA, "trabalho")
+SAIDA = os.path.join(TEMPORARIA, "saida")
+# Sobras de builds antigos dentro do projeto, que eram geradas ali.
+SOBRAS_ANTIGAS = [os.path.join(RAIZ, nome) for nome in ("build", "dist_novo", "dist_antigo")]
 
 # Versoes testadas. O pywebview usa o pythonnet no Windows, que ainda nao
 # tem versao para Python mais novo que o 3.13.
@@ -146,28 +159,87 @@ def conferir_python():
         falhar("conferir o Python", f"tkinter: {exc}")
 
 
+def _tirar_somente_leitura(funcao, caminho, _erro):
+    """Arquivo marcado como somente leitura nao se apaga no Windows."""
+    os.chmod(caminho, stat.S_IWRITE)
+    funcao(caminho)
+
+
+def _com_paciencia(acao, tentativas=8, espera=0.5):
+    """O OneDrive e o antivirus seguram por um instante o arquivo recem-
+    criado: tenta de novo algumas vezes antes de desistir."""
+    for tentativa in range(tentativas):
+        try:
+            return acao()
+        except OSError:
+            if tentativa == tentativas - 1:
+                raise
+            time.sleep(espera * (tentativa + 1))
+
+
+def apagar(caminho):
+    """Apaga arquivo ou pasta, com paciencia. Erro so se nao der mesmo."""
+    if os.path.isdir(caminho) and not os.path.islink(caminho):
+        if sys.version_info >= (3, 12):
+            _com_paciencia(lambda: shutil.rmtree(caminho, onexc=_tirar_somente_leitura))
+        else:
+            _com_paciencia(lambda: shutil.rmtree(caminho, onerror=_tirar_somente_leitura))
+    elif os.path.lexists(caminho):
+        def _arquivo():
+            try:
+                os.remove(caminho)
+            except PermissionError:
+                os.chmod(caminho, stat.S_IWRITE)
+                os.remove(caminho)
+        _com_paciencia(_arquivo)
+
+
 def remover(pasta, passo):
-    if not os.path.exists(pasta):
+    if not os.path.lexists(pasta):
         return
     try:
-        shutil.rmtree(pasta)
+        apagar(pasta)
     except OSError as exc:
         falhar(passo, f"{type(exc).__name__}: {exc}")
 
 
-def trocar_o_dist():
-    """dist_novo vira dist. O antigo so sai depois que o novo esta pronto."""
-    antigo = DIST + "_antigo"
-    remover(antigo, "trocar o dist")
+def colocar_no_dist(gerado):
+    """Deixa no dist so o .exe novo. Ele e copiado ao lado do antigo e so
+    entao toma o lugar dele (troca de um arquivo so, sem janela em que o
+    dist fica vazio); depois sai tudo o que nao for ele. Devolve o que
+    nao deu para apagar."""
+    os.makedirs(DIST, exist_ok=True)
+    final = os.path.join(DIST, EXECUTAVEL)
+    temporario = final + ".novo"
     try:
-        if os.path.exists(DIST):
-            os.replace(DIST, antigo)
-        os.replace(NOVO, DIST)
+        apagar(temporario)
+        shutil.copy2(gerado, temporario)
+        _com_paciencia(lambda: os.replace(temporario, final))
     except OSError as exc:
-        if not os.path.exists(DIST) and os.path.exists(antigo):
-            os.replace(antigo, DIST)
-        falhar("trocar o dist", f"{type(exc).__name__}: {exc} (o .exe novo ficou em dist_novo)")
-    remover(antigo, "apagar o dist antigo")
+        try:
+            apagar(temporario)
+        except OSError:
+            pass
+        falhar("colocar o .exe no dist", f"{type(exc).__name__}: {exc}")
+    sobras = []
+    for nome in sorted(os.listdir(DIST)):
+        if nome == EXECUTAVEL:
+            continue
+        try:
+            apagar(os.path.join(DIST, nome))
+        except OSError:
+            sobras.append(nome)
+    return sobras
+
+
+def limpar_sobras_antigas():
+    """build, dist_novo e dist_antigo na pasta do projeto, de builds de
+    antes. Se algum estiver preso, fica para o proximo build."""
+    for caminho in SOBRAS_ANTIGAS:
+        try:
+            apagar(caminho)
+        except OSError as exc:
+            registrar(f"Aviso: nao consegui apagar {caminho} ({exc}); fica para o proximo build.")
 
 
 def main(argumentos):
@@ -185,22 +257,33 @@ def main(argumentos):
             rodar("Baixando o Chromium de reserva (Playwright)",
                   [sys.executable, "-m", "playwright", "install", "chromium"])
 
-    remover(NOVO, "limpar o build anterior")
-    remover(TRABALHO, "limpar o build anterior")
+    limpar_sobras_antigas()
+    registrar(f"Pasta de trabalho (temporaria): {TEMPORARIA}")
+    remover(TEMPORARIA, "limpar o build anterior")
     rodar("Gerando o executavel (PyInstaller: app + lancador)",
           [sys.executable, "-m", "PyInstaller", "build.spec", "--noconfirm",
-           "--distpath", NOVO, "--workpath", TRABALHO])
+           "--distpath", SAIDA, "--workpath", TRABALHO])
 
-    gerado = os.path.join(NOVO, EXECUTAVEL)
+    gerado = os.path.join(SAIDA, EXECUTAVEL)
     if not os.path.isfile(gerado):
         falhar("conferir o executavel gerado", f"O PyInstaller terminou sem criar {gerado}.")
-    trocar_o_dist()
+    sobras = colocar_no_dist(gerado)
+    try:
+        apagar(TEMPORARIA)  # ~1 GB do app em pasta, que ja esta dentro do .exe
+    except OSError:
+        pass
 
     final = os.path.join(DIST, EXECUTAVEL)
     registrar("")
     registrar("=" * 64)
     registrar(f" Pronto: {final}")
-    registrar(f" {os.path.getsize(final) / 1024 / 1024:.0f} MB. Esse arquivo sozinho e o que se distribui.")
+    registrar(f" {os.path.getsize(final) / 1024 / 1024:.0f} MB, um arquivo so, sem mais nada junto:")
+    registrar(" e esse arquivo sozinho que se distribui.")
+    if sobras:
+        registrar("")
+        registrar(f" ATENCAO: sobrou no dist {', '.join(sobras)}, que o OneDrive ou o antivirus")
+        registrar(" esta segurando. Nao faz parte do app: feche o Explorer nessa pasta e apague,")
+        registrar(" ou rode o build de novo.")
     registrar("=" * 64)
     return 0
 
