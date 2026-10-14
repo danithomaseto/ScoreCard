@@ -108,6 +108,33 @@ function formatDuration(seconds) {
   return `${mins}min ${secs}s`;
 }
 
+// 84 -> "1 min 24 s": o resumo do fim se le como frase.
+function duracaoPorExtenso(segundos) {
+  const total = Math.max(0, Math.round(Number(segundos) || 0));
+  if (total < 60) return `${total} s`;
+  const minutos = Math.floor(total / 60);
+  const resto = total % 60;
+  return resto ? `${minutos} min ${resto} s` : `${minutos} min`;
+}
+
+// O cartao do fim: quanto tempo levou, o que foi extraido e o arquivo.
+function mostrarResumoDaExtracao(result, classe) {
+  const caixa = document.getElementById('extracao-resumo');
+  const segundos = Number(result.duration_seconds) || 0;
+  const tempo = duracaoPorExtenso(segundos);
+  let titulo = `Concluída em ${tempo}`;
+  if (classe === 'warning') titulo = `Concluída em ${tempo}, sem indicador`;
+  if (classe === 'error') titulo = segundos ? `Falhou depois de ${tempo}` : 'Não começou';
+  const arquivo = result.file_path ? String(result.file_path).split(/[\\/]/).pop() : '';
+  document.getElementById('extracao-resumo-titulo').textContent = titulo;
+  document.getElementById('extracao-resumo-detalhe').textContent =
+    [result.operation_label, result.period_type, result.period_label].filter(Boolean).join(' · ');
+  document.getElementById('extracao-resumo-arquivo').textContent = arquivo ? `${arquivo} · arquivo na pasta` : '';
+  caixa.className = `extracao-resumo ${classe}`;
+  caixa.hidden = false;
+  reiniciarAnimacao(caixa, 'entrando');
+}
+
 function setBadge(kind, text) {
   progressBadgeEl.textContent = text;
   progressBadgeEl.className = 'badge' + (kind ? ' ' + kind : '');
@@ -635,6 +662,7 @@ runBtn.addEventListener('click', async () => {
   runBtn.disabled = true;
   runBtn.querySelector('.btn-texto').textContent = 'Executando...';
   resetSteps();
+  document.getElementById('extracao-resumo').hidden = true;
   setBadge('running', 'Em andamento');
   progressDetailEl.textContent = 'Iniciando a extração...';
   progressPercentEl.textContent = '0%';
@@ -657,6 +685,7 @@ runBtn.addEventListener('click', async () => {
     progressDetailEl.textContent = texto;
     showStatus(runStatus, texto, desfecho.classe);
     showRunActions(runActions, { houveSucesso: result.success, houveFalha: !result.success });
+    mostrarResumoDaExtracao(result, desfecho.classe);
     extracaoTerminou(desfecho.classe, desfecho.rotulo);
     await loadHistoryTable();
   } catch (err) {
@@ -788,12 +817,13 @@ chooseFolderBtn.addEventListener('click', async () => {
   }
 });
 
-logoutBtn.addEventListener('click', async () => {
+// Sair fica no menu da conta (canto direito da barra amarela).
+async function sairDaConta() {
   await pywebview.api.logout();
   loginUsername.value = '';
   loginPassword.value = '';
   showLogin();
-});
+}
 
 window.addEventListener('pywebviewready', async () => {
   window.pywebview.api = comBarraDeCarregamento(window.pywebview.api);

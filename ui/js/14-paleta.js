@@ -83,9 +83,10 @@ function operacaoDaPalavra(palavra) {
 }
 
 function abasDoMenu() {
-  return [...document.querySelectorAll('.nav-item[data-page]')].map((botao) => ({
+  // As abas do menu lateral e Configuracoes, que fica no menu da conta.
+  return [...document.querySelectorAll('.nav-item[data-page], .usuario-menu [data-page]')].map((botao) => ({
     pagina: botao.dataset.page,
-    titulo: botao.querySelector('span')?.textContent.trim() || botao.dataset.page,
+    titulo: (botao.querySelector('span') || botao).textContent.trim() || botao.dataset.page,
     icone: botao.querySelector('svg')?.innerHTML || ICONES_DA_PALETA.acao,
     atalho: botao.dataset.atalho ? `Ctrl ${botao.dataset.atalho}` : '',
   }));

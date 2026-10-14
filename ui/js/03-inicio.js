@@ -85,6 +85,7 @@ async function loadIndicators() {
   indicatorsLegend.hidden = !temDados;
   if (!temDados) {
     document.getElementById('distribuicao-card').hidden = true;
+    document.getElementById('resumo-inicio').hidden = true;
     const nomeDoMes = homeMes.selectedOptions[0]?.text || 'neste mês';
     document.getElementById('indicators-empty-titulo').textContent =
       `Nenhuma extração de ${homeOperationSelect.selectedOptions[0]?.text || 'esta operação'} em ${nomeDoMes} ainda`;
@@ -92,6 +93,7 @@ async function loadIndicators() {
     return tabela;
   }
 
+  desenharResumoDaInicio(tabela.resumo);
   desenharDistribuicao(tabela.distribuicao);
   const primeiraVez = !indicatorsBody.querySelector('tr:not(.linha-esqueleto)');
   desenharCabecalho(tabela);
@@ -102,6 +104,73 @@ async function loadIndicators() {
   // primeiro, e numa janela estreita eles ficariam escondidos a direita.
   indicatorsWrap.scrollLeft = indicatorsWrap.scrollWidth;
   return tabela;
+}
+
+// ---------------------------------------------------------------
+// Resumo no topo: na meta, melhor, pior e o periodo anterior
+// ---------------------------------------------------------------
+// Os numeros vem prontos do Python (resumo_inicio.py); aqui so se desenha.
+
+function pedacoDoResumo(classe, rotulo, titulo, detalhe) {
+  const bloco = document.createElement('div');
+  bloco.className = `resumo-bloco ${classe}`;
+  const r = document.createElement('span');
+  r.className = 'resumo-rotulo';
+  r.textContent = rotulo;
+  const t = document.createElement('strong');
+  t.textContent = titulo;
+  const d = document.createElement('span');
+  d.className = 'resumo-detalhe';
+  d.textContent = detalhe;
+  bloco.append(r, t, d);
+  return bloco;
+}
+
+function desenharResumoDaInicio(resumo) {
+  const caixa = document.getElementById('resumo-inicio');
+  if (!resumo || !resumo.com_numero) {
+    caixa.hidden = true;
+    return;
+  }
+  caixa.hidden = false;
+  caixa.innerHTML = '';
+  const noPeriodo = resumo.periodo === 'month' ? `em ${resumo.coluna}` : `na ${resumo.coluna}`;
+
+  // O anel: a fracao dos indicadores com numero que estao na meta.
+  const principal = document.createElement('div');
+  principal.className = 'resumo-bloco resumo-principal';
+  const fracao = resumo.na_meta / resumo.com_numero;
+  principal.innerHTML = '<svg class="resumo-anel" viewBox="0 0 44 44" aria-hidden="true">'
+    + '<circle class="resumo-anel-trilho" cx="22" cy="22" r="18" pathLength="100"></circle>'
+    + `<circle class="resumo-anel-valor" cx="22" cy="22" r="18" pathLength="100" style="--fracao: ${(fracao * 100).toFixed(1)}"></circle></svg>`;
+  const texto = document.createElement('div');
+  const titulo = document.createElement('strong');
+  titulo.textContent = `${resumo.na_meta} de ${resumo.com_numero} na meta`;
+  const sub = document.createElement('span');
+  sub.className = 'resumo-detalhe';
+  const semNumero = resumo.total - resumo.com_numero;
+  sub.textContent = noPeriodo + (semNumero > 0 ? ` · ${semNumero} sem número` : '');
+  texto.append(titulo, sub);
+  principal.appendChild(texto);
+  caixa.appendChild(principal);
+
+  caixa.appendChild(resumo.melhor
+    ? pedacoDoResumo('resumo-melhor', '▲ Melhor', resumo.melhor.nome, `${resumo.melhor.texto} · ${resumo.melhor.folga}`)
+    : pedacoDoResumo('resumo-melhor', 'Melhor', 'Nenhum na meta', 'ainda'));
+  caixa.appendChild(resumo.pior
+    ? pedacoDoResumo('resumo-pior', '▼ Pior', resumo.pior.nome, `${resumo.pior.texto} · ${resumo.pior.folga}`)
+    : pedacoDoResumo('resumo-pior resumo-tudo-bem', '✓ Pior', 'Nenhum abaixo', 'da meta'));
+
+  const ant = resumo.anterior;
+  if (ant) {
+    const sinal = ant.diferenca > 0 ? `+${ant.diferenca}` : ant.diferenca < 0 ? `−${-ant.diferenca}` : '=';
+    const bloco = pedacoDoResumo('resumo-anterior', `Comparado a ${ant.rotulo}`, `${ant.na_meta} de ${ant.com_numero} na meta`, '');
+    const selo = bloco.querySelector('.resumo-detalhe');
+    selo.className = `resumo-variacao ${ant.diferenca > 0 ? 'subiu' : ant.diferenca < 0 ? 'caiu' : 'igual'}`;
+    selo.textContent = ant.diferenca === 0 ? 'igual' : `${sinal} na meta`;
+    caixa.appendChild(bloco);
+  }
+  reiniciarAnimacao(caixa, 'entrando');
 }
 
 // Na lista de operacoes, um ponto verde nas que tem dados no mes da tela
@@ -155,6 +224,39 @@ function caminhoSuave(pontos) {
   return d;
 }
 
+// Degrade de cima para baixo para as barras: o topo um pouco mais claro.
+// As cores vem do CSS (stop-color com a variavel do tema).
+function degradesNoGrafico(svg, prefixo, nomes) {
+  const defs = elementoSvg('defs', {});
+  for (const nome of nomes) {
+    const degrade = elementoSvg('linearGradient', { id: `${prefixo}-${nome}`, x1: '0', y1: '0', x2: '0', y2: '1' });
+    degrade.append(
+      elementoSvg('stop', { offset: '0', class: `degrade-topo ${nome}` }),
+      elementoSvg('stop', { offset: '1', class: `degrade-base ${nome}` }),
+    );
+    defs.appendChild(degrade);
+  }
+  svg.appendChild(defs);
+}
+
+// O numero do grafico sobe junto com a barra (sem animacao: ja o final).
+function subirNumero(elemento, prefixo, valor, atraso) {
+  const final = `${prefixo}${num(valor)}`;
+  elemento.textContent = final;
+  if (SEM_ANIMACAO || !valor) return;
+  elemento.textContent = `${prefixo}${num(0)}`;
+  const inicio = performance.now() + atraso;
+  const duracao = 640;
+  const passo = (agora) => {
+    if (!elemento.isConnected) return;
+    const t = Math.max(0, Math.min(1, (agora - inicio) / duracao));
+    const suave = 1 - Math.pow(1 - t, 3);
+    elemento.textContent = t < 1 ? `${prefixo}${num(Math.round(valor * suave))}` : final;
+    if (t < 1) requestAnimationFrame(passo);
+  };
+  requestAnimationFrame(passo);
+}
+
 function percentualDe(parte, total) {
   return total ? `${(parte / total * 100).toFixed(2).replace('.', ',')}%` : '—';
 }
@@ -193,6 +295,7 @@ function desenharDistribuicao(dist) {
   const larguraBarra = Math.min(64, passo * 0.5);
   const centro = (i) => lado + passo * i + passo / 2;
 
+  degradesNoGrafico(svg, 'distribuicao', ['verde', 'amarelo', 'vermelho']);
   svg.appendChild(elementoSvg('line', { x1: lado, x2: largura - lado, y1: base, y2: base, class: 'distribuicao-eixo' }));
 
   dist.faixas.forEach((faixa, i) => {
@@ -219,6 +322,7 @@ function desenharDistribuicao(dist) {
 
   // Curva da meta, com o numero da faixa verde no pico.
   const pontos = dist.faixas.map((faixa, i) => ({ x: centro(i), y: y(faixa.meta) }));
+  svg.appendChild(elementoSvg('path', { d: caminhoSuave(pontos), class: 'distribuicao-meta-brilho' }));
   svg.appendChild(elementoSvg('path', { d: caminhoSuave(pontos), class: 'distribuicao-meta' }));
   const verde = dist.faixas.find((f) => f.chave === 'dentro');
   const pico = pontos[dist.faixas.indexOf(verde)];
@@ -235,8 +339,9 @@ function desenharDistribuicao(dist) {
   // nos indicadores: a cor nunca e a unica pista.
   dist.faixas.forEach((faixa, i) => {
     const simbolo = faixa.chave === 'dentro' ? '\u2713' : (faixa.chave.startsWith('abaixo') ? '\u25BC' : '\u25B2');
-    svg.appendChild(elementoSvg('text', { x: centro(i), y: y(faixa.pessoas) - 8, class: 'distribuicao-valor' },
-      `${simbolo} ${num(faixa.pessoas)}`));
+    const valor = elementoSvg('text', { x: centro(i), y: y(faixa.pessoas) - 8, class: 'distribuicao-valor' });
+    svg.appendChild(valor);
+    subirNumero(valor, `${simbolo} `, faixa.pessoas, i * 70);
   });
 
   // A mesma informacao em tabela, como na planilha: pessoas e meta.
@@ -793,4 +898,15 @@ document.addEventListener('keydown', (evento) => {
 
 navItems.forEach((btn) => {
   btn.addEventListener('click', () => showPage(btn.dataset.page));
+});
+
+// O Copiar de cada coluna aparece com o mouse em qualquer celula dela
+// (Inicio, Resultado Gestor e Resultado Turno usam a mesma tabela).
+document.addEventListener('mouseover', (evento) => {
+  const celula = evento.target.closest && evento.target.closest('.indicators-table :is(td, th)');
+  const cabecalho = celula ? celula.closest('table').tHead?.rows[0]?.cells[celula.cellIndex] : null;
+  document.querySelectorAll('.coluna-sob-o-mouse').forEach((th) => {
+    if (th !== cabecalho) th.classList.remove('coluna-sob-o-mouse');
+  });
+  if (cabecalho && cabecalho.classList.contains('indicator-col')) cabecalho.classList.add('coluna-sob-o-mouse');
 });

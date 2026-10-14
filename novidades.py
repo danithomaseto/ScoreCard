@@ -24,6 +24,10 @@ NOVIDADES = {
         ("Visual novo",
          "Filtros com a lista no visual do app (com ponto verde nas operações que têm dados no mês), "
          "login e abertura redesenhados, ícone em cada página e Configurações organizadas por seção."),
+        ("Resumo no topo da Início",
+         "Quantos indicadores estão na meta no mês, o melhor, o pior e a comparação com o mês anterior."),
+        ("Seu nome na barra amarela",
+         "Clique nele para abrir Configurações, os atalhos, as novidades e o Sair — que saíram do menu lateral."),
         ("Arquivos do SharePoint para todo mundo",
          "A Início mostra o relatório que já está na pasta do SharePoint, mesmo que você não "
          "tenha extraído, com a data do arquivo mais novo ao lado da última extração."),

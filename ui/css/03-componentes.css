@@ -630,14 +630,35 @@ button.com-onda-livre { overflow: hidden; }
 .dialogo-botoes { display: flex; justify-content: center; gap: var(--esp-25); flex-wrap: wrap; }
 
 /* ---------- 13: telas vazias no mesmo padrao ---------- */
+/* Uma cena (cartao vazio com grafico apagado) e o icone da tela como um
+   selo amarelo no canto dela. A cena e a mesma em todas; o selo diz de
+   que tela e. */
+.estado-vazio::before {
+  content: "";
+  width: 180px;
+  height: 124px;
+  background: var(--ilustracao-vazia) center / contain no-repeat;
+}
+
 .estado-vazio-icone {
   box-sizing: content-box;
-  padding: var(--esp-35);
+  position: relative;
+  left: 46px;
+  width: 22px;
+  height: 22px;
+  margin: -58px 0 var(--esp-15);
+  padding: 11px;
   border-radius: 50%;
-  background: rgba(255, 204, 0, 0.1);
-  stroke: var(--amarelo-tx);
+  background: linear-gradient(135deg, #ffdb4d, #ffc400);
+  box-shadow: 0 0 0 4px var(--card-bg), 0 8px 18px rgba(255, 196, 0, 0.28);
+  stroke: #1d1300;
+  stroke-width: 2;
   opacity: 1;
 }
+
+.estado-vazio:not([hidden])::before { animation: cena-entra 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+.estado-vazio:not([hidden]) .estado-vazio-icone { animation: selo-entra 520ms 180ms cubic-bezier(0.2, 1.4, 0.4, 1) both; }
 
 .estado-vazio-acoes { display: flex; gap: var(--esp-25); flex-wrap: wrap; justify-content: center; }
 

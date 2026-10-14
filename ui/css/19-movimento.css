@@ -248,3 +248,57 @@
 }
 
 :root.modo-leve .pagina-entrando .page-icone { animation: none; }
+
+/* Resumo da Inicio e o Copiar da coluna. */
+@media (prefers-reduced-motion: reduce) {
+  .resumo-inicio.entrando .resumo-bloco, .resumo-inicio.entrando .resumo-anel-valor { animation: none; }
+  .resumo-anel-valor, .indicator-col .copy-btn { transition: none; }
+}
+
+:root.modo-leve .resumo-inicio.entrando .resumo-bloco,
+  :root.modo-leve .resumo-inicio.entrando .resumo-anel-valor { animation: none; }
+
+:root.modo-leve .resumo-anel-valor,
+  :root.modo-leve .indicator-col .copy-btn { transition: none; }
+
+/* Menu da conta. */
+@media (prefers-reduced-motion: reduce) {
+  .usuario-menu, .usuario-seta { transition: none; }
+}
+
+:root.modo-leve .usuario-menu,
+  :root.modo-leve .usuario-seta { transition: none; }
+
+/* Etapas do Extrair, resumo do fim, placar dos grupos, telas vazias e graficos. */
+@media (prefers-reduced-motion: reduce) {
+  .step.done .step-number::after,
+  .step.error .step-number::after,
+  .extracao-resumo.entrando,
+  .extracao-resumo.entrando .extracao-resumo-icone,
+  .extracao-resumo.entrando .extracao-resumo-icone::after,
+  .grupo-entrando .grupo-placar-barra i,
+  .estado-vazio:not([hidden])::before,
+  .estado-vazio:not([hidden]) .estado-vazio-icone,
+  .distribuicao-meta-brilho,
+  .ind-pareto-barra,
+  .ind-trilho span { animation: none; }
+  .step:not(:last-child)::before { transition: none; }
+}
+
+:root.modo-leve .step.done .step-number::after,
+  :root.modo-leve .step.error .step-number::after,
+  :root.modo-leve .extracao-resumo.entrando,
+  :root.modo-leve .extracao-resumo.entrando .extracao-resumo-icone,
+  :root.modo-leve .extracao-resumo.entrando .extracao-resumo-icone::after,
+  :root.modo-leve .grupo-entrando .grupo-placar-barra i,
+  :root.modo-leve .estado-vazio:not([hidden])::before,
+  :root.modo-leve .estado-vazio:not([hidden]) .estado-vazio-icone,
+  :root.modo-leve .distribuicao-meta-brilho,
+  :root.modo-leve .ind-pareto-barra,
+  :root.modo-leve .ind-trilho span { animation: none; }
+
+:root.modo-leve .step:not(:last-child)::before { transition: none; }
+
+/* No modo leve o brilho desfocado das linhas sai (o desfoque custa). */
+:root.modo-leve .distribuicao-meta-brilho,
+  :root.modo-leve .ind-pareto-acumulado-brilho { display: none; }

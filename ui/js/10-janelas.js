@@ -182,3 +182,92 @@ function desenharRodape() {
 // O "há 5 min" anda sozinho.
 setInterval(() => { if (!appView.hidden && !janelaEscondida()) desenharRodape(); }, 60000);
 document.addEventListener('janelavoltou', () => { if (!appView.hidden) desenharRodape(); });
+
+// ---------------------------------------------------------------
+// Quem entrou: selo na barra amarela e o menu da conta
+// ---------------------------------------------------------------
+// So o nome de usuario (o mesmo do Summary); a senha nunca sai do Python.
+
+function partesDoUsuario(usuario) {
+  return String(usuario || '').split(/[._\-\s]+/).filter(Boolean);
+}
+
+// "daniel.thomaseto" -> "Daniel Thomaseto"; "danitho2" fica como esta.
+function nomeDeExibicao(usuario) {
+  const partes = partesDoUsuario(usuario);
+  if (partes.length > 1) return partes.map((p) => p[0].toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+  return usuario || '';
+}
+
+function iniciaisDoUsuario(usuario) {
+  const partes = partesDoUsuario(usuario);
+  if (partes.length > 1) return (partes[0][0] + partes[1][0]).toUpperCase();
+  const letras = (partes[0] || '').replace(/[^A-Za-zÀ-ÿ]/g, '');
+  return (letras || partes[0] || '?').slice(0, 2).toUpperCase();
+}
+
+// Iniciais de um nome do relatorio: "SILVA,ANA" -> "AS", "Ana Silva" -> "AS".
+function iniciaisDoNome(nome) {
+  let texto = String(nome || '');
+  const virgula = texto.indexOf(',');
+  if (virgula > 0) texto = `${texto.slice(virgula + 1)} ${texto.slice(0, virgula)}`;
+  const palavras = texto.split(/[\s.,_-]+/).filter((p) => /[A-Za-zÀ-ÿ0-9]/.test(p));
+  if (!palavras.length) return '?';
+  const primeira = palavras[0].replace(/[^A-Za-zÀ-ÿ0-9]/g, '');
+  if (palavras.length === 1) return primeira.slice(0, 2).toUpperCase();
+  const ultima = palavras[palavras.length - 1].replace(/[^A-Za-zÀ-ÿ0-9]/g, '');
+  return (primeira[0] + ultima[0]).toUpperCase();
+}
+
+async function mostrarUsuario() {
+  let usuario = null;
+  try {
+    usuario = (await pywebview.api.get_usuario()).usuario;
+  } catch (erro) {
+    usuario = null;
+  }
+  const botao = document.getElementById('usuario-botao');
+  botao.hidden = !usuario;
+  if (!usuario) return;
+  const nome = nomeDeExibicao(usuario);
+  const iniciais = iniciaisDoUsuario(usuario);
+  document.getElementById('usuario-iniciais').textContent = iniciais;
+  document.getElementById('usuario-menu-iniciais').textContent = iniciais;
+  document.getElementById('usuario-nome').textContent = nome;
+  document.getElementById('usuario-menu-nome').textContent = nome;
+  botao.title = `Conectado como ${usuario}`;
+}
+
+const menuDoUsuario = document.getElementById('usuario-menu');
+
+// O menu abre logo abaixo do selo, alinhado a direita dele.
+menuDoUsuario.addEventListener('beforetoggle', (evento) => {
+  if (evento.newState !== 'open') return;
+  const caixa = document.getElementById('usuario-botao').getBoundingClientRect();
+  menuDoUsuario.style.top = `${Math.round(caixa.bottom + 8)}px`;
+  menuDoUsuario.style.right = `${Math.round(innerWidth - caixa.right)}px`;
+});
+
+menuDoUsuario.addEventListener('toggle', (evento) => {
+  document.getElementById('usuario-botao').setAttribute('aria-expanded', String(evento.newState === 'open'));
+  if (evento.newState === 'open') menuDoUsuario.querySelector('[role="menuitem"]').focus();
+});
+
+menuDoUsuario.addEventListener('keydown', (evento) => {
+  if (evento.key !== 'ArrowDown' && evento.key !== 'ArrowUp') return;
+  evento.preventDefault();
+  const itens = [...menuDoUsuario.querySelectorAll('[role="menuitem"]')];
+  const i = itens.indexOf(document.activeElement);
+  itens[(i + (evento.key === 'ArrowDown' ? 1 : -1) + itens.length) % itens.length].focus();
+});
+
+menuDoUsuario.addEventListener('click', (evento) => {
+  const item = evento.target.closest('[data-acao]');
+  if (!item) return;
+  menuDoUsuario.hidePopover();
+  const acao = item.dataset.acao;
+  if (acao === 'settings') showPage('settings');
+  else if (acao === 'atalhos') abrirAtalhos();
+  else if (acao === 'novidades') abrirNovidades();
+  else if (acao === 'sair') sairDaConta();
+});

@@ -149,7 +149,7 @@
 
 .ind-trilho { height: 4px; margin-top: 5px; border-radius: 2px; background: var(--overlay-1); }
 
-.ind-trilho span { display: block; height: 100%; border-radius: 2px; background: var(--grafico-neutro); }
+.ind-trilho span { display: block; height: 100%; border-radius: 2px; background: var(--grafico-neutro); transform-origin: left center; animation: trilho-enche 620ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
 .ind-atividade.maior .ind-trilho span { background: var(--grafico-destaque); }
 
@@ -178,9 +178,9 @@
 
 .ind-barras-item .ind-trilho { height: 9px; border-radius: 3px; }
 
-.ind-barras-item .ind-trilho span { background: var(--grafico-neutro); border-radius: 3px; }
+.ind-barras-item .ind-trilho span { background: linear-gradient(90deg, var(--grafico-neutro), color-mix(in srgb, var(--grafico-neutro) 75%, #fff)); border-radius: 3px; }
 
-.ind-barras-item.maior .ind-trilho span { background: var(--grafico-destaque); }
+.ind-barras-item.maior .ind-trilho span { background: linear-gradient(90deg, var(--grafico-destaque), color-mix(in srgb, var(--grafico-destaque) 70%, #fff)); box-shadow: 0 0 10px color-mix(in srgb, var(--grafico-destaque) 35%, transparent); }
 .ind-barras-item.tem-dica:hover, .ind-atividade.tem-dica:hover { background: var(--overlay-1); }
 .ind-barras-item.tem-dica:hover .ind-trilho span, .ind-atividade.tem-dica:hover .ind-trilho span { filter: brightness(1.15); }
 
@@ -247,9 +247,17 @@
 
 .ind-pareto { display: block; width: 100%; max-height: 320px; margin: var(--esp-1) 0 var(--esp-4); overflow: visible; }
 
-.ind-pareto-barra { fill: var(--grafico-neutro); }
+.ind-pareto-barra {
+  fill: url(#pareto-neutro) var(--grafico-neutro);
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: barra-cresce 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
 
-.ind-pareto-barra.maior { fill: var(--grafico-destaque); }
+.ind-pareto-barra.maior { fill: url(#pareto-destaque) var(--grafico-destaque); }
+
+.ind-pareto-acumulado-brilho { fill: none; stroke: var(--grafico-linha); stroke-width: 7; stroke-linejoin: round; stroke-linecap: round; stroke-opacity: 0.3; filter: blur(4px); pointer-events: none; }
 
 .ind-pareto-eixo { stroke: var(--grafico-eixo); stroke-width: 1; }
 

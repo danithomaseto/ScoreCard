@@ -186,9 +186,47 @@ function criarAbaDeGrupo(dimensao, pre) {
             dica: 'Cadastre no Headcount um gestor com exatamente este nome para o presenteísmo e o cubo aparecerem.' };
       }
       desenharCabecalhoEm(linhaCabecalho, corpo, tela.colunas, nomes.singular, tabela.rotulo, nota);
+      enfeitarCanto(linhaCabecalho.querySelector('.indicator-corner'), tabela);
       desenharLinhasEm(corpo, tabela.linhas, tela.colunas);
       wrap.scrollLeft = wrap.scrollWidth;
     });
+  }
+
+  // Canto da tabela: as iniciais do gestor (ou o relogio do turno) ao
+  // lado do nome e o placar da ultima coluna - quantos indicadores estao
+  // na meta e um tracinho por indicador, na cor da celula.
+  function enfeitarCanto(canto, tabela) {
+    const nome = canto.querySelector('.corner-operation');
+    nome.classList.add('com-selo');
+    const selo = document.createElement('span');
+    selo.className = 'grupo-iniciais' + (dimensao === 'gestor' ? '' : ' turno');
+    selo.setAttribute('aria-hidden', 'true');
+    if (dimensao === 'gestor') selo.textContent = iniciaisDoNome(tabela.rotulo);
+    const texto = document.createElement('span');
+    texto.className = 'grupo-nome-texto';
+    texto.textContent = nome.textContent;
+    nome.replaceChildren(selo, texto);
+
+    const ultima = tela.colunas.length - 1;
+    const celulas = tabela.linhas.map((linha) => linha.celulas[ultima] || {}).filter((c) => !c.nao_se_aplica);
+    const comNumero = celulas.filter((c) => c.texto);
+    if (!comNumero.length) return;
+    const naMeta = comNumero.filter((c) => c.cor === 'verde').length;
+    const placar = document.createElement('div');
+    placar.className = 'grupo-placar';
+    placar.title = `${naMeta} de ${comNumero.length} indicadores na meta em ${tela.colunas[ultima].titulo}`;
+    const barra = document.createElement('span');
+    barra.className = 'grupo-placar-barra';
+    barra.setAttribute('aria-hidden', 'true');
+    for (const celula of celulas) {
+      const traco = document.createElement('i');
+      traco.className = celula.texto ? (celula.cor || 'sem-cor') : 'vazio';
+      barra.appendChild(traco);
+    }
+    const legenda = document.createElement('span');
+    legenda.textContent = `${naMeta} de ${comNumero.length} na meta`;
+    placar.append(barra, legenda);
+    nome.after(placar);
   }
 
   // Recolhida, a tabela vira uma linha: o nome e os seis indicadores da

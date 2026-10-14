@@ -47,6 +47,7 @@ import navegadores
 import novidades
 import observador_de_pasta
 import registro
+import resumo_inicio
 import settings_store
 import versao
 
@@ -239,6 +240,11 @@ class Api:
 
     def is_logged_in(self):
         return bool(self._username and self._password)
+
+    def get_usuario(self):
+        """O usuario que entrou, para o selo da barra amarela (so o nome;
+        a senha nunca sai daqui)."""
+        return {"usuario": self._username} if self.is_logged_in() else {"usuario": None}
 
     # ---------------- Operacoes ----------------
 
@@ -1153,6 +1159,8 @@ class Api:
                 "celulas": celulas,
             })
 
+        resumo = self._resumo_da_inicio(operation_key, colunas, tudo)
+
         for coluna in colunas:
             coluna.pop("_entrada")
             coluna.pop("sem", None)
@@ -1169,10 +1177,40 @@ class Api:
             "colunas": colunas,
             "linhas": linhas,
             "distribuicao": self._distribuicao_do_mes(meses.get(mes)),
+            "resumo": resumo,
             "mes": mes,
             "meses": [{"id": m, "rotulo": periodos.rotulo_mes_ano(m)}
                       for m in sorted(set(meses_com_dado) | {atual}, reverse=True)],
         }
+
+    def _resumo_da_inicio(self, operation_key, colunas, tudo):
+        """O resumo do topo da Inicio (resumo_inicio.py). A coluna de
+        referencia e o mes; sem ele, a ultima semana. O anterior e o mes
+        de antes (da extracao Month dele) ou a semana de antes."""
+        mensal = [c for c in colunas if c["periodo"] == "month"]
+        semanas = [c for c in colunas if c["periodo"] == "week"]
+        referencia = (mensal or semanas or [None])[-1]
+        if referencia is None:
+            return None
+
+        def valores(entrada, sem=()):
+            return {i: entrada.get(i) for i in limits.ORDEM if i not in sem}
+
+        anterior = None
+        if referencia["periodo"] == "month":
+            chave = referencia["chave"]
+            ano, numero = int(chave[:4]), int(chave[5:7])
+            antes = f"{ano - 1}-12" if numero == 1 else f"{ano}-{numero - 1:02d}"
+            entrada = (tudo.get("month") or {}).get(antes)
+            if entrada:
+                vivo = headcount.presenteismo_por_periodo(operation_key, semanas=[], meses=[antes])["month"].get(antes)
+                entrada = self._com_coverage(self._com_presenteismo(dict(entrada), vivo), operation_key, "month", antes)
+                anterior = {"rotulo": periodos.rotulo_mes_ano(antes), **resumo_inicio.contar(valores(entrada))}
+        elif len(semanas) > 1:
+            antes = semanas[-2]
+            anterior = {"rotulo": antes["titulo"], **resumo_inicio.contar(valores(antes["_entrada"], antes.get("sem", ())))}
+        return resumo_inicio.resumir(referencia["titulo"], referencia["periodo"],
+                                     valores(referencia["_entrada"], referencia.get("sem", ())), anterior)
 
     @staticmethod
     def _distribuicao_do_mes(entrada_mes):

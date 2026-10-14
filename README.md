@@ -93,6 +93,19 @@ Detalhes de uso:
   com restauracao em Configuracoes.
 - **Versao nova:** quem publica uma versao com `tools/publicar_versao.py`
   faz aparecer um aviso no app de todo mundo.
+- **Menu da conta:** o selo com as iniciais e o nome de quem entrou fica
+  na barra amarela; clicando, abre Configuracoes, Atalhos, O que ha de
+  novo e **Sair** (Configuracoes e Sair nao ficam mais no menu lateral;
+  Ctrl+9 e o Ctrl+K continuam abrindo Configuracoes).
+- **Resumo da Inicio:** acima da tabela, quantos indicadores estao na
+  meta no mes ("2 de 4 na meta"), o melhor, o pior e a comparacao com o
+  mes anterior (`resumo_inicio.py`).
+- **Acabamento:** fonte Inter embutida (`ui/assets/fontes`, licenca OFL),
+  icone em cada card, resumo no fim da extracao ("Concluida em 1 min
+  24 s"), iniciais e placar no canto das tabelas de gestor e turno,
+  telas vazias ilustradas, graficos em degrade com os numeros subindo,
+  luzes andando pelo mapa do login e conteudo centralizado em tela muito
+  larga.
 
 Toda a logica de automacao (login no Summary, navegacao pelo iframe de
 relatorios, filtros, exportacao) e a mesma ja validada — o empacotamento
@@ -293,8 +306,8 @@ nunca um arquivo pela metade.
 
 ## Configuracoes / trocar a pasta do SharePoint
 
-Dentro do app, botao **Configuracoes** no topo, depois **Alterar
-pasta**. Abre o seletor de pastas nativo do Windows. A pasta e validada
+Dentro do app, clique no seu nome no canto direito da barra amarela,
+depois **Configuracoes** e **Alterar pasta**. Abre o seletor de pastas nativo do Windows. A pasta e validada
 (confere se ainda existe) antes de cada execucao.
 
 ## Seguranca das credenciais
@@ -356,6 +369,7 @@ cache_de_telas.py     # telas montadas guardadas ate os dados mudarem
 observador_de_pasta.py  # aviso do Windows quando a pasta do SharePoint muda
 explicacoes.py        # a conta de cada indicador, para a dica da tabela
 novidades.py          # "O que ha de novo" por versao e o tour do primeiro uso
+resumo_inicio.py      # resumo do topo da Inicio: na meta, melhor, pior e o periodo anterior
 exportar_imagem.py    # PNG da tabela da Inicio salvo em Downloads
 automation/
   base.py              # login, iframe, comboboxes, export (Playwright)
@@ -408,6 +422,7 @@ tests/
   test_observador.py     # aviso de mudanca na pasta
   test_explicacoes.py    # a conta mostrada na dica de cada indicador
   test_novidades.py      # novidades, tour, imagem da tabela e rodizio da apresentacao
+  test_resumo_inicio.py  # resumo do topo da Inicio e o usuario do selo
 requirements.txt
 requirements-dev.txt      # o de cima + pytest
 build.spec               # config do PyInstaller (app + lancador)

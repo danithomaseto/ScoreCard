@@ -15,7 +15,6 @@ const runBtn = document.getElementById('run-btn');
 const runStatus = document.getElementById('run-status');
 const runActions = document.getElementById('run-actions');
 
-const logoutBtn = document.getElementById('logout-btn');
 const folderPathEl = document.getElementById('folder-path');
 const chooseFolderBtn = document.getElementById('choose-folder-btn');
 const homeOperationSelect = document.getElementById('home-operation');
@@ -468,7 +467,7 @@ async function conferirSenhaRecusada(resultado) {
         + 'Saia, confira a senha entrando no próprio Summary e faça login de novo.',
       botoes: [{ rotulo: 'Agora não', valor: false }, { rotulo: 'Sair e entrar de novo', valor: true, principal: true }],
     });
-    if (sair) logoutBtn.click();
+    if (sair) sairDaConta();
   }
 }
 
@@ -507,6 +506,7 @@ async function showApp() {
   iniciarLeituraDoSharePoint();
   conferirVersaoNova();
   conferirNovidades();
+  mostrarUsuario();
   preCarregar();
 }
 
@@ -631,7 +631,11 @@ const navIndicador = document.getElementById('nav-indicador');
 // A barra amarela do menu desliza ate o item ativo, em vez de pular.
 function moverIndicadorDoMenu() {
   const ativo = document.querySelector('.nav-item.active');
-  if (!ativo || !navIndicador) return;
+  if (!navIndicador) return;
+  // Configuracoes fica no menu da conta: com ela aberta, nenhum item do
+  // menu lateral fica marcado.
+  navIndicador.classList.toggle('sem-item', !ativo);
+  if (!ativo) return;
   navIndicador.style.transform = `translateY(${ativo.offsetTop}px)`;
   navIndicador.style.height = `${ativo.offsetHeight}px`;
   ligarTransicaoDepois(navIndicador, 'visivel');
@@ -650,6 +654,7 @@ function trocarPagina(pageName) {
   for (const btn of navItems) {
     btn.classList.toggle('active', btn.dataset.page === pageName);
   }
+  document.getElementById('usuario-botao').classList.toggle('pagina-aberta', pageName === 'settings');
   for (const page of pages) {
     page.hidden = page.id !== `page-${pageName}`;
   }

@@ -191,7 +191,15 @@ andamento da preparação no rodapé.
 
 - **Menu em grupos:** *Resultados* (Início, Resultado Gestor, Resultado
   Turno, Coverage, Horas Indiretas), *Extração* (Extrair Dados, Extrair
-  Múltiplos), *Lançamentos* (Headcount) e *Sistema* (Configurações).
+  Múltiplos) e *Lançamentos* (Headcount). O item aberto fica com um fundo
+  amarelo suave e uma barrinha amarela à esquerda.
+- **Menu da conta:** no canto direito da barra amarela fica o selo de
+  quem entrou, com as iniciais e o nome ("daniel.thomaseto" vira "DT ·
+  Daniel Thomaseto"). Clicando nele abre o menu com **Configurações**,
+  **Atalhos de teclado**, **O que há de novo** e **Sair** — Configurações
+  e Sair saíram do menu lateral e ficam só aqui. Com Configurações aberta,
+  o selo fica marcado. Ctrl+9 e o Procurar (Ctrl+K) continuam abrindo
+  Configurações. Só o nome do usuário chega à tela; a senha nunca.
 - **Recolher o menu:** a alça redonda **no meio da borda do menu** (ou
   Ctrl+B) deixa o menu só com os ícones e sobra mais largura para as
   tabelas; os nomes somem deslizando e a largura acompanha. A alça fica
@@ -205,7 +213,7 @@ andamento da preparação no rodapé.
 
   | Atalho | O que faz |
   |---|---|
-  | Ctrl+1 … Ctrl+9 | abre as abas do menu, na ordem (1 = Início, 2 = Resultado Gestor…) |
+  | Ctrl+1 … Ctrl+9 | abre as abas do menu, na ordem (1 = Início, 2 = Resultado Gestor… 9 = Configurações) |
   | Ctrl+K | procura telas, operações, meses e ações |
   | Ctrl+E | Extrair Dados, já com a operação da tela aberta |
   | Ctrl+B | recolhe ou abre o menu |
@@ -261,10 +269,15 @@ andamento da preparação no rodapé.
   não mais na caixa do Windows.
 - **Teclado:** navegando com Tab, o item em foco ganha um contorno
   amarelo.
-- **Telas vazias:** todas com o mesmo desenho — o que falta, como
-  resolver e o botão **Extrair agora** (no Headcount, **+ Adicionar
-  Gestor**); quando há um mês anterior com dados, aparece também **Ver
-  <mês>**.
+- **Telas vazias:** todas com o mesmo desenho — uma ilustração (um
+  cartão com um gráfico apagado e, por cima, um selo amarelo com o ícone
+  da tela), o que falta, como resolver e o botão **Extrair agora** (no
+  Headcount, **+ Adicionar Gestor**); quando há um mês anterior com
+  dados, aparece também **Ver <mês>**.
+- **Fonte:** o app usa a **Inter**, embutida no próprio programa (não
+  depende da fonte instalada no Windows), com números alinhados.
+- **Tela muito larga** (2560, 4K): o conteúdo para de esticar em 1720 px
+  e fica centralizado; o modo apresentação continua usando a tela toda.
 - As preferências (tema, densidade e menu) ficam guardadas na máquina.
 
 ### 4.2 Login
@@ -302,7 +315,8 @@ leve nas bordas), com o cartão de vidro escuro no centro: ícone do app e
 marca DHL no topo, a saudação, os campos com ícone (usuário e cadeado), o
 botão **Entrar** largo com a seta (mostra um giro enquanto confere) e, no
 pé da tela, "DHL Supply Chain · Score Card <versão> · Criado por Daniel
-Thomaseto".
+Thomaseto". Sobre o mapa-múndi da foto, **pontinhos de luz andam pelas
+rotas** entre as cidades (somem com "reduzir movimento" ou no modo leve).
 
 ### 4.3 Início (o painel)
 
@@ -324,6 +338,14 @@ Thomaseto".
   Week 37…, com as datas), depois o **mês** e, colado nele, o **Pico**.
   Semana que não está completa mostra "semana incompleta"; mês ou pico
   extraído só até parte do mês mostra "mês em andamento".
+- **Resumo no topo** (entre os filtros e a tabela): quantos indicadores
+  estão na meta no mês ("2 de 4 na meta", com um anel que enche; sem o
+  mês extraído, vale a última semana), o **melhor** (o verde com mais
+  folga sobre a meta) e o **pior** (o vermelho mais longe dela), com a
+  diferença em pontos percentuais, e a comparação com o **mês anterior**
+  (ou a semana anterior): "Comparado a Agosto/2026 · 3 de 4 na meta ·
+  +1". Azul (acima do teto) não conta como na meta. Some no modo
+  apresentação.
 - **Linhas:** os seis indicadores, nesta ordem: CUBO, EFETIVIDADE, HORA
   DIRETA, PRESENTEÍSMO, DISPERSÃO e COVERAGE, cada um com a meta
   escrita embaixo do nome.
@@ -349,7 +371,8 @@ Thomaseto".
   é só colar no PowerPoint com Ctrl+V. **Shift + clique** salva o PNG em
   Downloads (o Explorer abre com ele selecionado); se a cópia não der
   certo, ele salva o arquivo sozinho.
-- **Copiar:** cada coluna tem um botão que copia os seis valores, na
+- **Copiar:** cada coluna tem um botão (aparece com o mouse em qualquer
+  célula da coluna, ou com Tab) que copia os seis valores, na
   ordem da tela, para colar direto na apresentação (Excel ou
   PowerPoint). Indicador sem número vira célula vazia, para nenhum
   valor mudar de lugar. Cada valor vai centralizado, em fonte de 10 pt
@@ -426,7 +449,11 @@ faixa de Var no mês, da extração Month — ver [5.7](#57-distribuição-da-di
    mudam (ver [5.2](#52-efetividade-hora-direta-e-dispersão-vêm-do-summary)).
 5. **Iniciar extração.** O painel "Andamento" mostra as 11 etapas
    (abrir o navegador, login, menu Reports, relatório, período, Group
-   By 1, 2 e 3, exportar, salvar) e o percentual. Os níveis de
+   By 1, 2 e 3, exportar, salvar) e o percentual. A linha entre as
+   etapas enche de verde conforme elas terminam, e cada etapa feita vira
+   um ✓ (a que falhou, um ✕). No fim aparece um **resumo**: "Concluída
+   em 1 min 24 s", a operação, o tipo e o período, e o nome do arquivo
+   "· arquivo na pasta" (na falha, "Falhou depois de 42 s"). Os níveis de
    agrupamento que não entram no tipo escolhido são desmarcados no
    relatório (ele guarda o que ficou marcado da extração anterior).
 
@@ -481,7 +508,10 @@ Onde se lança o quadro de cada gestor para o presenteísmo.
 - **Resultado do Mês:** o ciclo da folha ponto, do dia 13 ao dia 12.
 - **Cards:** operação, período (com os dias úteis), HC total, faltas
   (com as horas perdidas) e o presenteísmo, com "dentro da meta" ou
-  "abaixo da meta".
+  "abaixo da meta". Cada card tem um ícone no canto e o número principal
+  (presenteísmo; no Coverage, o coverage; nas Horas Indiretas, a %
+  indireta) fica num card amarelo em degradê — vermelho quando passa do
+  limite.
 - **Tabela por gestor:** HC, dias úteis, horas/dia e faltas (em dias
   inteiros) são digitados por semana ou por ciclo. O que não foi
   digitado aparece esmaecido e é herdado (ver
@@ -602,6 +632,10 @@ nas linhas, as semanas do mês nas colunas e o mês no fim, com o botão
 - **Recolher:** cada tabela tem uma seta no canto; recolhida, vira uma
   linha com o nome e os seis indicadores da última coluna (o mês, se já
   foi extraído).
+- **Canto de cada tabela:** as iniciais do gestor num selo amarelo ao
+  lado do nome (no Resultado Turno, um relógio) e um **placar** da
+  última coluna — um tracinho por indicador, na cor da célula, e "2 de 4
+  na meta".
 - Ver o cálculo em [5.9](#59-indicadores-por-gestor-e-por-turno).
 
 ### 4.10 Resultado Turno
@@ -833,8 +867,9 @@ O **total** é a soma das pessoas das cinco faixas (como o `$R$17` da
 planilha). A meta é em pessoas inteiras: na **verde**, o mínimo para
 chegar a 70%, arredondado **para cima** (2 pessoas: 1,4 → 2; 9 pessoas:
 6,3 → 7); nas **amarelas**, o máximo aceito, arredondado **para baixo**
-(9 pessoas: 1,35 → 1). A curva laranja é a meta, com o número
-da faixa verde no topo. Embaixo do gráfico, a tabela Pessoas × Meta.
+(9 pessoas: 1,35 → 1). A curva roxa é a meta (com um brilho suave), com o número
+da faixa verde no topo. As barras têm cantos arredondados e degradê, e os
+números sobem junto com elas. Embaixo do gráfico, a tabela Pessoas × Meta.
 
 Mês extraído antes deste gráfico existir não tem a contagem por faixa:
 o quadro pede para extrair o mês de novo. Não aparece no modo

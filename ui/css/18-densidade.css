@@ -36,7 +36,15 @@
 
 :root[data-densidade="compacta"] .hc-card { padding: var(--esp-3) var(--esp-35); }
 
-:root[data-densidade="compacta"] .hc-card-valor { font-size: 19px; }
+:root[data-densidade="compacta"] .hc-card[data-icone] { padding-right: 48px; }
+
+:root[data-densidade="compacta"] .hc-card[data-icone]::before { top: var(--esp-25); right: var(--esp-25); }
+
+:root[data-densidade="compacta"] .hc-card[data-icone]::after { top: calc(var(--esp-25) + 7px); right: calc(var(--esp-25) + 7px); }
+
+:root[data-densidade="compacta"] .hc-card-valor:not(.texto) { font-size: 21px; }
+
+:root[data-densidade="compacta"] .hc-card.destaque .hc-card-valor:not(.texto) { font-size: 24px; }
 
 :root[data-densidade="compacta"] .indicators-table th,
 :root[data-densidade="compacta"] .indicators-table td { padding: var(--esp-2) var(--esp-25); }

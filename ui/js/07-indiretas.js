@@ -332,6 +332,7 @@ function desenharParetoIndiretas(t) {
   const largura = Math.min(56, passo * 0.6);
   const centro = (i) => esquerda + passo * i + passo / 2;
 
+  degradesNoGrafico(svg, 'pareto', ['neutro', 'destaque']);
   for (const fracao of [0.25, 0.5, 0.75, 1]) {
     const valor = (maximo / 1.1) * fracao;
     svg.appendChild(elementoSvg('line', { x1: esquerda, x2: L - direita, y1: y(valor), y2: y(valor), class: 'ind-pareto-grade' }));
@@ -353,6 +354,7 @@ function desenharParetoIndiretas(t) {
     const x = centro(i) - largura / 2;
     const raio = Math.min(4, altura);
     grupo.appendChild(elementoSvg('path', {
+      style: `--i: ${i}`,
       class: 'ind-pareto-barra' + (atividade.maior ? ' maior' : ''),
       d: `M${x},${base} V${base - altura + raio} Q${x},${base - altura} ${x + raio},${base - altura} `
         + `H${x + largura - raio} Q${x + largura},${base - altura} ${x + largura},${base - altura + raio} V${base} Z`,
@@ -362,6 +364,9 @@ function desenharParetoIndiretas(t) {
     svg.appendChild(grupo);
   });
 
+  svg.appendChild(elementoSvg('polyline', {
+    class: 'ind-pareto-acumulado-brilho', points: pontos.map((p) => `${p.x},${p.y}`).join(' '),
+  }));
   svg.appendChild(elementoSvg('polyline', {
     class: 'ind-pareto-acumulado', points: pontos.map((p) => `${p.x},${p.y}`).join(' '),
   }));

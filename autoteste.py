@@ -83,9 +83,20 @@ def _arquivos_da_tela(problemas):
     except OSError as exc:
         problemas.append(f"tela: {exc}")
         return
-    for arquivo in re.findall(r'(?:src|href)="((?:js|css|assets)/[^"]+)"', html):
+    arquivos = re.findall(r'(?:src|href)="((?:js|css|assets)/[^"]+)"', html)
+    for arquivo in arquivos:
         if not os.path.isfile(os.path.join(ui, *arquivo.split("/"))):
             problemas.append(f"tela sem ui/{arquivo}")
+    # O que os CSS puxam de assets (a fonte Inter, a foto do login).
+    for folha in (a for a in arquivos if a.startswith("css/") and a.endswith(".css")):
+        try:
+            with open(os.path.join(ui, *folha.split("/")), encoding="utf-8") as fh:
+                css = fh.read()
+        except OSError:
+            continue
+        for arquivo in re.findall(r'url\("\.\./(assets/[^"]+)"\)', css):
+            if not os.path.isfile(os.path.join(ui, *arquivo.split("/"))):
+                problemas.append(f"tela sem ui/{arquivo} ({folha})")
 
 
 def rodar(destino=None):

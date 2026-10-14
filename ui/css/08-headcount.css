@@ -44,6 +44,77 @@
 
 .hc-card.destaque .hc-card-nota { color: rgba(21, 21, 21, 0.75); font-weight: var(--peso-semi); }
 
+/* ---------- Icone em cada card e o destaque em degrade ---------- */
+.hc-card[data-icone] { position: relative; padding-right: 54px; }
+
+.hc-card[data-icone]::before {
+  content: "";
+  position: absolute;
+  top: var(--esp-35);
+  right: var(--esp-35);
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(255, 204, 0, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 204, 0, 0.18);
+}
+
+.hc-card[data-icone]::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--esp-35) + 7px);
+  right: calc(var(--esp-35) + 7px);
+  width: 16px;
+  height: 16px;
+  background-color: var(--amarelo-tx);
+  mask: var(--icone-do-card) center / contain no-repeat;
+}
+
+.hc-card[data-icone="operacao"] { --icone-do-card: var(--icone-operacao); }
+
+.hc-card[data-icone="mes"] { --icone-do-card: var(--icone-mes); }
+
+.hc-card[data-icone="usuarios"] { --icone-do-card: var(--icone-usuarios); }
+
+.hc-card[data-icone="falta"] { --icone-do-card: var(--icone-falta); }
+
+.hc-card[data-icone="presenca"] { --icone-do-card: var(--icone-presenca); }
+
+.hc-card[data-icone="relogio"] { --icone-do-card: var(--icone-relogio); }
+
+.hc-card[data-icone="grafico"] { --icone-do-card: var(--icone-grafico); }
+
+.hc-card[data-icone="pizza"] { --icone-do-card: var(--icone-pizza); }
+
+.hc-card[data-icone="ampulheta"] { --icone-do-card: var(--icone-ampulheta); }
+
+.hc-card[data-icone="pausa"] { --icone-do-card: var(--icone-pausa); }
+
+.hc-card[data-icone="percentual"] { --icone-do-card: var(--icone-percentual); }
+
+/* Numero maior: e o que se le de longe. O texto (operacao, periodo)
+   continua menor, senao corta. */
+.hc-card-valor:not(.texto) { font-size: 26px; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+
+/* O card do numero principal: degrade amarelo com um brilho em cima. */
+.hc-card.destaque {
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, 0.38), transparent 55%),
+    linear-gradient(135deg, #ffdb4d 0%, #ffcc00 48%, #f5b800 100%);
+  border-color: rgba(255, 214, 51, 0.9);
+  box-shadow: 0 8px 24px rgba(255, 204, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.hc-card.destaque[data-icone]::before { background: rgba(21, 21, 21, 0.1); box-shadow: inset 0 0 0 1px rgba(21, 21, 21, 0.08); }
+
+.hc-card.destaque[data-icone]::after { background-color: #151515; }
+
+.hc-card.destaque .hc-card-valor:not(.texto) { font-size: 30px; }
+
+.hc-card.destaque.alerta[data-icone]::before { background: rgba(255, 255, 255, 0.18); box-shadow: none; }
+
+.hc-card.destaque.alerta[data-icone]::after { background-color: #fff; }
+
 .hc-tabela-card, .hc-formula-card, .hc-arquivo-card { width: 100%; max-width: none; margin-bottom: var(--esp-5); }
 
 .hc-tabela-topo {
@@ -412,7 +483,11 @@ button.acao {
 .hc-card.destaque .hc-card-valor.verde,
 .hc-card.destaque .hc-card-valor.vermelho { color: #151515; }
 
-.hc-card.destaque.alerta { background: #ef4444; border-color: #ef4444; }
+.hc-card.destaque.alerta {
+  background: radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, 0.2), transparent 55%), linear-gradient(135deg, #f25555 0%, #dc2626 100%);
+  border-color: #ef4444;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.2);
+}
 
 .hc-card.destaque.alerta .hc-card-label,
 .hc-card.destaque.alerta .hc-card-nota,

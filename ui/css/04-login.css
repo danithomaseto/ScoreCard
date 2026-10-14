@@ -594,3 +594,26 @@
 .login-seguro svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 #login-saudacao { transition: opacity 300ms ease; }
+
+/* Luzes nas rotas do mapa: o SVG tem o tamanho da foto (1672 x 941) e o
+   mesmo "cover" e a mesma aproximacao lenta do fundo, para as rotas
+   ficarem em cima do mapa em qualquer tamanho de janela. */
+.login-rotas {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  animation: foto-respira 26s ease-in-out infinite alternate;
+}
+
+.login-rotas .rota { fill: none; stroke: rgba(255, 255, 255, 0.32); stroke-width: 1.2; stroke-linecap: round; stroke-dasharray: 2 6; }
+
+#login-view.periodo-noite .login-rotas .rota { stroke: rgba(255, 244, 200, 0.28); }
+
+@media (prefers-reduced-motion: reduce) {
+  .login-rotas { display: none; }
+}
+
+:root.modo-leve .login-rotas { display: none; }

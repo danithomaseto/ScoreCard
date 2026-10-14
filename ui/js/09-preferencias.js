@@ -89,7 +89,7 @@ window.addEventListener('resize', () => document.querySelectorAll('.aparencia-op
 // ---------------------------------------------------------------
 
 const ATALHOS = [
-  { teclas: ['Ctrl', '1 … 9'], texto: 'Abre as abas do menu, na ordem (1 = Início, 2 = Resultado Gestor…)' },
+  { teclas: ['Ctrl', '1 … 9'], texto: 'Abre as abas do menu, na ordem (1 = Início, 2 = Resultado Gestor… 9 = Configurações)' },
   { teclas: ['Ctrl', 'K'], texto: 'Procura telas, operações, meses e ações (ex.: "hughes setembro")' },
   { teclas: ['Ctrl', 'E'], texto: 'Extrair Dados, já com a operação da tela' },
   { teclas: ['Ctrl', 'B'], texto: 'Recolhe ou abre o menu' },
@@ -177,7 +177,7 @@ document.addEventListener('keydown', (evento) => {
   if (emApresentacao) return;
   const numero = /^Digit([1-9])$/.exec(evento.code) || /^Numpad([1-9])$/.exec(evento.code);
   if (numero) {
-    const botao = document.querySelector(`.nav-item[data-atalho="${numero[1]}"]`);
+    const botao = document.querySelector(`[data-page][data-atalho="${numero[1]}"]`);
     if (botao) {
       evento.preventDefault();
       showPage(botao.dataset.page);

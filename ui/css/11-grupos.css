@@ -163,3 +163,70 @@
 /* ---------- Tabelas de gestor/turno: conteudo surge ao abrir/recolher ---------- */
 .grupo-tabela.mudando-altura > .table-wrap,
 .grupo-tabela.mudando-altura > .grupo-compacto { animation: surgir 260ms ease both; }
+
+/* ---------- Selo com as iniciais e placar no canto de cada tabela ---------- */
+.corner-operation.com-selo { display: flex; align-items: center; gap: var(--esp-25); min-width: 0; }
+
+.grupo-nome-texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.grupo-iniciais {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 216, 77, 0.24), rgba(255, 204, 0, 0.1));
+  box-shadow: inset 0 0 0 1px rgba(255, 204, 0, 0.32);
+  color: var(--amarelo-tx);
+  font-size: var(--letra-s);
+  font-weight: var(--peso-forte);
+  letter-spacing: 0.02em;
+}
+
+/* Turno nao tem iniciais: leva o relogio. */
+.grupo-iniciais.turno::after {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background-color: var(--amarelo-tx);
+  mask: var(--icone-relogio) center / contain no-repeat;
+}
+
+.grupo-placar {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin-top: var(--esp-2);
+  font-size: var(--letra-xs);
+  font-weight: var(--peso-semi);
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.grupo-placar-barra { display: inline-flex; gap: 3px; }
+
+.grupo-placar-barra i { width: 12px; height: 6px; border-radius: 3px; background: var(--input-border); }
+
+.grupo-placar-barra i.verde { background: #22c55e; }
+
+.grupo-placar-barra i.vermelho { background: #f43f5e; }
+
+.grupo-placar-barra i.azul { background: #38bdf8; }
+
+.grupo-placar-barra i.sem-cor { background: var(--text-faint); }
+
+.grupo-entrando .grupo-placar-barra i { animation: traco-acende 360ms ease-out both; }
+
+.grupo-entrando .grupo-placar-barra i:nth-child(2) { animation-delay: 60ms; }
+
+.grupo-entrando .grupo-placar-barra i:nth-child(3) { animation-delay: 120ms; }
+
+.grupo-entrando .grupo-placar-barra i:nth-child(4) { animation-delay: 180ms; }
+
+.grupo-entrando .grupo-placar-barra i:nth-child(5) { animation-delay: 240ms; }
+
+.grupo-entrando .grupo-placar-barra i:nth-child(6) { animation-delay: 300ms; }

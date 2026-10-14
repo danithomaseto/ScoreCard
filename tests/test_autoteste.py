@@ -60,3 +60,24 @@ def test_build_mostra_o_que_o_autoteste_achou(tmp_path, monkeypatch, capsys):
     assert "  - import webview: ModuleNotFoundError: No module named 'clr'" in tela
     assert "  - tela sem ui/js/13-novidades.js" in tela
     assert "nao passou no autoteste" in tela
+
+
+def test_fonte_que_o_css_puxa_e_conferida(tmp_path, monkeypatch):
+    # A Inter vem do CSS (url(../assets/fontes/...)), nao do index.html:
+    # sem ela no pacote a tela abre com outra letra e ninguem percebe.
+    ui = tmp_path / "ui"
+    (ui / "css").mkdir(parents=True)
+    (ui / "index.html").write_text('<link rel="stylesheet" href="css/01-base.css">', encoding="utf-8")
+    (ui / "css" / "01-base.css").write_text(
+        '@font-face { src: url("../assets/fontes/inter-latin.woff2") format("woff2"); }', encoding="utf-8")
+    monkeypatch.setattr(autoteste, "_pasta_do_app", lambda: str(tmp_path))
+
+    problemas = []
+    autoteste._arquivos_da_tela(problemas)
+    assert problemas == ["tela sem ui/assets/fontes/inter-latin.woff2 (css/01-base.css)"]
+
+    (ui / "assets" / "fontes").mkdir(parents=True)
+    (ui / "assets" / "fontes" / "inter-latin.woff2").write_bytes(b"wOF2")
+    problemas = []
+    autoteste._arquivos_da_tela(problemas)
+    assert problemas == []

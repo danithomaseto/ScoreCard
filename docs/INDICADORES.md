@@ -1496,3 +1496,45 @@ icone do menu no titulo de cada pagina (`.page-icone`, copiado do menu no
 hover (`--linha-hover`), icone por secao em Configuracoes
 (`data-icone` + `--icone-*`) e a bolinha de cor em cada tema. Tudo tem a
 versao sem movimento (reduzir movimento do Windows e modo leve).
+
+## 33. Resumo da Inicio, menu da conta e acabamento (14/10/2026)
+
+Quase tudo visual; a unica conta nova e o resumo do topo da Inicio, que
+so le as faixas que ja existiam.
+
+**Resumo da Inicio (`resumo_inicio.py`).** "Na meta" e o verde de
+`limits.cor` (azul, acima do teto, nao conta). Coluna de referencia: o
+mes; sem ele, a ultima semana. Melhor = verde com mais folga sobre o
+minimo; pior = vermelho mais longe dele (folga em p.p., com o menos
+tipografico). Periodo anterior: o mes de antes, montado como a Inicio o
+montaria (presenteismo vivo do Headcount e coverage), ou a semana de
+antes; sem nenhum numero nele, a comparacao nao aparece.
+`Api.get_indicator_table` devolve `resumo`; `Api.get_usuario` devolve so
+o nome de quem entrou (a senha nunca vai para a tela).
+
+**Menu da conta.** Selo com iniciais e nome na barra amarela, com menu
+`popover` (Configuracoes, Atalhos, O que ha de novo, Sair). Configuracoes
+e Sair sairam do menu lateral: `sairDaConta()` (04-extrair.js) faz o que
+o antigo botao fazia; o item Configuracoes do menu da conta leva
+`data-page="settings"` e `data-atalho="9"`, entao Ctrl+9 e o Procurar
+continuam achando a aba. Com ela aberta, nenhum item lateral fica marcado
+(`.nav-indicador.sem-item`) e o selo ganha `.pagina-aberta`.
+
+**Fonte.** Inter variavel (licenca OFL, `ui/assets/fontes/`), so latin e
+latin-ext. O autoteste do build agora confere tambem os arquivos que os
+CSS puxam com `url("../assets/...")`.
+
+**Telas.** Item ativo do menu com fundo amarelo suave e barrinha a
+esquerda; Copiar so com o mouse na coluna; cards com icone
+(`data-icone` + `--icone-*`), numero maior e o card principal em degrade;
+etapas do Extrair com a linha que enche e o visto desenhado, e o resumo do
+fim (`mostrarResumoDaExtracao`); canto das tabelas de gestor/turno com
+iniciais e placar da ultima coluna; telas vazias com a cena
+`--ilustracao-vazia` (uma por tema) e o icone da tela como selo; graficos
+com degrade por cor (`degradesNoGrafico`), brilho na curva da meta e no
+acumulado do Pareto, e os numeros subindo com as barras; luzes andando
+pelas rotas do mapa do login (SVG com o mesmo enquadramento da foto,
+`animateMotion`); conteudo limitado a 1720 px e centralizado em tela
+muito larga. Cada animacao tem a versao parada (reduzir movimento e modo
+leve); no modo leve o brilho desfocado das linhas e as luzes do login
+nem aparecem.
