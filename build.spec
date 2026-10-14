@@ -210,7 +210,7 @@ app_pasta = COLLECT(
 
 
 def autoteste_do_app():
-    """Abre o app recem-gerado com --autoteste (ver main.autoteste): se um
+    """Abre o app recem-gerado com --autoteste (ver autoteste.py): se um
     modulo, a planilha, o driver do Playwright ou um arquivo da tela
     faltar, o build para aqui, e nao na maquina de quem usa."""
     import glob
@@ -222,21 +222,27 @@ def autoteste_do_app():
     pasta = os.path.join(DISTPATH, "ScoreCardApp")
     executavel = (glob.glob(os.path.join(pasta, "ScoreCardApp.exe")) or
                   glob.glob(os.path.join(pasta, "ScoreCardApp")))[0]
-    with tempfile.TemporaryDirectory() as temporaria:
+    # ignore_cleanup_errors: no Windows, arquivo ainda preso (antivirus
+    # olhando o log do app) nao pode derrubar o build depois do teste.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temporaria:
         relatorio = os.path.join(temporaria, "autoteste.txt")
         ambiente = {**os.environ, "APPDATA": temporaria, "LOCALAPPDATA": temporaria}
         try:
-            subprocess.run([executavel, "--autoteste", relatorio], env=ambiente, timeout=180, check=False)
-        except (OSError, subprocess.SubprocessError) as exc:
-            raise SystemExit(f"Autoteste do app nao rodou: {exc}")
-        try:
+            subprocess.run([executavel, "--autoteste", relatorio], env=ambiente, timeout=300, check=False)
             with open(relatorio, encoding="utf-8") as fh:
                 resultado = fh.read().strip()
-        except OSError:
-            resultado = "AUTOTESTE FALHOU\no app fechou sem responder"
-    print(f"[autoteste] {resultado}", flush=True)
+        except subprocess.TimeoutExpired:
+            resultado = "AUTOTESTE FALHOU\no app nao respondeu em 5 minutos (antivirus segurando a primeira abertura?)"
+        except (OSError, subprocess.SubprocessError) as exc:
+            resultado = f"AUTOTESTE FALHOU\no app nao rodou ou fechou sem responder: {exc}"
+    linhas = resultado.splitlines() or ["AUTOTESTE FALHOU", "relatorio vazio"]
+    print(f"[autoteste] {linhas[0]}", flush=True)
+    # Cada problema numa linha propria: o tools/build.py mostra estas
+    # linhas no fim, junto da mensagem de que o build parou.
+    for linha in linhas[1:]:
+        print(f"[autoteste] - {linha}", flush=True)
     if not resultado.startswith("AUTOTESTE OK"):
-        raise SystemExit(resultado)
+        raise SystemExit("AUTOTESTE FALHOU")
 
 
 autoteste_do_app()

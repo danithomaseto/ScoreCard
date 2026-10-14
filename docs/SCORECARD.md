@@ -1041,7 +1041,8 @@ ScoreCard.exe (lancador.py)
 |---|---|
 | `lancador.py` | o `ScoreCard.exe`: descompacta o app uma vez e abre |
 | `instancia_unica.py` | uma janela só: a segunda abertura traz a primeira |
-| `main.py` | cria a janela, aviso ao fechar; `--autoteste` confere o pacote no build |
+| `main.py` | cria a janela, aviso ao fechar |
+| `autoteste.py` | conferência do pacote no build (`ScoreCardApp --autoteste`): imports, planilha de ida e volta, driver do Playwright e arquivos da tela |
 | `api.py` | métodos chamados pela tela (login, extração, telas, lançamentos) |
 | `automation/base.py` | login, menu Reports, filtros, exportação |
 | `automation/generic.py` | orquestra o fluxo de uma operação |

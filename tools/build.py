@@ -50,9 +50,10 @@ PYTHON_MAXIMO = (3, 13)
 # que aparecer na saida do passo que falhou e a mostrada.
 DICAS = [
     ("autoteste falhou",
-     "O app gerado nao passou no autoteste (falta um modulo ou arquivo da tela no pacote). Se alguem "
-     "mexeu na lista EXCLUIDOS do build.spec, tire de la o modulo citado acima; senao apague a pasta "
-     "venv e rode de novo."),
+     "O app gerado nao passou no autoteste (o que ele achou esta logo acima). Falta de modulo: se "
+     "alguem mexeu na lista EXCLUIDOS do build.spec, tire de la o modulo citado; senao apague a pasta "
+     "venv e rode de novo. Arquivo da tela faltando: baixe o projeto inteiro de novo. Se continuar, "
+     "mande o build.log. (SCORECARD_BUILD_SEM_AUTOTESTE=1 pula a conferencia, por sua conta.)"),
     ("pythonnet",
      "O pywebview (a janela do app) precisa do pythonnet, que nao instala nesta versao do Python. "
      "Instale o Python 3.12 (python.org, marcando \"Add python.exe to PATH\"), apague a pasta venv "
@@ -108,11 +109,24 @@ def registrar(texto=""):
         fh.write(texto + "\n")
 
 
+def problemas_do_autoteste(saida):
+    """As linhas "[autoteste] - ..." que o build.spec imprime, uma por
+    problema achado no app gerado."""
+    marca = "[autoteste] - "
+    return [linha.split(marca, 1)[1].strip() for linha in saida.splitlines() if marca in linha]
+
+
 def falhar(passo, saida=""):
     registrar("")
     registrar("=" * 64)
     registrar(f" O BUILD PAROU EM: {passo}")
     registrar("=" * 64)
+    problemas = problemas_do_autoteste(saida)
+    if problemas:
+        registrar("O autoteste achou:")
+        for problema in problemas[:12]:
+            registrar(f"  - {problema}")
+        registrar("")
     dica = dica_para(saida)
     registrar(dica or "Causa nao reconhecida: veja as ultimas linhas acima.")
     registrar(f"Registro completo: {LOG}")

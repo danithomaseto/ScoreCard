@@ -1388,9 +1388,11 @@ forca um; `SemNavegador` quando nenhum existe. O perfil e temporario
 unittest, pydoc e outros modulos sem uso, a API assincrona do
 Playwright; do driver do Playwright saem as telas de relatorio/trace e
 os tipos) e roda o app gerado com `--autoteste`
-(`main.autoteste`: importa os modulos, abre e grava um xlsx, confere o
-driver do Playwright e os arquivos da tela). Falhou, o build para e o
-`dist` anterior fica.
+(`autoteste.py`, chamado pelo `main.py` antes dos outros imports: importa
+os modulos, grava e relê um xlsx — fechando o arquivo, senao o Windows
+nao deixa apagar a pasta temporaria —, confere o driver do Playwright e
+os arquivos da tela). Falhou, o build para, mostra cada problema achado
+na mensagem final e o `dist` anterior fica.
 
 **Telas guardadas (`cache_de_telas.py`).** `get_indicator_table`,
 `get_headcount`, `get_indiretas`, `get_coverage` e `get_resultado_grupo`

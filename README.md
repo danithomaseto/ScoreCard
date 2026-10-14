@@ -312,7 +312,8 @@ aparece sozinha no dropdown, sem precisar mexer em mais nada.
 ## Estrutura
 
 ```
-main.py              # cria a janela; --autoteste confere o pacote no build
+main.py              # cria a janela (com --autoteste, so confere o pacote)
+autoteste.py         # a conferencia do pacote que o build roda no app gerado
 lancador.py          # o ScoreCard.exe: descompacta o app uma vez e abre
 instancia_unica.py   # uma janela so: a segunda abertura traz a primeira
 api.py                # metodos chamados pelo JS (login, executar, config)

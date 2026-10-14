@@ -15,6 +15,15 @@ if sys.stderr is None:
 if sys.stdin is None:
     sys.stdin = open(os.devnull, "r")
 
+# Conferencia do pacote no build (autoteste.py). Roda antes dos imports
+# abaixo: se um deles quebrar no .exe, vira uma linha do relatorio do
+# build, e nao uma janela de erro sem explicacao.
+if __name__ == "__main__" and "--autoteste" in sys.argv:
+    import autoteste
+
+    _resto = sys.argv[sys.argv.index("--autoteste") + 1:]
+    sys.exit(autoteste.rodar(_resto[0] if _resto else None))
+
 import logging
 
 import instancia_unica
@@ -139,68 +148,5 @@ def main():
     webview.start()
 
 
-def autoteste(destino=None):
-    """ScoreCardApp --autoteste [arquivo]: confere, sem abrir janela, que o
-    pacote tem tudo o que o app usa (o build roda isto antes de juntar o
-    app ao lancador; ver build.spec). Importa os modulos que so carregam
-    na hora de extrair ou ler um relatorio, faz uma planilha de ida e
-    volta e confere os arquivos da tela e o driver do Playwright.
-    Devolve 0 se esta tudo certo."""
-    import importlib
-    import re
-    import tempfile
-
-    problemas = []
-    modulos = ("api", "automation.generic", "automation.base", "indicators.reader", "indicators.faltas",
-               "indicators.pico", "indicators.coverage", "indicators.grupos", "indicators.indiretas",
-               "lancamentos", "arquivos_sharepoint", "diagnostico", "navegadores", "openpyxl", "xlrd",
-               "concurrent.futures", "playwright.sync_api", "webview")
-    for nome in modulos:
-        try:
-            importlib.import_module(nome)
-        except Exception as exc:  # noqa: BLE001
-            problemas.append(f"import {nome}: {exc}")
-    try:
-        import openpyxl
-
-        with tempfile.TemporaryDirectory() as pasta:
-            caminho = os.path.join(pasta, "teste.xlsx")
-            planilha = openpyxl.Workbook()
-            planilha.active["A1"] = "ok"
-            planilha.save(caminho)
-            if openpyxl.load_workbook(caminho, read_only=True).active["A1"].value != "ok":
-                problemas.append("openpyxl: ida e volta da planilha")
-    except Exception as exc:  # noqa: BLE001
-        problemas.append(f"openpyxl: {exc}")
-    try:
-        from playwright._impl._driver import compute_driver_executable
-
-        driver = compute_driver_executable()
-        for caminho in (driver if isinstance(driver, tuple) else (driver,)):
-            if not os.path.isfile(caminho):
-                problemas.append(f"driver do Playwright sem {caminho}")
-    except Exception as exc:  # noqa: BLE001
-        problemas.append(f"driver do Playwright: {exc}")
-    pagina = resource_path(os.path.join("ui", "index.html"))
-    try:
-        with open(pagina, encoding="utf-8") as fh:
-            html = fh.read()
-        for arquivo in re.findall(r'(?:src|href)="((?:js|css|assets)/[^"]+)"', html):
-            if not os.path.isfile(resource_path(os.path.join("ui", arquivo))):
-                problemas.append(f"tela sem ui/{arquivo}")
-    except OSError as exc:
-        problemas.append(f"tela: {exc}")
-
-    texto = "AUTOTESTE OK" if not problemas else "AUTOTESTE FALHOU\n" + "\n".join(problemas)
-    if destino:
-        with open(destino, "w", encoding="utf-8") as fh:
-            fh.write(texto + "\n")
-    print(texto)
-    return 0 if not problemas else 1
-
-
 if __name__ == "__main__":
-    if "--autoteste" in sys.argv:
-        resto = sys.argv[sys.argv.index("--autoteste") + 1:]
-        sys.exit(autoteste(resto[0] if resto else None))
     main()
