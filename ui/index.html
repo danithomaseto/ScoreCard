@@ -3,12 +3,31 @@
 <head>
 <meta charset="utf-8">
 <title>Score Card</title>
-<link rel="stylesheet" href="style.css">
+<!-- Na ordem do numero: a ordem decide qual regra vale quando duas
+     batem no mesmo elemento. -->
+<link rel="stylesheet" href="css/01-base.css">
+<link rel="stylesheet" href="css/02-inicio.css">
+<link rel="stylesheet" href="css/03-extrair.css">
+<link rel="stylesheet" href="css/04-headcount.css">
+<link rel="stylesheet" href="css/05-padrao-e-configuracoes.css">
+<link rel="stylesheet" href="css/06-fluidez.css">
+<link rel="stylesheet" href="css/07-headcount-edicao.css">
+<link rel="stylesheet" href="css/08-coverage.css">
+<link rel="stylesheet" href="css/09-apresentacao-e-grafico.css">
+<link rel="stylesheet" href="css/10-indiretas.css">
+<link rel="stylesheet" href="css/11-extrair-tipos-e-grupos.css">
+<link rel="stylesheet" href="css/12-animacoes.css">
+<link rel="stylesheet" href="css/13-tema-claro.css">
+<link rel="stylesheet" href="css/14-menu-atalhos-densidade.css">
+<link rel="stylesheet" href="css/15-selo-dialogos-rodape.css">
+<link rel="stylesheet" href="css/16-sharepoint.css">
+<link rel="stylesheet" href="css/17-menu-login-carregamento.css">
+<link rel="stylesheet" href="css/18-configuracoes.css">
 </head>
 <body>
 
 <!-- Abertura: toca uma vez, enquanto o app termina de carregar. So
-     apresentacao; some sozinha (ui/app.js, encerrarAbertura). -->
+     apresentacao; some sozinha (ui/js/02-animacoes.js, encerrarAbertura). -->
 <div id="abertura" class="abertura" aria-hidden="true">
   <div class="abertura-grade"></div>
   <div class="abertura-faixas"><i></i><i></i><i></i></div>
@@ -40,30 +59,65 @@
 <div id="login-view" class="center-wrap" hidden>
   <div class="card login-card" id="login-card">
     <div class="login-marca"><span class="dhl-logo">DHL</span><span class="login-marca-texto">Score Card</span></div>
-    <h2>Bem-vindo</h2>
+    <h2 id="login-saudacao">Bem-vindo</h2>
     <p class="subtitle">Entre com seu usuário e senha do Summary.</p>
     <form id="login-form">
       <label for="login-username">Usuário</label>
-      <input id="login-username" type="text" autocomplete="username">
+      <input id="login-username" type="text" autocomplete="username" spellcheck="false">
       <label for="login-password">Senha</label>
-      <input id="login-password" type="password" autocomplete="current-password">
+      <div class="campo-senha">
+        <input id="login-password" type="password" autocomplete="current-password">
+        <button type="button" class="senha-olho" id="login-olho" aria-label="Mostrar a senha" aria-pressed="false" title="Mostrar a senha">
+          <svg class="olho-aberto" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="olho-fechado" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A17.6 17.6 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+        </button>
+      </div>
       <p class="aviso-caps" id="login-caps" hidden>Caps Lock está ligado.</p>
       <button id="login-btn" type="submit">Entrar</button>
     </form>
     <div id="login-status" class="status error" hidden></div>
+    <div class="login-rodape">
+      <button type="button" class="login-vpn" id="login-vpn" data-estado="verificando" title="Clique para conferir de novo">
+        <span class="login-vpn-ponto" aria-hidden="true"></span><span id="login-vpn-texto">Conferindo a VPN…</span>
+      </button>
+      <span class="login-seguro">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        A senha fica só na memória
+      </span>
+    </div>
   </div>
 </div>
 
 <div id="app-view" hidden>
+  <div class="carregando-barra" id="carregando-barra" aria-hidden="true"></div>
   <div class="apresentacao-barra" id="apresentacao-barra" hidden>
     <span class="apresentacao-dica"><kbd>&larr;</kbd><kbd>&rarr;</kbd> troca a operação</span>
+    <button type="button" class="secondary acao apresentacao-auto" id="apresentacao-auto" aria-pressed="false"
+            title="Troca de operação sozinho (barra de espaço liga e pausa). Pula as operações sem dados no mês.">
+      <svg class="btn-icone icone-play" viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"/></svg>
+      <svg class="btn-icone icone-pausa" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+      <span id="apresentacao-auto-texto">Automático</span>
+    </button>
+    <select id="apresentacao-intervalo" class="apresentacao-intervalo" title="Tempo em cada operação">
+      <option value="15000">15 s</option>
+      <option value="30000" selected>30 s</option>
+      <option value="60000">1 min</option>
+      <option value="120000">2 min</option>
+    </select>
     <button type="button" class="secondary acao" id="apresentacao-tema" title="Tema claro ou escuro">Tema claro</button>
     <button type="button" class="secondary acao" id="apresentacao-sair">Sair da apresentação <kbd>Esc</kbd></button>
+    <span class="apresentacao-tempo" id="apresentacao-tempo" aria-hidden="true"></span>
+  </div>
+  <!-- Capa da operacao no modo apresentacao: entra ao trocar de operacao. -->
+  <div class="apresentacao-capa" id="apresentacao-capa" hidden aria-live="polite">
+    <div class="capa-conteudo">
+      <span class="dhl-logo capa-logo">DHL</span>
+      <div class="capa-operacao" id="capa-operacao"></div>
+      <div class="capa-mes" id="capa-mes"></div>
+      <div class="capa-resumo" id="capa-resumo"></div>
+    </div>
   </div>
   <div class="topbar-dhl">
-    <button type="button" class="topbar-botao topbar-menu" id="nav-recolher" title="Recolher o menu (Ctrl+B)" aria-label="Recolher o menu" aria-expanded="true">
-      <svg class="topbar-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path class="seta-menu" d="m16 15-3-3 3-3"/></svg>
-    </button>
     <span class="dhl-logo">DHL</span>
     <span class="topbar-title">Score Card</span>
     <div class="topbar-acoes">
@@ -184,8 +238,19 @@
         <div class="sidebar-versao" id="app-versao"></div>
       </div>
     </nav>
+    <!-- Recolher/abrir o menu: a alca no meio da borda do menu (Ctrl+B). -->
+    <button type="button" class="menu-alca" id="nav-recolher" title="Recolher o menu (Ctrl+B)"
+            aria-label="Recolher ou abrir o menu" aria-controls="sidebar" aria-expanded="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6.5-5.5 5.5 5.5 5.5"/></svg>
+    </button>
 
     <div class="content-area">
+      <div class="aviso-versao" id="aviso-versao" hidden role="status">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        <span id="aviso-versao-texto"></span>
+        <button type="button" class="acao" id="aviso-versao-abrir">Abrir a pasta</button>
+        <button type="button" class="aviso-versao-fechar" id="aviso-versao-fechar" aria-label="Fechar o aviso">✕</button>
+      </div>
       <section id="page-home" class="page" hidden>
         <div class="page-wide-wrap">
           <div class="cabecalho-com-acao">
@@ -1404,6 +1469,32 @@
             </div>
           </div>
 
+          <div class="card settings-card" id="saude-card">
+            <div class="settings-topo">
+              <div>
+                <h3 class="card-title">Saúde do sistema</h3>
+                <p class="settings-texto">VPN, pasta do SharePoint, leitura da pasta, versões e backup.</p>
+              </div>
+              <button type="button" class="secondary acao" id="saude-conferir">
+                <svg class="btn-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+                Conferir agora
+              </button>
+            </div>
+            <div class="saude-lista" id="saude-lista" aria-live="polite"></div>
+            <div class="saude-nao-lidos" id="saude-nao-lidos" hidden>
+              <div class="saude-nao-lidos-topo">
+                <h4>Arquivos da pasta que não foram lidos</h4>
+                <button type="button" class="secondary acao" id="saude-reler" title="Esquece o que já foi lido e calcula todos os relatórios da pasta de novo.">Ler a pasta do zero</button>
+              </div>
+              <div class="table-wrap">
+                <table class="saude-tabela">
+                  <thead><tr><th>Operação</th><th>Tipo</th><th>Arquivo</th><th>Motivo</th></tr></thead>
+                  <tbody id="saude-nao-lidos-corpo"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
           <div class="card settings-card">
             <h3 class="card-title">Aparência</h3>
             <p class="settings-texto">Como a tela aparece nesta máquina. Não muda nenhum número.</p>
@@ -1448,6 +1539,17 @@
           </div>
 
           <div class="card settings-card">
+            <div class="settings-topo">
+              <div>
+                <h3 class="card-title">Backup dos dados</h3>
+                <p class="settings-texto">Uma cópia por dia dos dados deste computador (Headcount, Coverage, indicadores, histórico e configurações), feita ao abrir o app. Ficam os últimos 7 dias.</p>
+              </div>
+              <button type="button" class="secondary acao" id="backup-agora">Fazer backup agora</button>
+            </div>
+            <ul class="backup-lista" id="backup-lista"></ul>
+          </div>
+
+          <div class="card settings-card">
             <h3 class="card-title">Diagnóstico</h3>
             <p class="settings-texto">
               Quando algo der errado, gere o diagnóstico e mande o arquivo para quem
@@ -1489,6 +1591,20 @@
   </div>
 </div>
 
-<script src="app.js"></script>
+<!-- Scripts comuns (sem modulo): todos dividem o mesmo escopo e rodam
+     nesta ordem. Funcao de um arquivo chamada na carga de outro tem
+     de estar num arquivo de cima. -->
+<script src="js/01-base.js"></script>
+<script src="js/02-animacoes.js"></script>
+<script src="js/03-inicio.js"></script>
+<script src="js/04-extrair.js"></script>
+<script src="js/05-headcount.js"></script>
+<script src="js/06-coverage.js"></script>
+<script src="js/07-indiretas.js"></script>
+<script src="js/08-grupos.js"></script>
+<script src="js/09-preferencias.js"></script>
+<script src="js/10-janelas.js"></script>
+<script src="js/11-sharepoint.js"></script>
+<script src="js/12-configuracoes.js"></script>
 </body>
 </html>

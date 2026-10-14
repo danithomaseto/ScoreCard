@@ -1302,3 +1302,72 @@ pasta do SharePoint (a mesma para todo mundo) e a fonte compartilhada
   novo (`get_sharepoint_info`, "todas" pega o mais novo entre as
   operacoes). As respostas das abas passaram a ser numeradas: a de um
   filtro antigo que chega depois nao desenha por cima da nova.
+
+## 30. Lancamentos compartilhados e manutencao (14/10/2026)
+
+**Lancamentos (`lancamentos.py`).** O digitado no Headcount e no Coverage
+vai para `<pasta>/<op>/Lancamentos/ScoreCard_lancamentos_<op>.json`, um
+arquivo por operacao, como "celulas":
+
+| Chave | Valor |
+|---|---|
+| `["g", id]` | o gestor existe |
+| `["g", id, campo]` | nome, hc, dias_uteis, horas_dia, criado_em, editado_em |
+| `["g", id, "q", periodo, campo]` | quadro do periodo (hc, dias_uteis, horas_dia, faltas) |
+| `["f", nome em minusculas]` | funcao que conta como falta |
+| `["cv", chave do periodo, usuario, campo]` | dias/horas digitados no Coverage |
+| `["sin", chave do periodo, campo]` | sinergia cedida/recebida da operacao |
+
+- Cada celula e `{"v": valor, "t": quando}`; apagada e `{"x": 1, "t": quando}`.
+  Na juncao vale a de `t` maior; no empate, a apagada, e depois o maior
+  valor (todo mundo escolhe igual).
+- O que esta pessoa mudou se descobre comparando a copia local com o
+  ultimo estado juntado (`%APPDATA%/ScoreCard/lancamentos.json`): o
+  diferente ganha `t` de agora; o que sumiu vira apagado. Campo de
+  gestor apagado nao conta como mudanca.
+- Primeira juncao numa maquina: o que ja estava digitado entra com a
+  data dos arquivos locais (`headcount.json`, `coverage.json`), e nao
+  com a de agora.
+- Gestores vivos com o mesmo `nome_comparavel` na operacao viram o de
+  menor id, com a celula mais nova de cada campo; o outro id fica
+  apagado.
+- Copias de conflito do OneDrive (`ScoreCard_lancamentos_<op>-PC.json`,
+  `... (1).json`) sao juntadas e apagadas. Arquivo ilegivel (ainda
+  baixando) fica para a proxima, sem gravar por cima.
+- A copia local e refeita com o resultado (`_materializar`); funcoes
+  antigas "todas as operacoes" ficam so na maquina.
+- **Quando:** cada lancamento salvo pela API (`Api._lancar`) agenda a
+  juncao 3 s depois do ultimo (`ESPERA_PARA_PUBLICAR`); a leitura da
+  pasta (`sincronizar_sharepoint`) tambem junta e devolve
+  `"lancamentos"` com as operacoes que mudaram por causa de outra
+  pessoa. Lancamentos, calculo e juncao passam pela mesma trava
+  (`Api._trava_dados`, agora reentrante).
+
+**Manutencao.**
+
+- `migracoes.py`: lista numerada de consertos dos dados gravados; roda
+  os que faltam ao abrir (e depois de restaurar um backup). A 1 e o
+  `reparo_semanas`. O numero fica em `settings.json`
+  (`versao_dos_dados`).
+- `backup.py`: zip diario dos `.json` de `%APPDATA%/ScoreCard` em
+  `backups/`, 7 dias. Restaurar volta cada arquivo com a data dele e
+  apaga o que nao existia no dia (a data importa para os lancamentos:
+  dado restaurado e dado antigo). Antes, o estado atual vai para um zip
+  "antes-de-restaurar".
+- `atualizacao.py`: compara a versao do app com o `.exe` mais novo em
+  `<pasta>/_ScoreCard/` (publicado por `tools/publicar_versao.py`).
+- Senha recusada: duas extracoes seguidas que param na tela de login
+  (`_senha_recusada`) travam novas extracoes ate um novo login; a fila
+  cancela o resto.
+- `arquivos_sharepoint.nao_lidos/lidos/reler/estado_da_pasta`: a tela
+  Saude do sistema (arquivos de fora com o motivo, ler do zero, pasta
+  gravavel, OneDrive, arquivos so na nuvem).
+
+**Tela.** `ui/app.js` virou `ui/js/01-base.js` ... `12-configuracoes.js`
+e `ui/style.css` virou `ui/css/01-base.css` ... `18-configuracoes.css`,
+trechos contiguos na ordem original (scripts comuns dividem o escopo;
+no CSS a ordem decide empates). Conferido: o mesmo texto e os mesmos
+estilos calculados em todas as abas antes e depois.
+
+**CI.** `.github/workflows/testes.yml`: pytest, flake8 (so erros `F`) e
+eslint (`no-undef`, `no-redeclare`) nos doze scripts juntos.

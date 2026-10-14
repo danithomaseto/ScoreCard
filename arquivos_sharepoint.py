@@ -329,6 +329,8 @@ def _sincronizar(base, aplicar, agora):
         estado = {"pasta": _mesma_pasta(base), "grupos": {}}
         mudou = True
     grupos = estado.setdefault("grupos", {})
+    # Os que nao deu para ler, com o motivo (aparecem em Configuracoes).
+    nao_lidos = estado.setdefault("ignorados", {})
     limite = datetime.datetime.fromtimestamp(agora) - datetime.timedelta(days=HORIZONTE_DIAS)
     atualizados, ignorados = [], []
 
@@ -350,11 +352,14 @@ def _sincronizar(base, aplicar, agora):
                 reler = [a for a in presentes
                          if a not in novos and a["nome"] in lidos and a["quando"] > primeiro]
                 calculados = 0
+                do_grupo = nao_lidos.setdefault(chave, {})
                 for arquivo in sorted(prontos + reler, key=lambda a: (a["quando"], a["nome"])):
                     montado = resultado(arquivo, operacao, tipo)
+                    do_grupo.pop(arquivo["nome"], None)
                     if montado is None:
                         ignorados.append({"operacao": operacao, "tipo": tipo, "nome": arquivo["nome"],
                                           "motivo": "arquivo antigo, sem o mês no nome"})
+                        do_grupo[arquivo["nome"]] = ignorados[-1]["motivo"]
                     else:
                         try:
                             aplicar(operacao, montado)
@@ -364,6 +369,7 @@ def _sincronizar(base, aplicar, agora):
                         if montado.get("indicators_message"):
                             ignorados.append({"operacao": operacao, "tipo": tipo, "nome": arquivo["nome"],
                                               "motivo": montado["indicators_message"]})
+                            do_grupo[arquivo["nome"]] = montado["indicators_message"]
                         else:
                             calculados += 1
                     lidos[arquivo["nome"]] = _assinatura(arquivo)
@@ -378,6 +384,13 @@ def _sincronizar(base, aplicar, agora):
                 grupos[chave] = sobra
             else:
                 grupos.pop(chave, None)
+            ainda = {nome: motivo for nome, motivo in nao_lidos.get(chave, {}).items() if nome in nomes}
+            if ainda != nao_lidos.get(chave, {}):
+                mudou = True
+            if ainda:
+                nao_lidos[chave] = ainda
+            else:
+                nao_lidos.pop(chave, None)
 
     if mudou:
         arquivo_seguro.gravar_json(_caminho_do_estado(), estado, compacto=True)
@@ -404,3 +417,80 @@ def registrar(base, operacao, tipo, caminho):
 
 def rotulo(tipo):
     return ROTULOS_DO_PERIODO.get(tipo, tipo)
+
+
+def nao_lidos(base):
+    """[{"operacao", "tipo", "nome", "motivo"}] dos arquivos da pasta que
+    a leitura deixou de fora, como ficou anotado na ultima leitura."""
+    estado = _ler_estado()
+    if not base or estado.get("pasta") != _mesma_pasta(base):
+        return []
+    itens = []
+    for chave, por_nome in sorted((estado.get("ignorados") or {}).items()):
+        operacao, _, tipo = chave.partition("|")
+        for nome, motivo in sorted(por_nome.items()):
+            itens.append({"operacao": operacao, "tipo": tipo, "nome": nome, "motivo": motivo})
+    return itens
+
+
+def lidos(base):
+    """Quantos relatorios da pasta ja foram lidos (ultima leitura). Os que
+    ficaram de fora tambem estao anotados (para nao tentar de novo a cada
+    leitura), mas nao contam."""
+    estado = _ler_estado()
+    if not base or estado.get("pasta") != _mesma_pasta(base):
+        return 0
+    ignorados = estado.get("ignorados") or {}
+    return sum(len([nome for nome in por_nome if nome not in ignorados.get(chave, {})])
+               for chave, por_nome in (estado.get("grupos") or {}).items())
+
+
+def reler(base, aplicar):
+    """Esquece o que ja foi lido e le a pasta inteira de novo."""
+    with _trava:
+        try:
+            os.remove(_caminho_do_estado())
+        except OSError:
+            pass
+    log.info("leitura da pasta do SharePoint refeita do zero")
+    return sincronizar(base, aplicar)
+
+
+# Atributos do Windows de arquivo que o OneDrive deixa so na nuvem.
+_SO_NA_NUVEM = 0x1000 | 0x40000 | 0x400000  # OFFLINE, RECALL_ON_OPEN, RECALL_ON_DATA_ACCESS
+
+
+def estado_da_pasta(base):
+    """Para a saude do sistema: a pasta existe, da para gravar, esta no
+    OneDrive, quantos relatorios, o mais novo e quantos estao so na nuvem."""
+    info = {"configurada": bool(base), "existe": False, "gravavel": False, "onedrive": False,
+            "relatorios": 0, "so_na_nuvem": 0, "mais_novo": None}
+    if not base or not os.path.isdir(base):
+        return info
+    info["existe"] = True
+    try:
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(dir=base, prefix=".scorecard-teste-", delete=True):
+            pass
+        info["gravavel"] = True
+    except OSError:
+        pass
+    caminho = os.path.normcase(os.path.abspath(base))
+    raizes = [os.environ.get(v) for v in ("OneDrive", "OneDriveCommercial", "OneDriveConsumer")]
+    info["onedrive"] = ("onedrive" in caminho) or any(
+        r and caminho.startswith(os.path.normcase(os.path.abspath(r))) for r in raizes)
+    mais_novo = None
+    for operacao in OPERATIONS:
+        for tipo in PASTAS_DO_PERIODO:
+            for arquivo in arquivos(base, operacao, tipo):
+                info["relatorios"] += 1
+                if mais_novo is None or arquivo["quando"] > mais_novo["quando"]:
+                    mais_novo = {"quando": arquivo["quando"], "operacao": operacao, "tipo": tipo}
+                try:
+                    if getattr(os.stat(arquivo["caminho"]), "st_file_attributes", 0) & _SO_NA_NUVEM:
+                        info["so_na_nuvem"] += 1
+                except OSError:
+                    pass
+    info["mais_novo"] = mais_novo
+    return info

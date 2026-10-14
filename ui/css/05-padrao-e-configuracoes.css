@@ -1,0 +1,124 @@
+/* ---------- Padronizacao geral (auditoria de layout) ---------- */
+
+/* Icones de traco dentro de botoes, no mesmo desenho da barra lateral.
+   Substituem os emoji, que cada fonte do Windows desenha de um jeito. */
+.btn-icone {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#run-btn .btn-icone,
+#multi-run-btn .btn-icone { fill: currentColor; width: 12px; height: 12px; }
+
+/* Botoes de acao secundarios: uma altura so no sistema todo. Antes
+   havia 38px (Abrir pasta, Remover) e 40px (acoes da Headcount). */
+.run-actions button,
+.hc-inline button,
+button.acao {
+  height: 40px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+/* Links de atalho tinham 14px de altura: area de clique pequena demais. */
+.link-btn { padding: 4px 0; }
+
+/* Copiar e um botao de apoio dentro do cabecalho da tabela; herdava os
+   46px do botao principal e competia com o titulo da coluna. */
+.copy-btn { height: 28px; }
+
+/* Cada operacao da lista e um <label>, e a margem global de label
+   deixava o espaco vertical em 14px contra 8px no horizontal. */
+.ops-item { margin: 0; }
+
+/* Fonte de dados com a mesma altura dos cards Week/Month ao lado. */
+.source-option {
+  height: 46px;
+  box-sizing: border-box;
+  padding: 0 12px;
+}
+
+/* Configuracoes no mesmo molde das outras telas. */
+.settings-card { width: 100%; max-width: none; }
+.card-title { margin: 0 0 4px; font-size: 16px; color: var(--text); }
+.settings-texto { margin: 0 0 16px; font-size: 13px; color: var(--text-muted); }
+.settings-linha { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.settings-linha .folder-box {
+  flex: 1 1 320px;
+  margin: 0;
+  min-width: 0;
+  min-height: 46px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  overflow-wrap: anywhere;
+}
+.settings-linha button { flex-shrink: 0; }
+
+
+/* ---------- Carregamento e transicoes ---------- */
+
+.esqueleto {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg,
+    var(--overlay-1) 0%,
+    var(--overlay-3) 50%,
+    var(--overlay-1) 100%);
+  background-size: 200% 100%;
+  animation: esqueleto-brilho 1.2s ease-in-out infinite;
+}
+
+.linha-esqueleto .esqueleto { width: 55%; }
+.linha-esqueleto td:first-child .esqueleto { width: 75%; }
+
+@keyframes esqueleto-brilho {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* Curtas de proposito: a ideia e a tela nao "saltar", nao fazer esperar. */
+.page:not([hidden]) { animation: surgir 140ms ease-out; }
+
+.hc-inline:not([hidden]),
+.hc-funcoes:not([hidden]) { animation: surgir 120ms ease-out; }
+
+@keyframes surgir {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page:not([hidden]),
+  .hc-inline:not([hidden]),
+  .hc-funcoes:not([hidden]),
+  .esqueleto { animation: none; }
+}
+
+
+/* ---------- Configuracoes: diagnostico ---------- */
+
+.settings-card + .settings-card { margin-top: 20px; }
+.settings-status { font-size: 12px; color: var(--text-muted); word-break: break-all; }
+.settings-status.erro { color: var(--perigo-tx); }
+
+
+
+/* Janela estreita (a padrao e 980 px): os tres periodos continuam numa
+   linha so, sem o icone e com o texto um pouco menor. */
+@container (max-width: 420px) {
+  .period-option { flex: 1 1 0; justify-content: center; padding: 12px 6px; }
+  .period-option .source-icon { display: none; }
+  .period-option strong { font-size: 13px; white-space: nowrap; }
+}
+
+.hc-varia { color: var(--text-muted); font-style: italic; }
+
+.settings-texto { max-width: 760px; }

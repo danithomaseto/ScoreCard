@@ -78,7 +78,15 @@ def resumo():
     else:
         linhas.append("  (pasta de dados ainda nao existe)")
 
-    pasta_sp = (_ler_json("settings.json") or {}).get("sharepoint_base_dir")
+    configuracoes = _ler_json("settings.json") or {}
+    try:
+        import migracoes
+        versao_atual = migracoes.VERSAO_ATUAL
+    except Exception:  # noqa: BLE001 - o diagnostico nao pode falhar por isto
+        versao_atual = "?"
+    linhas += ["", f"Versao dos dados: {configuracoes.get('versao_dos_dados', 0)} (a deste app: {versao_atual})"]
+
+    pasta_sp = configuracoes.get("sharepoint_base_dir")
     linhas += ["", f"Pasta do SharePoint configurada: {'sim' if pasta_sp else 'nao'}"
                + (f" (existe: {'sim' if os.path.isdir(pasta_sp) else 'NAO'})" if pasta_sp else "")]
 
@@ -115,6 +123,13 @@ def resumo():
     linhas.append("Relatorios da pasta do SharePoint ja lidos (por operacao|tipo):")
     for grupo, lidos in sorted((estado_sp.get("grupos") or {}).items()):
         linhas.append(f"  {grupo}: {len(lidos)}")
+
+    # Lancamentos compartilhados: so quantas celulas de cada operacao (o
+    # conteudo tem nomes de gestores e nao vem para ca).
+    estado_lancamentos = _ler_json("lancamentos.json") or {}
+    linhas.append("Lancamentos juntados com a pasta (celulas por operacao):")
+    for operacao, celulas in sorted((estado_lancamentos.get("operacoes") or {}).items()):
+        linhas.append(f"  {operacao}: {len(celulas)}")
 
     linhas += ["", "Chromium:"] + [f"  {n}" for n in _navegadores()]
 

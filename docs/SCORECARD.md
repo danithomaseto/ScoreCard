@@ -155,17 +155,41 @@ mês vê o resultado mesmo sem ter extraído.
   extraia o mês de novo uma vez.
 - **Todos na mesma versão:** a versão antiga apaga todos os arquivos da
   operação na pasta a cada extração, inclusive o histórico.
-- Os lançamentos digitados (Headcount, dias/horas e sinergia do
-  Coverage) continuam **por computador**.
+- **Lançamentos compartilhados:** o que é digitado também vai para a
+  pasta — gestores e o quadro de cada um (HC, dias úteis, horas/dia,
+  faltas), as funções que contam como falta e, no Coverage, os
+  dias/horas por usuário e a sinergia. Um arquivo por operação:
+  `<pasta>\<operação>\Lancamentos\ScoreCard_lancamentos_<op>.json`.
+  - Cada valor vai com a hora em que foi mudado; juntando o que duas
+    pessoas digitaram, **vale o mais recente de cada campo** (não o do
+    arquivo inteiro). Duas pessoas mexendo em gestores ou semanas
+    diferentes não se atrapalham.
+  - O que é apagado fica marcado como apagado, para não voltar.
+  - O lançamento vai para a pasta 3 segundos depois do último campo
+    digitado; o que outra pessoa lançou chega na leitura da pasta (ao
+    entrar, ao trocar de aba e a cada minuto), com o aviso "Lançamentos
+    de outra pessoa". Se você estiver digitando, a tela só se atualiza
+    quando sair do campo.
+  - **Mesmo gestor cadastrado por duas pessoas** (antes do
+    compartilhamento) vira um só, com os valores mais recentes de cada.
+  - **Na primeira vez** em cada computador, o que já estava digitado
+    entra com a data em que foi digitado: dado antigo não passa por
+    cima de dado mais novo da pasta.
+  - As cópias de conflito que o OneDrive cria ("…-PC123.json") são
+    juntadas e apagadas.
+  - O arquivo tem os **nomes dos gestores**; fica na mesma pasta do
+    SharePoint que os relatórios do Summary, com o mesmo acesso.
 
 ### 4.1.1 Menu, topo e atalhos
 
 - **Menu em grupos:** *Resultados* (Início, Resultado Gestor, Resultado
   Turno, Coverage, Horas Indiretas), *Extração* (Extrair Dados, Extrair
   Múltiplos), *Lançamentos* (Headcount) e *Sistema* (Configurações).
-- **Recolher o menu:** o botão à esquerda do logo, na barra amarela (ou
-  Ctrl+B), deixa o menu só com os ícones e sobra mais largura para as
-  tabelas. Passando o mouse no ícone aparece o nome da aba.
+- **Recolher o menu:** a alça redonda **no meio da borda do menu** (ou
+  Ctrl+B) deixa o menu só com os ícones e sobra mais largura para as
+  tabelas; os nomes somem deslizando e a largura acompanha. A alça fica
+  discreta e aparece inteira com o mouse perto do menu. Passando o mouse
+  no ícone aparece o nome da aba.
 - **Tema claro ou escuro:** o botão de sol/lua na barra amarela (ou
   Ctrl+Shift+L). O claro fica melhor no projetor. O login e a abertura
   continuam escuros (são telas da marca).
@@ -184,7 +208,13 @@ mês vê o resultado mesmo sem ter extraído.
 
 - **Avisos no canto:** ao copiar uma coluna ou tabela aparece um aviso no
   canto inferior direito dizendo o que foi copiado ("Copiado: 6 valores
-  de Week 37"); erros também aparecem ali.
+  de Week 37"); erros também aparecem ali. Uma barrinha embaixo do aviso
+  mostra quanto tempo falta para ele sumir (com o mouse em cima, espera).
+- **Barra de carregamento:** uma linha amarela fina no topo do app
+  aparece quando uma consulta demora; as rápidas não mostram nada.
+- **Números e gráficos animados:** os números dos cards e da tabela
+  contam até o valor novo ao trocar de filtro, as barras dos gráficos
+  sobem e as tabelas recolhíveis abrem e fecham com a altura deslizando.
 - **Extração vista de qualquer aba:** enquanto uma extração roda (Extrair
   Dados, Extrair Múltiplos ou Horas Indiretas), um selo na barra amarela
   mostra a etapa ("Extraindo · Swa · Week · Fazendo login" ou "3 de 7 ·
@@ -215,6 +245,17 @@ mês vê o resultado mesmo sem ter extraído.
   [Segurança](#8-segurança)).
 - Se o Caps Lock estiver ligado, aparece um aviso embaixo da senha —
   senha errada repetida pode bloquear o usuário no Summary.
+- **Saudação e fundo pelo horário:** "Bom dia", "Boa tarde" ou "Boa
+  noite" no topo do card, e o fundo muda de tom com o período do dia.
+- **Mostrar a senha:** o olho no campo de senha mostra ou esconde o que
+  foi digitado.
+- **VPN no login:** embaixo do card, um ponto mostra se os servidores do
+  Summary respondem (verde: todos; amarelo: parte; vermelho: nenhum).
+  Clicar confere de novo.
+- **Senha recusada duas vezes:** se o Summary recusar a senha em duas
+  extrações seguidas, o app **para de tentar** (na fila, as operações
+  seguintes são canceladas) e pede para sair e entrar de novo, conferindo
+  a senha no próprio Summary — evita bloquear o usuário.
 - **Animação:** o card entra subindo, com um feixe amarelo girando na
   borda; usuário ou senha em branco/errados fazem o card balançar; login
   aceito confirma o card, uma cortina amarela com o logo da DHL cobre a
@@ -273,6 +314,12 @@ faixa de Var no mês, da extração Month — ver [5.7](#57-distribuição-da-di
 
 - tela cheia, sem menu, só a tabela, com letra maior;
 - **setas ← →** trocam a operação;
+- **Automático** (botão na barra, ou a barra de espaço): troca a
+  operação sozinho a cada 15 s, 30 s, 1 min ou 2 min, com uma linha
+  amarela mostrando o tempo até a próxima. Entre uma operação e outra
+  aparece uma **capa** com o nome da operação, o mês e um resumo (quantos
+  indicadores dentro da meta). O mês fica o escolhido; operação sem dado
+  no mês é pulada;
 - **Esc** sai (a janela volta maximizada).
 
 ### 4.4 Extrair Dados (uma operação)
@@ -507,6 +554,26 @@ mudarem de linha.
 - **Atalhos de teclado:** a mesma lista da tecla `?`.
 - **Gerar diagnóstico:** cria um zip para mandar ao suporte (ver
   [Suporte](#10-suporte-e-diagnóstico)).
+- **Saúde do sistema:** num lugar só, com um ponto verde, amarelo ou
+  vermelho em cada item — VPN e servidores (quais não respondem), a
+  pasta do SharePoint (existe, dá para gravar, está no OneDrive), os
+  relatórios na pasta (quantos, o mais novo e quantos estão só na
+  nuvem), a leitura da pasta, a versão do app, a versão dos dados, os
+  lançamentos compartilhados e o último backup. **Conferir de novo**
+  atualiza.
+  - **Relatórios não lidos:** a lista dos arquivos da pasta que ficaram
+    de fora, com o motivo (por exemplo, "arquivo antigo, sem o mês no
+    nome").
+  - **Ler a pasta do zero:** esquece o que já foi lido e calcula todos
+    os relatórios da pasta de novo (os lançamentos digitados não mudam).
+- **Backup dos dados:** o app guarda uma cópia dos dados uma vez por dia,
+  ao abrir (os últimos 7 dias, em `%APPDATA%\ScoreCard\backups`).
+  **Fazer backup agora** guarda na hora; **Restaurar** volta os dados
+  daquele dia — antes, o estado atual vai para um backup "antes de
+  restaurar", para dar para desfazer.
+- **Versão nova:** quando há uma versão mais nova publicada na pasta do
+  SharePoint (ver [9.4](#94-avisar-todo-mundo-da-versão-nova)), aparece
+  uma faixa no topo do app com o botão **Abrir a pasta**.
 
 ### 4.12 Rodapé do menu
 
@@ -780,11 +847,23 @@ Tudo fica **no próprio computador**, em `%APPDATA%\ScoreCard\`:
   `<pasta>\<operação>\Gestor|Turno\Week|Month\`, um arquivo por período
   (ver [4.0](#40-pasta-do-sharepoint-compartilhada)).
 - `sharepoint.json` anota os relatórios da pasta já lidos (nome,
-  tamanho e data), para só calcular de novo o que mudou.
+  tamanho e data), para só calcular de novo o que mudou, e os que
+  ficaram de fora com o motivo.
+- `lancamentos.json` guarda o último estado juntado com a pasta dos
+  lançamentos de cada operação — é com ele que o app descobre o que
+  esta pessoa mudou desde a última vez.
+- `backups\ScoreCard_AAAA-MM-DD.zip` é o backup diário dos arquivos
+  acima (7 dias).
+- **Versão dos dados:** quando uma versão nova muda a forma de gravar,
+  o conserto do que já está gravado roda uma vez, ao abrir
+  (`migracoes.py`); o número fica em `settings.json`
+  (`versao_dos_dados`).
 - O app descompactado fica em `%LOCALAPPDATA%\ScoreCard\app-<versão>`
   (a versão anterior é apagada ao abrir uma nova).
-- Os dados são **por computador**: cada pessoa que usa o app tem os
-  seus lançamentos de Headcount e Coverage.
+- Os indicadores e os lançamentos de Headcount e Coverage vêm da pasta
+  compartilhada ([4.0](#40-pasta-do-sharepoint-compartilhada)); a cópia
+  em `%APPDATA%` é o que as telas leem. O histórico das extrações e as
+  preferências de tela continuam por computador.
 
 ---
 
@@ -798,6 +877,9 @@ Tudo fica **no próprio computador**, em `%APPDATA%\ScoreCard\`:
 - O **diagnóstico** não leva credenciais nem dados de pessoas (nomes de
   gestores, matrículas, faltas): dos arquivos de dados vão só tamanhos
   e contagens.
+- Os **lançamentos compartilhados** levam os nomes dos gestores para a
+  pasta do SharePoint (a mesma dos relatórios do Summary, que já têm os
+  nomes). Nenhuma credencial vai para a pasta.
 - O mesmo `.exe` serve para todo mundo: cada pessoa digita a própria
   credencial.
 
@@ -836,6 +918,20 @@ O `build.bat` cria o ambiente Python, instala as dependências, baixa o
 Chromium, empacota com o PyInstaller e junta tudo em
 `dist\ScoreCard.exe`.
 
+### 9.4 Avisar todo mundo da versão nova
+
+Depois do `build.bat`:
+
+```bat
+python tools/publicar_versao.py
+```
+
+Copia o `dist\ScoreCard.exe` para `<pasta do SharePoint>\_ScoreCard\ScoreCard_<versão>.exe`
+(ficam as duas mais novas). O app de quem está numa versão mais antiga
+mostra a faixa "Versão nova disponível" com o botão para abrir a pasta.
+Todo mundo na mesma versão importa: a pasta e os lançamentos são
+compartilhados.
+
 **Como o arquivo único abre rápido:** o `ScoreCard.exe` é um lançador
 pequeno com o app inteiro guardado dentro. Na primeira abertura de cada
 versão ele descompacta o app em `%LOCALAPPDATA%\ScoreCard\app-<versão>`;
@@ -868,7 +964,7 @@ export .xls/.xlsx) e **PyInstaller** (empacotamento).
 ```
 ScoreCard.exe (lancador.py)
   └─ descompacta uma vez e abre o app
-       main.py ─ cria a janela (pywebview) ─ ui/ (index.html, app.js, style.css)
+       main.py ─ cria a janela (pywebview) ─ ui/ (index.html, js/, css/)
           │
           api.py ─ tudo o que a tela chama
              ├─ automation/   extração no BlueYonder (Playwright)
@@ -902,8 +998,14 @@ ScoreCard.exe (lancador.py)
 | `arquivo_seguro.py` | gravação dos JSON sem corromper |
 | `registro.py` | log com filtro de credenciais |
 | `conexao.py` | checagem da VPN antes de extrair |
-| `reparo_semanas.py` | acerta, ao abrir, semanas gravadas com dia e mês trocados |
+| `reparo_semanas.py` | acerta semanas gravadas com dia e mês trocados (migração 1) |
 | `arquivos_sharepoint.py` | nome com o período, limpeza do que foi substituído e leitura da pasta compartilhada |
+| `lancamentos.py` | Headcount e Coverage digitados, compartilhados pela pasta (o mais recente de cada campo vale) |
+| `migracoes.py` | versão dos dados e os consertos do que já está gravado, uma vez cada |
+| `backup.py` | backup diário dos dados e restauração |
+| `atualizacao.py` / `tools/publicar_versao.py` | aviso de versão nova pela pasta do SharePoint |
+| `ui/js/01-base.js` … `12-configuracoes.js` | a tela, um arquivo por aba ou assunto, na ordem do número |
+| `ui/css/01-base.css` … `18-configuracoes.css` | os estilos, na ordem do número (a ordem decide qual regra vale) |
 | `diagnostico.py` | zip de diagnóstico |
 | `versao.py` / `VERSAO` | número da versão e detalhes do .exe |
 | `config/operations.py` | cadastro das 12 operações |
@@ -913,7 +1015,7 @@ ScoreCard.exe (lancador.py)
 
 ## 12. Testes
 
-São cerca de 240 testes automáticos (`tests/`). Eles rodam a extração
+São cerca de 320 testes automáticos (`tests/`). Eles rodam a extração
 contra páginas que imitam o BlueYonder, conferem cada cálculo contra as
 planilhas de referência (Efetividade 96,38%, Hora Direta 85,37%,
 Dispersão 81,82%, Pico 96,57%/96,82%, Coverage) e cobrem presenteísmo,
@@ -926,6 +1028,11 @@ pip install -r requirements-dev.txt
 python -m pytest -q tests
 ```
 
+**No GitHub:** a cada push e pull request, os testes rodam sozinhos
+(`.github/workflows/testes.yml`), junto com uma checagem de erros de
+código no Python (flake8) e no JavaScript da tela (eslint). O resultado
+aparece na aba Actions e no selo do README.
+
 ---
 
 ## 13. Limites conhecidos e próximos passos
@@ -936,8 +1043,9 @@ python -m pytest -q tests
   código de importar a planilha continua no projeto, desligado
   (`FALTAS_DA_PLANILHA = False` em `headcount.py`), para uma versão
   futura.
-- **Dados por computador:** cada pessoa tem os seus lançamentos de
-  Headcount e Coverage; não há base compartilhada.
+- **Pasta compartilhada sem servidor:** o compartilhamento depende do
+  OneDrive sincronizar a pasta; quem estiver sem sincronizar vê os dados
+  quando ela voltar.
 - **Coverage precisa de extração nova:** extrações feitas antes da aba
   Coverage não guardavam as horas por usuário.
 - **Validado em ambiente de teste:** a checagem final (janela única,
@@ -949,8 +1057,7 @@ python -m pytest -q tests
 - Aba própria para a **hora direta de pico por hora** (já levantada
   como próximo passo).
 - Religar a importação da planilha de ausências.
-- Cópia diária automática dos dados, atalhos de teclado entre abas e
-  explicação das fórmulas ao passar o mouse nos indicadores.
+- Explicação das fórmulas ao passar o mouse nos indicadores.
 
 ---
 
@@ -975,6 +1082,8 @@ python -m pytest -q tests
 | 09/10/2026 | Selo da extração em qualquer aba (uma extração por vez); rodapé com a última extração; perguntas no visual do app; foco do teclado; telas vazias padronizadas; Coverage com User ID fixo e agrupado por gestor; pente fino (acentos nas mensagens, cores do resultado da fila) |
 | 09/10/2026 | Menu em grupos e recolhível; Resumo, barra de nomes e tabelas recolhíveis no Resultado Gestor/Turno; nomes do Summary sugeridos no Headcount; **tema claro**; símbolos junto das cores; filtros iguais em todas as abas; avisos de "copiado"; atalhos de teclado; densidade compacta; filtro no histórico |
 | 08/10/2026 | Abas **Resultado Gestor** e **Resultado Turno** (extrações Gestor e Turno, Week e Month, com Group By 3); Week com o Supervisor no meio e **Coverage por gestor**; **Vários filtros** no Extrair Múltiplos; cópia das Horas Indiretas para o PowerPoint; animações de abertura, login, entrada no app e transições |
+| 13/10/2026 | Semana e Report Date em dia/mês ou mês/dia (servidor americano); **pasta do SharePoint compartilhada**: o que qualquer pessoa extrai aparece para todos, com a data do arquivo mais novo ao lado da última extração |
+| 14/10/2026 | **Headcount e Coverage compartilhados** pela pasta; saúde do sistema, relatórios não lidos e "ler a pasta do zero"; backup diário com restauração; aviso de versão nova; versão dos dados; login com saudação, VPN, olho da senha e trava de 2 senhas recusadas; alça do menu no meio da borda; números, gráficos e tabelas animados, barra de carregamento e tempo dos avisos; apresentação automática com capa; testes no GitHub; tela dividida por aba |
 
 ---
 

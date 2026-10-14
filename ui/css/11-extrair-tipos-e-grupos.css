@@ -1,0 +1,100 @@
+/* ---------- Tipos de extracao: dois grupos de quatro ---------- */
+
+/* Operacao (Week, Month, Pico, Indiretas) e Por gestor e por turno, cada
+   grupo numa linha de quatro. Numa coluna estreita os icones somem e,
+   mais estreita ainda, ficam dois por linha. */
+.period-escolha { container-type: inline-size; margin-bottom: 16px; }
+.period-grupo-rotulo {
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.period-escolha .period-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+  container-type: normal;
+}
+.period-escolha .period-options:last-child { margin-bottom: 0; }
+.period-escolha .period-option { min-height: 46px; padding: 8px 10px; gap: 8px; }
+.period-escolha .period-option strong { font-size: 13px; line-height: 1.25; }
+.period-escolha .period-option .source-icon { width: 28px; height: 28px; }
+@container (max-width: 640px) {
+  .period-escolha .period-option .source-icon { display: none; }
+  .period-escolha .period-option { justify-content: center; text-align: center; }
+}
+@container (max-width: 380px) {
+  .period-escolha .period-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Nota do agrupamento fixo: ocupa o lugar do campo, com a mesma altura. */
+.nota-agrupamento-fixo:not([hidden]) {
+  margin: 0 0 16px;
+  min-height: 46px;
+  padding: 8px 14px;
+  border: 1px dashed rgba(250, 204, 21, 0.45);
+  border-radius: 8px;
+  background: rgba(250, 204, 21, 0.05);
+  line-height: 1.45;
+}
+
+/* Extrair Multiplos: Várias operações | Vários filtros, ao lado do titulo. */
+.multi-modo { width: auto; flex-shrink: 0; margin-top: 2px; }
+.multi-modo .seg-opcao { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; }
+.multi-modo .seg-opcao .btn-icone { width: 14px; height: 14px; }
+/* No modo filtros cada operacao e um "radio": a marca fica redonda. */
+.modo-filtros #multi-operations input[type="checkbox"] { border-radius: 50%; }
+.modo-filtros #multi-period-options .period-option.active { box-shadow: inset 0 0 0 1px var(--yellow); }
+.modo-filtros #multi-period-options .period-option.active .source-icon { background: var(--yellow); color: #1d1300; }
+
+.step.entrando { animation: linha-entra 260ms ease-out both; }
+
+
+/* ---------- Abas Resultado Gestor e Resultado Turno ---------- */
+
+.grupos-card { width: 100%; max-width: none; margin-bottom: 20px; padding-top: 20px; padding-bottom: 16px; }
+.grupos-card .field-header label { margin-bottom: 10px; color: var(--text); }
+.grupos-contador { font-weight: 500; color: var(--text-muted); }
+.grupos-lista { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin-bottom: 10px; }
+.grupo-item { position: relative; }
+.grupo-nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grupo-selo {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #1d1300;
+  background: var(--yellow);
+}
+.grupos-nota { margin: 0; font-size: 12px; color: var(--text-faint); line-height: 1.5; }
+
+.grupos-tabelas { display: flex; flex-direction: column; gap: 16px; }
+.grupos-tabelas .indicators-card { padding-top: 18px; padding-bottom: 12px; }
+.grupos-esqueleto { height: 240px; }
+.grupos-legenda { margin-top: 16px; padding: 14px 4px 0; border-top: none; }
+.estado-vazio-card { margin-bottom: 20px; }
+
+.corner-nota { margin-top: 6px; font-size: 10px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.corner-nota.ok { color: var(--ok-tx); }
+.corner-nota.alerta { color: var(--alerta-tx); }
+
+/* Cada tabela nova entra subindo, uma depois da outra. */
+.grupo-entrando { animation: cartao-entra 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes cartao-entra {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Coverage: o gestor de cada usuario. */
+.cv-gestor-celula { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .step.entrando,
+  .grupo-entrando { animation: none; }
+}

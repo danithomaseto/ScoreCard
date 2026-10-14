@@ -1,5 +1,7 @@
 # Score Card - Aplicativo Desktop
 
+[![Testes](https://github.com/danithomaseto/ScoreCard/actions/workflows/testes.yml/badge.svg)](https://github.com/danithomaseto/ScoreCard/actions/workflows/testes.yml)
+
 > **Documento completo da ferramenta** (uso, indicadores, regras, dados,
 > segurança, build e histórico): [`docs/SCORECARD.md`](docs/SCORECARD.md).
 
@@ -43,8 +45,22 @@ Detalhes de uso:
 - **Extrair Multiplos > Varios filtros:** uma operacao e varios tipos de
   extracao (Week, Month, Gestor...) em sequencia.
 - **Aparencia:** tema claro ou escuro (botao na barra amarela ou
-  Ctrl+Shift+L), densidade compacta e menu recolhido (Ctrl+B), em
-  Configuracoes. A tecla `?` mostra os atalhos de teclado.
+  Ctrl+Shift+L), densidade compacta e menu recolhido (Ctrl+B ou a alca
+  no meio da borda do menu), em Configuracoes. A tecla `?` mostra os
+  atalhos de teclado.
+- **Pasta compartilhada:** o que qualquer pessoa extrai vai para a pasta
+  do SharePoint e aparece para todo mundo; o Headcount e o Coverage
+  digitados tambem (um arquivo por operacao em `<operacao>\Lancamentos`).
+- **Apresentacao automatica:** no modo apresentacao, o botao Automatico
+  (ou a barra de espaco) troca a operacao sozinho, com uma capa entre
+  uma e outra.
+- **Configuracoes > Saude do sistema:** VPN por servidor, a pasta, os
+  relatorios que nao foram lidos (e por que), "Ler a pasta do zero", as
+  versoes, os lancamentos compartilhados e o backup.
+- **Backup diario** dos dados em `%APPDATA%\ScoreCard\backups` (7 dias),
+  com restauracao em Configuracoes.
+- **Versao nova:** quem publica uma versao com `tools/publicar_versao.py`
+  faz aparecer um aviso no app de todo mundo.
 
 Toda a logica de automacao (login no Summary, navegacao pelo iframe de
 relatorios, filtros, exportacao) e a mesma ja validada — o empacotamento
@@ -75,6 +91,11 @@ pytest
 
 Se o seu Chromium estiver em outro lugar, aponte
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` para o executavel antes de rodar.
+
+No GitHub, os testes rodam sozinhos a cada push e pull request
+(`.github/workflows/testes.yml`), junto com uma checagem de erros de
+codigo no Python (flake8) e no JavaScript da tela (eslint). O selo no
+topo deste arquivo mostra se a ultima rodada passou.
 
 ## Indicadores
 
@@ -263,6 +284,10 @@ grupos_store.py       # resultados por gestor e por turno
 grupos_tela.py        # monta as abas Resultado Gestor e Resultado Turno
 reparo_semanas.py     # acerta semanas gravadas com dia e mes trocados
 arquivos_sharepoint.py  # nome com periodo, limpeza e leitura da pasta compartilhada
+lancamentos.py        # Headcount e Coverage digitados, compartilhados pela pasta
+migracoes.py          # versao dos dados e os consertos do que ja esta gravado
+backup.py             # backup diario dos dados e restauracao
+atualizacao.py        # aviso de versao nova publicada na pasta do SharePoint
 automation/
   base.py              # login, iframe, comboboxes, export (Playwright)
   generic.py            # orquestra o fluxo por operacao
@@ -281,8 +306,12 @@ config/
   operations.py         # cadastro das operacoes
 ui/
   index.html             # login + painel + configuracoes
-  style.css
-  app.js
+  css/01-base.css ... 18-configuracoes.css
+                         # estilos, na ordem do numero (a ordem decide
+                         # qual regra vale)
+  js/01-base.js ... 12-configuracoes.js
+                         # um arquivo por aba ou assunto; todos dividem o
+                         # mesmo escopo e rodam na ordem do numero
 tests/
   fixtures/              # paginas de mock e exports de exemplo
   test_automation.py     # fluxo de extracao ponta a ponta
@@ -296,6 +325,7 @@ tests/
   test_grupos.py         # gestor, turno, Supervisor na Week e varios filtros
   test_datas.py          # semana e Report Date em dia/mes e mes/dia
   test_sharepoint.py     # nome do arquivo, limpeza e leitura da pasta compartilhada
+  test_lancamentos.py    # Headcount e Coverage compartilhados entre duas maquinas
   test_api.py            # extracao unica, fila multipla e validacoes
   test_lancador.py       # app dentro do .exe, descompactado uma vez
   test_infra.py          # gravacao segura e log sem credenciais
@@ -304,6 +334,8 @@ requirements.txt
 requirements-dev.txt      # o de cima + pytest
 build.spec               # config do PyInstaller (app + lancador)
 tools/empacotar.py        # poe o app dentro do lancador, no fim do build
+tools/publicar_versao.py  # copia o .exe novo para <pasta>\_ScoreCard (aviso no app)
+.github/workflows/testes.yml  # testes e checagens a cada push
 build.bat                 # script de build de um clique (Windows)
 ```
 

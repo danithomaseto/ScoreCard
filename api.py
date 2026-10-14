@@ -21,6 +21,8 @@ from config.operations import (
     ROTULOS_DO_PERIODO, agrupamento, e_semanal, escala_espanhola,
 )
 import arquivos_sharepoint
+import atualizacao
+import backup
 import conexao
 import coverage_store
 import coverage_tela
@@ -35,11 +37,30 @@ import indiretas_tela
 from indicators import faltas as faltas_reader
 from indicators import coverage, grupos, indiretas, limits, periodos, pico, reader, weekly
 import indicators_store
+import lancamentos
+import migracoes
 import registro
 import settings_store
 import versao
 
 log = logging.getLogger("scorecard.api")
+
+# Lancamento digitado vai para a pasta do SharePoint este tanto depois do
+# ultimo (varias celulas digitadas seguidas vao numa gravacao so).
+ESPERA_PARA_PUBLICAR = 3.0
+
+# Na segunda senha recusada seguida o app para de tentar.
+LIMITE_DE_SENHA_RECUSADA = 2
+MENSAGEM_SENHA_RECUSADA = (
+    "O Summary recusou a senha 2 vezes seguidas. Para não bloquear o seu usuário, "
+    "o app parou de tentar: clique em Sair, confira a senha entrando no próprio "
+    "Summary e faça login de novo aqui."
+)
+
+
+def _senha_recusada(result):
+    """A automacao clicou em Sign In e continuou na tela de login."""
+    return "continua sendo a de login" in (result.get("message") or "")
 
 
 class Api:
@@ -61,8 +82,21 @@ class Api:
         self._trava_extracoes = threading.Lock()
         # O calculo grava os arquivos de dados; a extracao e a leitura da
         # pasta do SharePoint podem calcular ao mesmo tempo (threads do
-        # js_api), e duas gravacoes cruzadas perderiam uma delas.
-        self._trava_dados = threading.Lock()
+        # js_api), e duas gravacoes cruzadas perderiam uma delas. Os
+        # lancamentos digitados (Headcount, Coverage) e a juncao deles com
+        # a pasta passam pela mesma trava.
+        self._trava_dados = threading.RLock()
+        # Lancamentos: a gravacao na pasta espera um pouco (ver
+        # _lancamento_mudou); o que chegou de outras pessoas nessa
+        # gravacao fica guardado ate a tela perguntar.
+        self._publicacao = None
+        self._trava_publicacao = threading.Lock()
+        self._lancamentos_de_fora = set()
+        self._lancamentos_estado = {"quando": None, "erros": []}
+        # Senha recusada pelo Summary seguidas vezes: na segunda, o app
+        # para de tentar ate um novo login (senao a fila tentaria a senha
+        # errada em todas as operacoes e bloquearia o usuario).
+        self._senhas_recusadas = 0
         # Modo apresentacao (tela cheia). A janela abre maximizada
         # (main.py); os eventos abaixo acompanham se o usuario mudou isso,
         # para a saida da tela cheia voltar do jeito que estava.
@@ -135,6 +169,7 @@ class Api:
             return {"success": False, "message": "Informe usuário e senha."}
         self._username = username
         self._password = password
+        self._senhas_recusadas = 0
         # So em memoria, para o filtro do log trocar por *** se algum
         # dia aparecerem numa mensagem de erro. Nunca vao para arquivo.
         registro.esconder(username, password)
@@ -147,6 +182,37 @@ class Api:
         registro.esquecer()
         log.info("logout")
         return {"success": True}
+
+    @staticmethod
+    def _servidores():
+        """[{"servidor", "operacoes", "ok"}]: cada servidor das operacoes,
+        conferido ao mesmo tempo (conexao rapida na porta dele)."""
+        from concurrent.futures import ThreadPoolExecutor
+
+        destinos = {}
+        for config in OPERATIONS.values():
+            alvo = conexao.destino(config.get("login_url"))
+            if alvo:
+                item = destinos.setdefault(alvo, {"url": config["login_url"], "operacoes": []})
+                item["operacoes"].append(config["label"])
+        if not destinos:
+            return []
+        with ThreadPoolExecutor(max_workers=min(8, len(destinos))) as grupo:
+            respostas = list(grupo.map(lambda item: conexao.alcancavel(item["url"], tempo_limite=2),
+                                       destinos.values()))
+        return [{"servidor": alvo[0], "operacoes": item["operacoes"], "ok": ok}
+                for (alvo, item), ok in zip(destinos.items(), respostas)]
+
+    def verificar_vpn(self):
+        """Para a tela de login: da para chegar nos servidores das
+        operacoes?"""
+        servidores = self._servidores()
+        alcancaveis = sum(s["ok"] for s in servidores)
+        if not servidores or alcancaveis == len(servidores):
+            estado = "ok"
+        else:
+            estado = "parcial" if alcancaveis else "fora"
+        return {"estado": estado, "alcancaveis": alcancaveis, "total": len(servidores)}
 
     def is_logged_in(self):
         return bool(self._username and self._password)
@@ -341,6 +407,17 @@ class Api:
         indicators_store.salvar_extracao(operation_key, periodo, resultados, meta=meta, quando=quando)
         result["indicators"] = len(resultados)
 
+    def _contar_senha(self, result):
+        """Conta as senhas recusadas seguidas; uma extracao que passou do
+        login zera a conta. Devolve True quando chegou no limite."""
+        if _senha_recusada(result):
+            self._senhas_recusadas += 1
+            log.warning("senha recusada pelo Summary (%d seguida[s])", self._senhas_recusadas)
+        elif result.get("success"):
+            self._senhas_recusadas = 0
+        result["senhas_recusadas"] = self._senhas_recusadas
+        return self._senhas_recusadas >= LIMITE_DE_SENHA_RECUSADA
+
     @staticmethod
     def _registrar_no_sharepoint(operation_key, result):
         """O arquivo que esta pessoa acabou de extrair ja foi calculado: a
@@ -357,20 +434,160 @@ class Api:
 
     def sincronizar_sharepoint(self):
         """Calcula os relatorios da pasta do SharePoint que esta pessoa
-        ainda nao tem (extraidos por qualquer um). A tela chama ao entrar,
+        ainda nao tem (extraidos por qualquer um) e junta os lancamentos
+        de Headcount e Coverage com os da pasta. A tela chama ao entrar,
         ao trocar de aba e de tempos em tempos."""
         if self._extracoes_em_andamento:
-            return {"atualizados": [], "ignorados": [], "ocupado": True}
+            return {"atualizados": [], "ignorados": [], "lancamentos": [], "ocupado": True}
         try:
             resposta = arquivos_sharepoint.sincronizar(
                 settings_store.get_sharepoint_folder(), self._calcular_indicadores)
         except Exception as exc:  # noqa: BLE001 - a tela segue com o que ja tem
             log.exception("falha ao ler a pasta do SharePoint")
-            return {"atualizados": [], "ignorados": [], "erro": str(exc)}
+            return {"atualizados": [], "ignorados": [], "lancamentos": [], "erro": str(exc)}
+        for item in resposta.get("atualizados", []):
+            item["operacao_rotulo"] = OPERATIONS[item["operacao"]]["label"]
+            item["tipo_rotulo"] = ROTULOS_DO_PERIODO[item["tipo"]]
+        resposta["lancamentos"] = [
+            {"operacao": op, "operacao_rotulo": OPERATIONS[op]["label"]}
+            for op in sorted(self._juntar_lancamentos(), key=list(OPERATIONS).index)
+        ]
+        return resposta
+
+    # ---------------- Lancamentos compartilhados (Headcount, Coverage) ----------------
+
+    def _juntar_lancamentos(self):
+        """Junta os lancamentos desta maquina com os da pasta. Devolve as
+        operacoes que mudaram aqui por causa de outra pessoa (inclusive
+        numa gravacao feita em segundo plano desde a ultima pergunta)."""
+        base = settings_store.get_sharepoint_folder()
+        try:
+            with self._trava_dados:
+                resposta = lancamentos.sincronizar(base)
+        except Exception:  # noqa: BLE001 - os lancamentos locais seguem valendo
+            log.exception("falha ao juntar os lançamentos com a pasta")
+            self._lancamentos_estado = {"quando": datetime.datetime.now(), "erros": ["todas"]}
+            resposta = {"mudaram": [], "erros": []}
+        else:
+            if not resposta.get("sem_pasta"):
+                self._lancamentos_estado = {"quando": datetime.datetime.now(), "erros": resposta["erros"]}
+        with self._trava_publicacao:
+            mudaram = self._lancamentos_de_fora | set(resposta["mudaram"])
+            self._lancamentos_de_fora = set()
+        return mudaram
+
+    def _lancamento_mudou(self):
+        """Depois de um lancamento digitado: leva para a pasta alguns
+        segundos depois do ultimo."""
+        with self._trava_publicacao:
+            if self._publicacao:
+                self._publicacao.cancel()
+            self._publicacao = threading.Timer(ESPERA_PARA_PUBLICAR, self._publicar_lancamentos)
+            self._publicacao.daemon = True
+            self._publicacao.start()
+
+    def _publicar_lancamentos(self):
+        mudaram = self._juntar_lancamentos()
+        if mudaram:
+            # A juncao trouxe coisa de outra pessoa: a tela recebe na
+            # proxima leitura da pasta.
+            with self._trava_publicacao:
+                self._lancamentos_de_fora |= mudaram
+
+    def _lancar(self, funcao, *args):
+        """Grava um lancamento (sob a mesma trava da juncao com a pasta) e
+        agenda a ida dele para a pasta. Erro de validacao sobe sem agendar."""
+        with self._trava_dados:
+            resultado = funcao(*args)
+        self._lancamento_mudou()
+        return resultado
+
+    def reler_sharepoint(self):
+        """Configuracoes > Ler a pasta do zero: esquece o que ja foi lido e
+        calcula todos os relatorios da pasta de novo."""
+        if self._extracoes_em_andamento:
+            return {"atualizados": [], "ignorados": [], "ocupado": True}
+        resposta = arquivos_sharepoint.reler(settings_store.get_sharepoint_folder(), self._calcular_indicadores)
         for item in resposta.get("atualizados", []):
             item["operacao_rotulo"] = OPERATIONS[item["operacao"]]["label"]
             item["tipo_rotulo"] = ROTULOS_DO_PERIODO[item["tipo"]]
         return resposta
+
+    # ---------------- Saude, versao e backup ----------------
+
+    def get_saude(self):
+        """Configuracoes > Saude do sistema: VPN por servidor, a pasta do
+        SharePoint, a leitura dela, as versoes e o backup."""
+        base = settings_store.get_sharepoint_folder()
+        pasta = arquivos_sharepoint.estado_da_pasta(base)
+        if pasta["mais_novo"]:
+            novo = pasta["mais_novo"]
+            pasta["mais_novo"] = {
+                "texto": novo["quando"].strftime("%d/%m/%Y %H:%M"),
+                "operacao": OPERATIONS[novo["operacao"]]["label"],
+                "tipo": ROTULOS_DO_PERIODO[novo["tipo"]],
+            }
+        nao_lidos = [
+            {**item, "operacao_rotulo": OPERATIONS.get(item["operacao"], {}).get("label", item["operacao"]),
+             "tipo_rotulo": ROTULOS_DO_PERIODO.get(item["tipo"], item["tipo"])}
+            for item in arquivos_sharepoint.nao_lidos(base)
+        ]
+        ultimo_backup = backup.ultimo()
+        app = versao.info()
+        compartilhados = lancamentos.resumo(base)
+        juncao = self._lancamentos_estado
+        return {
+            "servidores": self._servidores(),
+            "pasta": {**pasta, "caminho": base},
+            "leitura": {"lidos": arquivos_sharepoint.lidos(base), "nao_lidos": nao_lidos},
+            "versao": {**app, **atualizacao.verificar(base, app["versao"])},
+            "dados": {"versao": migracoes.versao_dos_dados(), "atual": migracoes.VERSAO_ATUAL},
+            "lancamentos": {
+                "operacoes": compartilhados["operacoes"],
+                "gravado": (datetime.datetime.fromisoformat(compartilhados["atualizado_em"]).strftime("%d/%m/%Y %H:%M")
+                            if compartilhados["atualizado_em"] else None),
+                "juntado": juncao["quando"].strftime("%H:%M") if juncao["quando"] else None,
+                "erros": [OPERATIONS.get(op, {}).get("label", op) for op in juncao["erros"]],
+            },
+            "backup": ({"texto": datetime.datetime.fromisoformat(ultimo_backup["quando"]).strftime("%d/%m/%Y %H:%M"),
+                        "arquivos": ultimo_backup["arquivos"]} if ultimo_backup else None),
+        }
+
+    def verificar_versao(self):
+        """Ha versao mais nova publicada na pasta do SharePoint?"""
+        return atualizacao.verificar(settings_store.get_sharepoint_folder(), versao.info()["versao"])
+
+    def abrir_pasta_da_versao(self):
+        base = settings_store.get_sharepoint_folder()
+        return self._open_path(atualizacao.pasta(base) if base else None, "Pasta da versão nova")
+
+    def get_backups(self):
+        return {"backups": [
+            {"id": item["id"], "dia": datetime.date.fromisoformat(item["dia"]).strftime("%d/%m/%Y"),
+             "hora": datetime.datetime.fromisoformat(item["quando"]).strftime("%H:%M"),
+             "arquivos": item["arquivos"], "antes_de_restaurar": item["antes_de_restaurar"]}
+            for item in backup.listar()]}
+
+    def fazer_backup(self):
+        try:
+            caminho = backup.fazer(forcar=True)
+        except OSError as exc:
+            return {"success": False, "message": f"Não deu para fazer o backup: {exc}"}
+        if not caminho:
+            return {"success": False, "message": "Ainda não há dados para guardar."}
+        return {"success": True, **self.get_backups()}
+
+    def restaurar_backup(self, identificador):
+        if self._extracoes_em_andamento:
+            return {"success": False, "message": "Espere a extração terminar para restaurar."}
+        try:
+            with self._trava_dados:
+                feito = backup.restaurar(identificador)
+                # Backup de antes de uma mudanca no formato dos dados.
+                migracoes.migrar()
+        except (OSError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True, **feito, **self.get_backups()}
 
     def get_sharepoint_info(self, operacao):
         """O relatorio mais novo de cada tipo da operacao na pasta do
@@ -444,6 +661,10 @@ class Api:
         if not self.is_logged_in():
             return {"success": False, "message": "Faça login antes de executar."}
 
+        if self._senhas_recusadas >= LIMITE_DE_SENHA_RECUSADA:
+            return {"success": False, "senhas_recusadas": self._senhas_recusadas,
+                    "message": MENSAGEM_SENHA_RECUSADA}
+
         if group_by and group_by not in GROUP_BY_OPTIONS:
             return {"success": False, "message": "Opção de 'Group By 1' inválida."}
 
@@ -499,6 +720,8 @@ class Api:
         self._calcular_indicadores(operation_key, result)
         self._registrar_no_sharepoint(operation_key, result)
         self._record_history(operation_key, result)
+        if self._contar_senha(result):
+            result["message"] = MENSAGEM_SENHA_RECUSADA
         result["status"] = self._status_da_extracao(result)
         return result
 
@@ -589,6 +812,7 @@ class Api:
         log.info("fila de %s extrações (%s)", total, ", ".join(sorted({t[1] or "week" for t in trabalhos})))
         navegador = None
         servidores_fora = set()  # sem VPN, nao tenta de novo o mesmo servidor
+        parada_por_senha = False
         try:
             for index, (operation_key, period, label) in enumerate(trabalhos):
                 if self._cancel_multi.is_set():
@@ -638,6 +862,10 @@ class Api:
                 self._calcular_indicadores(operation_key, result)
                 self._registrar_no_sharepoint(operation_key, result)
                 self._record_history(operation_key, result)
+                if self._contar_senha(result):
+                    # A senha errada nao vai dar certo na proxima operacao.
+                    parada_por_senha = True
+                    self._cancel_multi.set()
 
                 status = self._status_da_extracao(result)
                 if status != "error":
@@ -663,10 +891,14 @@ class Api:
             message += f", {sem_indicador} sem indicador"
         if cancelled:
             message += f", {cancelled} cancelada(s)"
+        message += "."
+        if parada_por_senha:
+            message += " " + MENSAGEM_SENHA_RECUSADA
         log.info("fila encerrada: %s", message)
         return {
             "success": failed == 0 and cancelled == 0,
-            "message": message + ".",
+            "senhas_recusadas": self._senhas_recusadas,
+            "message": message,
             "succeeded": succeeded,
             "failed": failed,
             "cancelled": cancelled,
@@ -952,14 +1184,14 @@ class Api:
         if operacao not in OPERATIONS:
             return {"success": False, "message": "Escolha a operação do gestor."}
         try:
-            gestor = headcount_store.adicionar_gestor(nome, operacao)
+            gestor = self._lancar(headcount_store.adicionar_gestor, nome, operacao)
         except ValueError as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True, "gestor": gestor}
 
     def update_gestor(self, gestor_id, campos):
         try:
-            headcount_store.atualizar_gestor(gestor_id, campos or {})
+            self._lancar(headcount_store.atualizar_gestor, gestor_id, campos or {})
         except (ValueError, TypeError) as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True}
@@ -996,7 +1228,7 @@ class Api:
         if operacao not in OPERATIONS:
             return {"success": False, "message": "Operação inválida."}
         try:
-            coverage_store.definir(operacao, chave_periodo, [usuario], campo, valor)
+            self._lancar(coverage_store.definir, operacao, chave_periodo, [usuario], campo, valor)
         except ValueError as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True}
@@ -1006,7 +1238,7 @@ class Api:
         if operacao not in OPERATIONS:
             return {"success": False, "message": "Escolha uma operação para lançar a sinergia."}
         try:
-            coverage_store.definir_sinergia(operacao, chave_periodo, campo, valor)
+            self._lancar(coverage_store.definir_sinergia, operacao, chave_periodo, campo, valor)
         except ValueError as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True}
@@ -1021,9 +1253,11 @@ class Api:
         grupos = {}
         for linha in tela["linhas"]:
             grupos.setdefault((linha["operacao_key"], linha["chave_periodo"]), []).append(linha["usuario"])
-        try:
+        def definir_todos():
             for (op, chave_periodo), usuarios in grupos.items():
                 coverage_store.definir(op, chave_periodo, usuarios, campo, valor)
+        try:
+            self._lancar(definir_todos)
         except ValueError as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True, "usuarios": len(tela["linhas"])}
@@ -1032,7 +1266,7 @@ class Api:
         """HC, dias uteis, horas/dia ou faltas de um gestor numa semana (ou
         ciclo da folha). Cada periodo tem os seus numeros."""
         try:
-            headcount_store.definir_quadro(gestor_id, periodo_id, campo, valor)
+            self._lancar(headcount_store.definir_quadro, gestor_id, periodo_id, campo, valor)
         except ValueError as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True}
@@ -1041,7 +1275,7 @@ class Api:
         """Faltas em dias digitadas na tela de Headcount, por gestor e por
         semana (ou ciclo da folha). Valem na hora na aba Inicio."""
         try:
-            headcount_store.lancar_faltas(gestor_id, periodo_id, valor)
+            self._lancar(headcount_store.lancar_faltas, gestor_id, periodo_id, valor)
         except ValueError as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True}
@@ -1052,7 +1286,7 @@ class Api:
         if operacao not in OPERATIONS:
             return {"success": False, "message": "Escolha a operação do gestor."}
         try:
-            gestor = headcount_store.editar_gestor(gestor_id, nome, operacao)
+            gestor = self._lancar(headcount_store.editar_gestor, gestor_id, nome, operacao)
         except ValueError as exc:
             return {"success": False, "message": str(exc)}
         # So o id: nome de gestor nao vai para o log (o diagnostico leva o
@@ -1061,7 +1295,7 @@ class Api:
         return {"success": True, "gestor": gestor}
 
     def remove_gestor(self, gestor_id):
-        removido = headcount_store.remover_gestor(gestor_id)
+        removido = self._lancar(headcount_store.remover_gestor, gestor_id)
         if not removido:
             return {"success": False, "message": "Gestor não encontrado."}
         log.info("gestor %s excluído", gestor_id)
@@ -1074,13 +1308,13 @@ class Api:
         if operacao not in OPERATIONS:
             return {"success": False, "message": "Escolha a operação da função."}
         try:
-            funcoes = headcount_store.adicionar_funcao(nome, operacao)
+            funcoes = self._lancar(headcount_store.adicionar_funcao, nome, operacao)
         except ValueError as exc:
             return {"success": False, "message": str(exc)}
         return {"success": True, "funcoes": funcoes, **self._resumo_atual()}
 
     def remove_funcao(self, nome, operacao=None):
-        funcoes = headcount_store.remover_funcao(nome, operacao)
+        funcoes = self._lancar(headcount_store.remover_funcao, nome, operacao)
         return {"success": True, "funcoes": funcoes, **self._resumo_atual()}
 
     @staticmethod

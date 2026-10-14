@@ -1,0 +1,56 @@
+/* ================================================================
+   Tema claro (Configuracoes ou o botao do topo)
+   ================================================================
+   So o app muda: o login e a abertura sao telas da marca e ficam
+   escuros. Os nomes sao os mesmos do :root, redefinidos dentro do app. */
+
+#app-view { background: var(--bg); color: var(--text); color-scheme: dark; }
+
+:root[data-tema="claro"] #app-view,
+:root[data-tema="claro"] .atalhos-fundo,
+:root[data-tema="claro"] .dialogo-fundo {
+  color-scheme: light;
+  --bg: #f2f4f8;
+  --card-bg: #ffffff;
+  --card-border: #e1e5ec;
+  --text: #1d2433;
+  --text-muted: #566072;
+  --text-faint: #8a93a3;
+  --input-bg: #f5f7fa;
+  --input-border: #d3d9e3;
+  --line: #eceff4;
+  --surface-2: #f5f7fa;
+  --surface-3: #fbfcfd;
+  --sidebar-bg: #ffffff;
+  --sidebar-tx: #3d4657;
+  --eixo: #c3cad6;
+  --barra-neutra: #9aa5b8;
+  --trilho: #b8c1cf;
+  --overlay-0: rgba(15, 23, 42, 0.015);
+  --overlay-1: rgba(15, 23, 42, 0.04);
+  --overlay-2: rgba(15, 23, 42, 0.08);
+  --overlay-3: rgba(15, 23, 42, 0.12);
+  --ok-tx: #15803d;
+  --erro-tx: #b42318;
+  --perigo-tx: #d92d20;
+  --alerta-tx: #b54708;
+  --azul-tx: #026aa2;
+  --amarelo-tx: #8a6100;
+  --sombra-card: 0 1px 2px rgba(15, 23, 42, 0.05), 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+:root[data-tema="claro"] .sidebar { border-right: 1px solid var(--card-border); }
+:root[data-tema="claro"] .sidebar-footer { border-top-color: var(--card-border); }
+:root[data-tema="claro"] .indicator-corner::after,
+:root[data-tema="claro"] .indicator-name::after { background: linear-gradient(90deg, rgba(15, 23, 42, 0.08), transparent); }
+:root[data-tema="claro"] .month-col,
+:root[data-tema="claro"] .peak-col { background: rgba(255, 204, 0, 0.08); }
+:root[data-tema="claro"] .indicator-value.verde { background: rgba(34, 197, 94, 0.13); }
+:root[data-tema="claro"] .indicator-value.vermelho { background: rgba(244, 63, 94, 0.11); }
+:root[data-tema="claro"] .indicator-value.azul { background: rgba(14, 165, 233, 0.12); }
+:root[data-tema="claro"] .period-option.active,
+:root[data-tema="claro"] .ops-item.selected,
+:root[data-tema="claro"] .source-option { background: rgba(255, 204, 0, 0.12); }
+:root[data-tema="claro"] .hc-card:hover,
+:root[data-tema="claro"] .ind-quadro:hover { box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1); }
+:root[data-tema="claro"] .nota-agrupamento-fixo:not([hidden]) { background: rgba(255, 204, 0, 0.1); border-color: rgba(181, 71, 8, 0.35); }
+:root[data-tema="claro"] .ind-pareto-rotulo-fundo { fill: rgba(255, 255, 255, 0.95); stroke: var(--card-border); }

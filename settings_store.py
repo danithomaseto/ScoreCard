@@ -90,3 +90,18 @@ def set_preferencia(chave, valor):
     settings.setdefault("preferencias", {})[chave] = valor
     save_settings(settings)
     return get_preferencias()
+
+
+# Versao dos arquivos de dados: ate qual migracao (migracoes.py) esta
+# maquina ja rodou.
+def get_versao_dos_dados():
+    try:
+        return int(get_settings().get("versao_dos_dados") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def set_versao_dos_dados(numero):
+    settings = get_settings()
+    settings["versao_dos_dados"] = int(numero)
+    save_settings(settings)

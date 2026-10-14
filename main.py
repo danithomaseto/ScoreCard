@@ -26,7 +26,8 @@ log = logging.getLogger("scorecard")
 import webview  # noqa: E402 - depois do log, para registrar erro de import
 
 from api import Api  # noqa: E402
-import reparo_semanas  # noqa: E402
+import backup  # noqa: E402
+import migracoes  # noqa: E402
 
 
 def resource_path(relative_path):
@@ -144,9 +145,13 @@ def main():
         instancia_unica.trazer_para_frente()
         return
     ensure_browser_installed()
-    # Semanas gravadas com dia e mes trocados (data americana lida como
-    # brasileira ate a V.01.1): ver reparo_semanas.py.
-    reparo_semanas.reparar()
+    # Backup do dia antes de qualquer conserto mexer nos dados, e depois os
+    # consertos no que ja esta gravado, uma vez cada (migracoes.py).
+    try:
+        backup.fazer()
+    except Exception:  # noqa: BLE001 - sem backup o app abre igual
+        log.exception("não consegui fazer o backup do dia")
+    migracoes.migrar()
 
     api = Api()
     index_path = resource_path(os.path.join("ui", "index.html"))
