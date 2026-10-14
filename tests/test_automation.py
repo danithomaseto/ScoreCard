@@ -96,6 +96,26 @@ def test_nova_extracao_apaga_a_anterior_da_mesma_pasta(operations, sharepoint_di
     assert not os.path.exists(primeira["file_path"])
 
 
+def test_periodos_diferentes_ficam_na_pasta_como_historico(operations, sharepoint_dir):
+    """A pasta do SharePoint e lida por todo mundo: a extracao nova so
+    apaga o que ela substitui (o mesmo periodo), nao as outras semanas."""
+    setembro = run_mock(operations, sharepoint_dir, date_range={"from_date": "2026-09-01", "to_date": "2026-09-07"})
+    outubro = run_mock(operations, sharepoint_dir, date_range={"from_date": "2026-10-01", "to_date": "2026-10-07"})
+
+    assert os.path.isfile(setembro["file_path"]) and os.path.isfile(outubro["file_path"])
+    assert os.path.basename(setembro["file_path"]).endswith("_20260901-20260907.xlsx")
+
+
+def test_month_com_last_month_leva_o_mes_anterior_no_nome(operations, sharepoint_dir):
+    from datetime import date, timedelta
+
+    result = run_mock(operations, sharepoint_dir, period="month", date_range=None)
+
+    anterior = date.today().replace(day=1) - timedelta(days=1)
+    esperado = f"_{anterior:%Y%m}01-{anterior:%Y%m%d}"
+    assert esperado in os.path.basename(result["file_path"])
+
+
 def test_week_nao_apaga_o_arquivo_de_month(operations, sharepoint_dir):
     mensal = run_mock(operations, sharepoint_dir, key="mock_m", folder="MockCo", period="month")
     run_mock(operations, sharepoint_dir, key="mock_m", folder="MockCo", period="week")

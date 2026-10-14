@@ -34,12 +34,13 @@ def ler():
     return dados if isinstance(dados, dict) else {}
 
 
-def salvar(operacao, semanas, de=None, ate=None):
+def salvar(operacao, semanas, de=None, ate=None, quando=None):
     """semanas e {chave da semana: indicators.indiretas.da_semana(...)},
-    cada uma com "parcial" ja marcado."""
+    cada uma com "parcial" ja marcado. quando e a data da extracao (a do
+    arquivo do SharePoint); sem ela, agora."""
     dados = ler()
     da_operacao = dados.setdefault(operacao, {})
-    agora = datetime.now().isoformat(timespec="seconds")
+    agora = quando or datetime.now().isoformat(timespec="seconds")
     for chave, semana in semanas.items():
         da_operacao[chave] = {**semana, "de": de, "ate": ate, "extraido_em": agora}
     arquivo_seguro.gravar_json(_caminho(), dados, compacto=True)

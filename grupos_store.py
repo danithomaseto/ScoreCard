@@ -44,14 +44,15 @@ def chave(periodo, chave_periodo):
     return f"{periodo}:{chave_periodo}"
 
 
-def salvar(dimensao, operacao, periodo, por_chave, de=None, ate=None, parciais=None):
+def salvar(dimensao, operacao, periodo, por_chave, de=None, ate=None, parciais=None, quando=None):
     """por_chave e {chave do periodo: {grupo: totais}}; parciais diz quais
-    semanas foram cortadas pelas datas da extracao."""
+    semanas foram cortadas pelas datas da extracao. quando e a data da
+    extracao (a do arquivo do SharePoint); sem ela, agora."""
     if dimensao not in DIMENSOES:
         raise ValueError("Dimensão inválida.")
     dados = ler()
     da_operacao = dados[dimensao].setdefault(operacao, {})
-    agora = datetime.now().isoformat(timespec="seconds")
+    agora = quando or datetime.now().isoformat(timespec="seconds")
     for chave_periodo, grupos in por_chave.items():
         da_operacao[chave(periodo, chave_periodo)] = {
             "grupos": grupos,

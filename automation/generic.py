@@ -1,7 +1,10 @@
+import calendar
 import logging
 import os
 import time
 from datetime import date, datetime, timedelta
+
+import arquivos_sharepoint
 
 from automation.base import (
     disable_grouping_level,
@@ -46,6 +49,19 @@ def _month_key(date_range, hoje=None):
     hoje = hoje or date.today()
     ultimo_dia_do_mes_anterior = hoje.replace(day=1) - timedelta(days=1)
     return ultimo_dia_do_mes_anterior.strftime("%Y-%m")
+
+
+def _periodo_do_nome(date_range, month_key):
+    """(de, ate) que vai no nome do arquivo: as datas digitadas ou, no
+    mes com o "Last Month", o mes anterior inteiro. Semana com o "Last
+    Week" fica sem: o periodo sai das semanas do proprio arquivo."""
+    if date_range:
+        return date_range["from_date"], date_range["to_date"]
+    if month_key:
+        ano, mes = (int(parte) for parte in month_key.split("-"))
+        ultimo = calendar.monthrange(ano, mes)[1]
+        return f"{month_key}-01", f"{month_key}-{ultimo:02d}"
+    return None
 
 
 def run(
@@ -103,11 +119,8 @@ def run(
     tipo = (period or "week").lower()
     if tipo not in PASTAS_DO_PERIODO:
         tipo = "week"
-    period_folder = PASTAS_DO_PERIODO[tipo]
-
-    folder = config.get("sharepoint_folder") or config["label"]
-    # "Gestor/Week" vira duas pastas, uma dentro da outra.
-    download_dir = os.path.join(base_dir, folder, *period_folder.split("/"))
+    # <pasta>\<operacao>\<tipo>; "Gestor/Week" vira duas pastas.
+    download_dir = arquivos_sharepoint.pasta(base_dir, operation_key, tipo)
 
     semanal = e_semanal(tipo)
     # Sem Week no agrupamento o export nao traz data nenhuma: o mes vem
@@ -201,6 +214,9 @@ def run(
             download_dir,
             operation_key=operation_key,
             export_format=config["export_format"],
+            tipo=tipo,
+            periodo=_periodo_do_nome(date_range, result["month_key"]),
+            group_by=niveis[-1] if tipo == "month" else None,
         )
 
         log(f"concluído: {saved_path}")

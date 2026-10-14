@@ -67,6 +67,11 @@
     <span class="dhl-logo">DHL</span>
     <span class="topbar-title">Score Card</span>
     <div class="topbar-acoes">
+      <button type="button" class="topbar-sp" id="topbar-sp" hidden
+              title="Lê de novo a pasta do SharePoint: o que qualquer pessoa extraiu aparece aqui.">
+        <svg class="topbar-sp-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6.34 8.6 4 4 0 0 0 6.5 19Z"/><path class="sp-seta" d="m9 14 2 2 4-4"/></svg>
+        <span class="topbar-sp-texto" id="topbar-sp-texto">SharePoint</span>
+      </button>
       <button type="button" class="topbar-extracao" id="topbar-extracao" hidden>
         <span class="topbar-extracao-icone" aria-hidden="true"></span>
         <span class="topbar-extracao-texto" id="topbar-extracao-texto"></span>
@@ -209,6 +214,10 @@
                 <label>Última extração</label>
                 <p class="filtro-nota" id="home-last-run">Nenhuma extração ainda</p>
               </div>
+              <div class="filtro-campo filtro-info filtro-sp" title="Data do relatório mais novo desta operação na pasta do SharePoint (vem do nome do arquivo). Vale para todo mundo que usa a pasta.">
+                <label>No SharePoint</label>
+                <p class="filtro-nota" id="home-sp"><span class="sp-icone" aria-hidden="true"></span><span class="sp-texto">Procurando…</span></p>
+              </div>
             </div>
           </div>
 
@@ -298,6 +307,10 @@
               <div class="filtro-campo filtro-info">
                 <label>Última extração</label>
                 <p class="filtro-nota" id="rg-ultima">Nenhuma extração ainda</p>
+              </div>
+              <div class="filtro-campo filtro-info filtro-sp" title="Data do relatório mais novo desta operação na pasta do SharePoint (vem do nome do arquivo). Vale para todo mundo que usa a pasta.">
+                <label>No SharePoint</label>
+                <p class="filtro-nota" id="rg-sp"><span class="sp-icone" aria-hidden="true"></span><span class="sp-texto">Procurando…</span></p>
               </div>
             </div>
           </div>
@@ -403,6 +416,10 @@
               <div class="filtro-campo filtro-info">
                 <label>Última extração</label>
                 <p class="filtro-nota" id="rt-ultima">Nenhuma extração ainda</p>
+              </div>
+              <div class="filtro-campo filtro-info filtro-sp" title="Data do relatório mais novo desta operação na pasta do SharePoint (vem do nome do arquivo). Vale para todo mundo que usa a pasta.">
+                <label>No SharePoint</label>
+                <p class="filtro-nota" id="rt-sp"><span class="sp-icone" aria-hidden="true"></span><span class="sp-texto">Procurando…</span></p>
               </div>
             </div>
           </div>
@@ -1146,6 +1163,10 @@
                   <button type="button" class="seg-opcao" data-visualizacao="mes">Resultado do Mês</button>
                 </div>
               </div>
+              <div class="filtro-campo filtro-info filtro-sp" title="Data do relatório mais novo desta operação na pasta do SharePoint (vem do nome do arquivo). Vale para todo mundo que usa a pasta.">
+                <label>No SharePoint</label>
+                <p class="filtro-nota" id="cv-sp"><span class="sp-icone" aria-hidden="true"></span><span class="sp-texto">Procurando…</span></p>
+              </div>
             </div>
           </div>
 
@@ -1298,6 +1319,7 @@
             <div class="ind-extracao-nota">
               <span>Agrupamento fixo pelo sistema (Week + Job Code). O arquivo vai para a pasta <strong>Indiretas</strong> da operação.</span>
               <span class="ind-chip" id="ind-ultima" hidden></span>
+              <span class="ind-chip ind-chip-sp" id="ind-sp" title="Data do relatório de Horas Indiretas mais novo desta operação na pasta do SharePoint (vem do nome do arquivo)."></span>
             </div>
             <div class="ind-progresso" id="ind-progresso" hidden>
               <div class="ind-progresso-barra"><span id="ind-progresso-preenchido"></span></div>

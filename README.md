@@ -262,6 +262,7 @@ indiretas_tela.py     # monta a aba Horas Indiretas (semanas, cards, tabela)
 grupos_store.py       # resultados por gestor e por turno
 grupos_tela.py        # monta as abas Resultado Gestor e Resultado Turno
 reparo_semanas.py     # acerta semanas gravadas com dia e mes trocados
+arquivos_sharepoint.py  # nome com periodo, limpeza e leitura da pasta compartilhada
 automation/
   base.py              # login, iframe, comboboxes, export (Playwright)
   generic.py            # orquestra o fluxo por operacao
@@ -294,6 +295,7 @@ tests/
   test_indiretas.py      # horas indiretas conferidas com a planilha
   test_grupos.py         # gestor, turno, Supervisor na Week e varios filtros
   test_datas.py          # semana e Report Date em dia/mes e mes/dia
+  test_sharepoint.py     # nome do arquivo, limpeza e leitura da pasta compartilhada
   test_api.py            # extracao unica, fila multipla e validacoes
   test_lancador.py       # app dentro do .exe, descompactado uma vez
   test_infra.py          # gravacao segura e log sem credenciais

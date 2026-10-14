@@ -20,6 +20,7 @@ from config.operations import (
     DEFAULT_DATE_RANGE, GROUP_BY_OPTIONS, OPERATIONS, PASTAS_DO_PERIODO, POR_GRUPO,
     ROTULOS_DO_PERIODO, agrupamento, e_semanal, escala_espanhola,
 )
+import arquivos_sharepoint
 import conexao
 import coverage_store
 import coverage_tela
@@ -58,6 +59,10 @@ class Api:
         # pede confirmacao (ver _extraindo).
         self._extracoes_em_andamento = 0
         self._trava_extracoes = threading.Lock()
+        # O calculo grava os arquivos de dados; a extracao e a leitura da
+        # pasta do SharePoint podem calcular ao mesmo tempo (threads do
+        # js_api), e duas gravacoes cruzadas perderiam uma delas.
+        self._trava_dados = threading.Lock()
         # Modo apresentacao (tela cheia). A janela abre maximizada
         # (main.py); os eventos abaixo acompanham se o usuario mudou isso,
         # para a saida da tela cheia voltar do jeito que estava.
@@ -232,14 +237,21 @@ class Api:
         return "success"
 
     def _calcular_indicadores(self, operation_key, result):
-        """Le o arquivo recem-baixado, calcula e grava os indicadores.
+        """Le o arquivo recem-baixado (ou da pasta do SharePoint), calcula
+        e grava os indicadores.
 
-        Roda aqui, na hora da extracao, e nao na tela: o proximo
-        download apaga este arquivo, entao quem nao calcular agora nao
-        calcula mais.
+        Roda na hora da extracao, e nao na tela: o arquivo pode ser
+        substituido por uma extracao seguinte. Os arquivos que outras
+        pessoas extrairam chegam pela leitura da pasta
+        (arquivos_sharepoint.sincronizar), pelo mesmo caminho.
         """
         if not result.get("success") or not result.get("file_path"):
             return
+        with self._trava_dados:
+            self._calcular(operation_key, result)
+
+    def _calcular(self, operation_key, result):
+        quando = result.get("extraido_em")  # a data do arquivo, se veio da pasta
 
         try:
             lido = reader.ler(result["file_path"])
@@ -268,12 +280,12 @@ class Api:
             semanas = indiretas.por_semana(lido["linhas"])
             for chave, semana in semanas.items():
                 semana["parcial"] = periodos.semana_parcial(chave, de, ate)
-            indiretas_store.salvar(operation_key, semanas, de, ate)
+            indiretas_store.salvar(operation_key, semanas, de, ate, quando=quando)
             result["indicators"] = len(semanas)
             return
 
         if tipo in POR_GRUPO:
-            self._calcular_por_grupo(operation_key, tipo, lido, result)
+            self._calcular_por_grupo(operation_key, tipo, lido, result, quando)
             return
 
         if tipo == "peak":
@@ -307,7 +319,7 @@ class Api:
             periodo = "month"
             # Coverage: as horas de cada usuario (primeiro nivel do mensal).
             coverage_store.salvar_extracao(
-                operation_key, "month", {chave: coverage.por_usuario(lido["linhas"])}, de, ate)
+                operation_key, "month", {chave: coverage.por_usuario(lido["linhas"])}, de, ate, quando=quando)
         else:
             if not lido["tem_semana"]:
                 result["indicators_message"] = (
@@ -324,13 +336,75 @@ class Api:
             periodo = "week"
             # Coverage: as horas e o gestor de cada usuario (ultimo nivel do semanal).
             coverage_store.salvar_extracao(
-                operation_key, "week", coverage.por_semana_e_usuario(lido["linhas"]), de, ate)
+                operation_key, "week", coverage.por_semana_e_usuario(lido["linhas"]), de, ate, quando=quando)
 
-        indicators_store.salvar_extracao(operation_key, periodo, resultados, meta=meta)
+        indicators_store.salvar_extracao(operation_key, periodo, resultados, meta=meta, quando=quando)
         result["indicators"] = len(resultados)
 
     @staticmethod
-    def _calcular_por_grupo(operation_key, tipo, lido, result):
+    def _registrar_no_sharepoint(operation_key, result):
+        """O arquivo que esta pessoa acabou de extrair ja foi calculado: a
+        leitura da pasta nao precisa calcular de novo."""
+        if not result.get("success"):
+            return
+        try:
+            arquivos_sharepoint.registrar(settings_store.get_sharepoint_folder(), operation_key,
+                                          result.get("tipo") or "week", result.get("file_path"))
+        except Exception:  # noqa: BLE001 - so evita um calculo repetido
+            log.exception("não consegui anotar %s como lido", result.get("file_path"))
+
+    # ---------------- Pasta do SharePoint (compartilhada) ----------------
+
+    def sincronizar_sharepoint(self):
+        """Calcula os relatorios da pasta do SharePoint que esta pessoa
+        ainda nao tem (extraidos por qualquer um). A tela chama ao entrar,
+        ao trocar de aba e de tempos em tempos."""
+        if self._extracoes_em_andamento:
+            return {"atualizados": [], "ignorados": [], "ocupado": True}
+        try:
+            resposta = arquivos_sharepoint.sincronizar(
+                settings_store.get_sharepoint_folder(), self._calcular_indicadores)
+        except Exception as exc:  # noqa: BLE001 - a tela segue com o que ja tem
+            log.exception("falha ao ler a pasta do SharePoint")
+            return {"atualizados": [], "ignorados": [], "erro": str(exc)}
+        for item in resposta.get("atualizados", []):
+            item["operacao_rotulo"] = OPERATIONS[item["operacao"]]["label"]
+            item["tipo_rotulo"] = ROTULOS_DO_PERIODO[item["tipo"]]
+        return resposta
+
+    def get_sharepoint_info(self, operacao):
+        """O relatorio mais novo de cada tipo da operacao na pasta do
+        SharePoint: {"tipos": {tipo: {"quando", "texto", "rotulo",
+        "periodo", "nome"}}}. A data e a do nome do arquivo."""
+        if operacao != "todas" and operacao not in OPERATIONS:
+            return {"tipos": {}}
+        base = settings_store.get_sharepoint_folder()
+        # "todas" (Coverage e Horas Indiretas): o mais novo de cada tipo
+        # entre todas as operacoes.
+        mais_novos = {}
+        for chave in (OPERATIONS if operacao == "todas" else [operacao]):
+            for tipo, info in arquivos_sharepoint.ultimos(base, chave).items():
+                if tipo not in mais_novos or info["quando"] > mais_novos[tipo]["quando"]:
+                    mais_novos[tipo] = {**info, "operacao": OPERATIONS[chave]["label"]}
+        tipos = {}
+        for tipo, info in mais_novos.items():
+            periodo = ""
+            if info["de"] and info["ate"]:
+                de = datetime.date.fromisoformat(info["de"])
+                ate = datetime.date.fromisoformat(info["ate"])
+                periodo = f"{de.strftime('%d/%m')} a {ate.strftime('%d/%m/%Y')}"
+            tipos[tipo] = {
+                "quando": info["quando"].isoformat(timespec="seconds"),
+                "texto": info["quando"].strftime("%d/%m/%Y %H:%M"),
+                "rotulo": ROTULOS_DO_PERIODO[tipo],
+                "operacao": info["operacao"],
+                "periodo": periodo,
+                "nome": info["nome"],
+            }
+        return {"tipos": tipos, "pasta": bool(base and os.path.isdir(base))}
+
+    @staticmethod
+    def _calcular_por_grupo(operation_key, tipo, lido, result, quando=None):
         """Resultado Gestor e Resultado Turno: os indicadores de cada gestor
         (ou turno) por semana, ou do mes."""
         dimensao, periodo = POR_GRUPO[tipo]
@@ -361,7 +435,7 @@ class Api:
                 return
             por_chave = {chave: grupos.por_grupo(lido["linhas"])}
             parciais = {chave: periodos.mes_parcial(chave, de, ate)}
-        grupos_store.salvar(dimensao, operation_key, periodo, por_chave, de, ate, parciais)
+        grupos_store.salvar(dimensao, operation_key, periodo, por_chave, de, ate, parciais, quando=quando)
         result["indicators"] = len(por_chave)
 
     def _check_extraction_params(self, group_by, period):
@@ -423,6 +497,7 @@ class Api:
             period=period,
         )
         self._calcular_indicadores(operation_key, result)
+        self._registrar_no_sharepoint(operation_key, result)
         self._record_history(operation_key, result)
         result["status"] = self._status_da_extracao(result)
         return result
@@ -561,6 +636,7 @@ class Api:
                         navegador=navegador,
                     )
                 self._calcular_indicadores(operation_key, result)
+                self._registrar_no_sharepoint(operation_key, result)
                 self._record_history(operation_key, result)
 
                 status = self._status_da_extracao(result)
@@ -751,8 +827,15 @@ class Api:
             coluna.pop("_entrada")
             coluna.pop("sem", None)
 
+        # A extracao mais nova dos dados da operacao, de quem quer que tenha
+        # extraido (os que vem da pasta do SharePoint guardam a data do
+        # arquivo).
+        ultima = max((entrada.get("extraido_em") or ""
+                      for por_periodo in tudo.values() if isinstance(por_periodo, dict)
+                      for entrada in por_periodo.values() if isinstance(entrada, dict)), default="")
         return {
             "operacao": OPERATIONS[operation_key]["label"],
+            "ultima_extracao": ultima or None,
             "colunas": colunas,
             "linhas": linhas,
             "distribuicao": self._distribuicao_do_mes(meses.get(mes)),

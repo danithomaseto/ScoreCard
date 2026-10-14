@@ -109,6 +109,13 @@ def resumo():
             nomes = {n for p in periodos.values() for n in (p.get("grupos") or {})}
             linhas.append(f"  {dimensao} {operacao}: {len(periodos)} periodos, {len(nomes)} grupos")
 
+    # Leitura da pasta do SharePoint: quantos relatorios de cada operacao
+    # e tipo ja foram lidos (os nomes dos arquivos so tem operacao e datas).
+    estado_sp = _ler_json("sharepoint.json") or {}
+    linhas.append("Relatorios da pasta do SharePoint ja lidos (por operacao|tipo):")
+    for grupo, lidos in sorted((estado_sp.get("grupos") or {}).items()):
+        linhas.append(f"  {grupo}: {len(lidos)}")
+
     linhas += ["", "Chromium:"] + [f"  {n}" for n in _navegadores()]
 
     historico = _ler_json("history.json") or []

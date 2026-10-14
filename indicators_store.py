@@ -58,7 +58,7 @@ def get_indicators(operation_key=None):
     return dados.get(operation_key, {})
 
 
-def salvar_extracao(operation_key, periodo, resultados, meta=None):
+def salvar_extracao(operation_key, periodo, resultados, meta=None, quando=None):
     """Grava o que veio de uma extracao.
 
     resultados e {chave: totais}. A substituicao e **parcial, por
@@ -66,10 +66,13 @@ def salvar_extracao(operation_key, periodo, resultados, meta=None):
     presenteismo e o coverage, que sao digitados a mao e nao estao no
     relatorio. Sem essa regra, reextrair uma semana pra corrigir um
     numero apagaria calado os dois e derrubaria o cubo junto.
+
+    quando e a data da extracao (a do arquivo, quando ele vem da pasta do
+    SharePoint); sem ela, agora.
     """
     dados = _ler()
     por_periodo = dados.setdefault(operation_key, {}).setdefault(periodo, {})
-    agora = datetime.now().isoformat(timespec="seconds")
+    agora = quando or datetime.now().isoformat(timespec="seconds")
 
     for chave, totais in resultados.items():
         anterior = por_periodo.get(chave, {})

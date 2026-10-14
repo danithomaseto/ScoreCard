@@ -158,3 +158,22 @@ def dias_do_mes(valores, mes):
         return sum(1 for d in datas if f"{d.year:04d}-{d.month:02d}" == mes)
 
     return _converter(list(valores), nota)
+
+
+def mes_predominante(valores):
+    """O mes ("2026-09") em que cai a maior parte de uma coluna de dias,
+    na ordem (dia/mes ou mes/dia) que mais concentra as datas num mes so.
+    Serve para o arquivo de Dias de Pico antigo, sem o periodo no nome."""
+    melhor = (0, None)
+    for ordem_ in ("dmy", "mdy"):
+        contagem = {}
+        for valor in valores:
+            lida = leituras(valor)
+            if lida:
+                mes = lida[ordem_].strftime("%Y-%m")
+                contagem[mes] = contagem.get(mes, 0) + 1
+        if contagem:
+            mes, quantos = max(contagem.items(), key=lambda item: (item[1], item[0]))
+            if quantos > melhor[0]:
+                melhor = (quantos, mes)
+    return melhor[1]

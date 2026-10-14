@@ -60,12 +60,13 @@ def chave(periodo, chave_periodo):
     return f"{periodo}:{chave_periodo}"
 
 
-def salvar_extracao(operacao, periodo, por_chave, de=None, ate=None):
+def salvar_extracao(operacao, periodo, por_chave, de=None, ate=None, quando=None):
     """por_chave e {chave do periodo: {usuario: {"lms", "diretas_sem_meta"}}}.
-    Substitui o que havia daquele periodo: e sempre o export mais novo."""
+    Substitui o que havia daquele periodo: e sempre o export mais novo.
+    quando e a data da extracao (a do arquivo do SharePoint); sem ela, agora."""
     dados = ler()
     da_operacao = dados["extracoes"].setdefault(operacao, {})
-    agora = datetime.now().isoformat(timespec="seconds")
+    agora = quando or datetime.now().isoformat(timespec="seconds")
     for chave_periodo, usuarios in por_chave.items():
         da_operacao[chave(periodo, chave_periodo)] = {
             "usuarios": usuarios,

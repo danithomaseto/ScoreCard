@@ -83,11 +83,36 @@ function desenharEsqueleto(tbody, colunas, linhas = 4) {
   }
 }
 
+// Respostas fora de ordem: cada chamada ao Python roda numa thread, e a
+// resposta de um filtro antigo pode chegar depois da do filtro novo
+// (troca rapida de operacao, ou a leitura do SharePoint redesenhando a
+// aba). Cada aba numera os pedidos e so a resposta do mais novo desenha.
+const pedidosDaTela = {};
+function novoPedido(aba) {
+  pedidosDaTela[aba] = (pedidosDaTela[aba] || 0) + 1;
+  return pedidosDaTela[aba];
+}
+function pedidoVale(aba, numero) {
+  return pedidosDaTela[aba] === numero;
+}
+
+// Enquanto o filtro novo carrega, o que esta na tela esmaece um pouco: da
+// para ver que algo esta vindo, sem piscar quando a resposta e rapida.
+async function comAtualizando(caixa, carregar) {
+  const marca = setTimeout(() => caixa && caixa.classList.add('atualizando'), 140);
+  try {
+    return await carregar();
+  } finally {
+    clearTimeout(marca);
+    if (caixa) caixa.classList.remove('atualizando');
+  }
+}
+
 async function comEsqueleto(tbody, colunas, carregar, antesDeMostrar) {
   // Voltando a uma aba que ja tem dados, eles ficam na tela enquanto a
   // atualizacao chega: trocar por barras cinza pareceria mais lento.
   if (tbody.querySelector('tr:not(.linha-esqueleto)')) {
-    return carregar();
+    return comAtualizando(tbody.closest('.card') || tbody, carregar);
   }
   const timer = setTimeout(() => {
     if (antesDeMostrar) antesDeMostrar();
@@ -220,6 +245,7 @@ async function showApp() {
   await loadGroupByOptions();
   await showPage('home');
   atualizarRodape();
+  iniciarLeituraDoSharePoint();
   preCarregar();
 }
 
@@ -527,6 +553,9 @@ document.addEventListener('pointerdown', (evento) => {
 
 async function showPage(pageName) {
   trocarComTransicao(pageName);
+  // O que outras pessoas extrairam chega pela pasta do SharePoint; se
+  // vier algo novo para esta aba, ela e redesenhada (sem esperar aqui).
+  if (ABAS_COM_DADOS.has(pageName)) sincronizarSharePoint();
   if (pageName === 'home') {
     await loadHome();
   } else if (pageName === 'extract') {
@@ -551,16 +580,25 @@ async function showPage(pageName) {
 }
 
 async function loadHome() {
-  await loadLastRun();
-  await loadIndicators();
+  const tabela = await loadIndicators();
+  if (!tabela) return; // sem operacao, ou ja chegou um pedido mais novo
+  await loadLastRun(tabela.ultima_extracao);
+  mostrarSharePoint('home-sp', homeOperationSelect.value, ['week', 'month', 'peak']);
 }
 
-async function loadLastRun() {
+async function loadLastRun(ultimaDosDados) {
   const history = await pywebview.api.get_report_history();
   // A ultima extracao da operacao escolhida no filtro (a de outra
   // operacao nao diz nada sobre estes numeros).
   const operacao = homeOperationSelect.selectedOptions[0]?.text;
   const last = history.find((h) => h.operation === operacao);
+  // Os dados podem ter vindo da pasta do SharePoint, extraidos por outra
+  // pessoa: vale a mais nova entre o historico desta maquina e os dados.
+  const dosDados = ultimaDosDados ? new Date(ultimaDosDados) : null;
+  if (dosDados && (!last || dosDados > new Date(last.timestamp))) {
+    homeLastRunEl.textContent = `${operacao} · ${dosDados.toLocaleString('pt-BR')}`;
+    return;
+  }
   if (!last) {
     homeLastRunEl.textContent = history.length
       ? `Nenhuma extração de ${operacao} ainda`
@@ -578,13 +616,15 @@ async function loadLastRun() {
 // diferentes na primeira mudanca.
 async function loadIndicators() {
   const operacao = homeOperationSelect.value;
-  if (!operacao) return;
+  if (!operacao) return null;
 
+  const pedido = novoPedido('inicio');
   const tabela = await comEsqueleto(
     indicatorsBody, 6,
     () => pywebview.api.get_indicator_table(operacao, homeMes.value || null),
     () => { indicatorsEmpty.hidden = true; indicatorsWrap.hidden = false; },
   );
+  if (!pedidoVale('inicio', pedido)) return null;
   preencherSelect(homeMes, tabela.meses || [], tabela.mes);
   const temDados = tabela.colunas.length > 0;
 
@@ -597,7 +637,7 @@ async function loadIndicators() {
     document.getElementById('indicators-empty-titulo').textContent =
       `Nenhuma extração de ${homeOperationSelect.selectedOptions[0]?.text || 'esta operação'} em ${nomeDoMes} ainda`;
     botaoMesAnterior(document.getElementById('indicators-anterior'), tabela.meses, tabela.mes);
-    return;
+    return tabela;
   }
 
   desenharDistribuicao(tabela.distribuicao);
@@ -608,6 +648,7 @@ async function loadIndicators() {
   // Abre mostrando o fim da tabela: o mes e o pico sao o que se olha
   // primeiro, e numa janela estreita eles ficariam escondidos a direita.
   indicatorsWrap.scrollLeft = indicatorsWrap.scrollWidth;
+  return tabela;
 }
 
 // ---------------------------------------------------------------
@@ -1001,7 +1042,7 @@ async function copiarTexto(texto, html) {
   }
 }
 
-homeOperationSelect.addEventListener('change', () => { loadLastRun(); loadIndicators(); });
+homeOperationSelect.addEventListener('change', loadHome);
 homeMes.addEventListener('change', loadIndicators);
 
 // Atalho das telas vazias: abre Extrair Dados com a operacao e o tipo de
@@ -1628,6 +1669,7 @@ async function ensureFolderConfigured() {
   const result = await pywebview.api.choose_sharepoint_folder();
   if (result.success) {
     folderPathEl.textContent = result.folder;
+    sincronizarSharePoint({ forcar: true });
     return true;
   }
   return false;
@@ -1865,6 +1907,7 @@ chooseFolderBtn.addEventListener('click', async () => {
   const result = await pywebview.api.choose_sharepoint_folder();
   if (result.success) {
     folderPathEl.textContent = result.folder;
+    sincronizarSharePoint({ forcar: true }); // pasta nova: le o que ja tem nela
   }
 });
 
@@ -1925,8 +1968,11 @@ function hcPercentual(valor) {
 }
 
 async function carregarHeadcount() {
-  hcTela = await comEsqueleto(hcCorpo, 7, () => pywebview.api.get_headcount(
+  const pedido = novoPedido('headcount');
+  const tela = await comEsqueleto(hcCorpo, 7, () => pywebview.api.get_headcount(
     hcEstado.operacao, hcEstado.visualizacao, hcEstado.mes, hcEstado.periodo_id));
+  if (!pedidoVale('headcount', pedido)) return;
+  hcTela = tela;
 
   hcEstado.mes = hcTela.mes;
   hcEstado.periodo_id = hcTela.periodo_id;
@@ -2749,8 +2795,11 @@ function pct(valor) {
 }
 
 async function carregarCoverage() {
-  cvTela = await comEsqueleto(cvCorpo, 11, () => pywebview.api.get_coverage(
+  const pedido = novoPedido('coverage');
+  const tela = await comEsqueleto(cvCorpo, 11, () => pywebview.api.get_coverage(
     cvEstado.operacao, cvEstado.visualizacao, cvEstado.mes, cvEstado.periodo_id, cvEstado.gestor || null));
+  if (!pedidoVale('coverage', pedido)) return;
+  cvTela = tela;
   cvEstado.mes = cvTela.mes;
   cvEstado.periodo_id = cvTela.periodo_id;
   cvEstado.gestor = cvTela.gestor || '';
@@ -2758,6 +2807,7 @@ async function carregarCoverage() {
   desenharCardsCv(cvTela);
   desenharTabelaCv(cvTela);
   ajustarAlturaCv();
+  mostrarSharePoint('cv-sp', cvEstado.operacao, ['week', 'month']);
 }
 
 // A lista de usuarios ganha a altura que sobra na janela, e rola sozinha
@@ -3114,11 +3164,16 @@ function selo(percentual, cor) {
 async function carregarIndiretas() {
   const conteudo = document.getElementById('ind-vis-semanas');
   if (!indTela) conteudo.innerHTML = '<div class="ind-semanas"><div class="ind-esqueleto"></div><div class="ind-esqueleto"></div><div class="ind-esqueleto"></div><div class="ind-esqueleto"></div></div>';
-  indTela = await pywebview.api.get_indiretas(indEstado.operacao, indEstado.mes, indEstado.semana_id);
+  const pedido = novoPedido('indiretas');
+  const tela = await comAtualizando(indTela ? document.getElementById('ind-conteudo') : null,
+    () => pywebview.api.get_indiretas(indEstado.operacao, indEstado.mes, indEstado.semana_id));
+  if (!pedidoVale('indiretas', pedido)) return;
+  indTela = tela;
   indEstado.operacao = indTela.operacao;
   indEstado.mes = indTela.mes;
   indEstado.semana_id = indTela.semana_id;
   desenharIndiretas();
+  mostrarSharePoint('ind-sp', indEstado.operacao, ['indiretas']);
 }
 
 // Datas sugeridas para extrair o mes escolhido: do domingo da semana do
@@ -3619,7 +3674,11 @@ function criarAbaDeGrupo(dimensao, pre) {
   async function carregar() {
     const tabelas = el('tabelas');
     if (!tela) tabelas.innerHTML = '<div class="card indicators-card"><div class="ind-esqueleto grupos-esqueleto"></div></div>';
-    tela = await pywebview.api.get_resultado_grupo(dimensao, estado.operacao, estado.mes);
+    const pedido = novoPedido(pre);
+    const nova = await comAtualizando(tela ? tabelas : null,
+      () => pywebview.api.get_resultado_grupo(dimensao, estado.operacao, estado.mes));
+    if (!pedidoVale(pre, pedido)) return;
+    tela = nova;
     estado.operacao = tela.operacao;
     estado.mes = tela.mes;
     desenhar();
@@ -3629,6 +3688,7 @@ function criarAbaDeGrupo(dimensao, pre) {
     preencherSelect(el('operacao'), tela.operacoes, tela.operacao, 'key', 'label');
     preencherSelect(el('mes'), tela.meses, tela.mes);
     el('ultima').textContent = tela.ultima_extracao || `Nenhuma extração de ${tela.operacao_rotulo} neste mês ainda`;
+    mostrarSharePoint(`${pre}-sp`, tela.operacao, [`${dimensao}_week`, `${dimensao}_month`]);
 
     const temDados = tela.colunas.length > 0;
     el('grupos-card').hidden = !temDados;
@@ -4353,3 +4413,168 @@ function desenharRodape() {
 }
 // O "há 5 min" anda sozinho.
 setInterval(() => { if (!appView.hidden) desenharRodape(); }, 60000);
+
+// ---------------------------------------------------------------
+// Pasta do SharePoint compartilhada
+// ---------------------------------------------------------------
+// Toda extracao vai para a pasta do SharePoint, que e a mesma para todo
+// mundo. O app le os relatorios que ainda nao tem (arquivos_sharepoint.py)
+// ao entrar, ao abrir uma aba de resultado e a cada minuto: quem filtra
+// uma operacao ve o que qualquer pessoa extraiu. Ao lado da "Ultima
+// extracao" fica a data do relatorio mais novo da pasta (vem do nome do
+// arquivo).
+
+const ABAS_COM_DADOS = new Set(['home', 'gestor', 'turno', 'coverage', 'indiretas', 'headcount']);
+const SP_INTERVALO = 60000;         // leitura automatica
+const SP_INTERVALO_MINIMO = 15000;  // trocar de aba nao le de novo antes disto
+const sp = { lendo: false, ultima: 0, estado: null, hora: '', relogio: null, pedidos: 0 };
+const seloSp = document.getElementById('topbar-sp');
+
+function desenharSeloSp() {
+  const texto = document.getElementById('topbar-sp-texto');
+  seloSp.hidden = !sp.estado;
+  seloSp.dataset.estado = sp.estado || '';
+  seloSp.disabled = sp.estado === 'lendo';
+  texto.textContent = {
+    lendo: 'Lendo o SharePoint…',
+    'sem-pasta': 'SharePoint: escolha a pasta',
+    erro: 'SharePoint indisponível',
+  }[sp.estado] || `SharePoint · ${sp.hora}`;
+}
+
+async function sincronizarSharePoint({ forcar = false } = {}) {
+  if (sp.lendo || appView.hidden) return null;
+  if (!forcar && Date.now() - sp.ultima < SP_INTERVALO_MINIMO) return null;
+  sp.lendo = true;
+  // So mostra "lendo" se demorar: o normal e levar milissegundos.
+  const mostrarLendo = setTimeout(() => { sp.estado = 'lendo'; desenharSeloSp(); }, forcar ? 0 : 500);
+  const antes = sp.estado === 'lendo' ? null : sp.estado;
+  let resposta;
+  try {
+    resposta = await pywebview.api.sincronizar_sharepoint();
+  } catch (err) {
+    resposta = { erro: String(err), atualizados: [] };
+  }
+  clearTimeout(mostrarLendo);
+  sp.lendo = false;
+  sp.ultima = Date.now();
+  if (resposta.sem_pasta) sp.estado = 'sem-pasta';
+  else if (resposta.erro) sp.estado = 'erro';
+  else if (resposta.ocupado) sp.estado = antes || 'ok'; // extraindo: le na proxima
+  else {
+    sp.estado = 'ok';
+    sp.hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+  if (sp.estado === 'ok' && !sp.hora) {
+    sp.hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+  desenharSeloSp();
+
+  const novos = resposta.atualizados || [];
+  if (novos.length) {
+    const lista = novos.map((n) => `${n.operacao_rotulo} · ${n.tipo_rotulo}`);
+    avisar(novos.length === 1 ? 'Dado novo da pasta do SharePoint' : `${novos.length} dados novos da pasta do SharePoint`,
+      'ok', lista.slice(0, 4).join(', ') + (lista.length > 4 ? ` e mais ${lista.length - 4}` : ''));
+    await recarregarAbaAberta();
+  } else if (forcar && sp.estado === 'ok' && !resposta.ocupado) {
+    avisar('Nada novo no SharePoint', 'info', 'Os dados da pasta já estão na tela.');
+  } else if (forcar && sp.estado === 'sem-pasta') {
+    avisar('Escolha a pasta do SharePoint', 'erro', 'Configurações › Pasta do SharePoint.');
+  }
+  return resposta;
+}
+
+async function recarregarAbaAberta() {
+  const aba = paginaAberta();
+  const antes = valoresNaTela();
+  if (aba === 'home') await loadHome();
+  else if (aba === 'gestor') await abaGestor.carregar();
+  else if (aba === 'turno') await abaTurno.carregar();
+  else if (aba === 'coverage') await carregarCoverage();
+  else if (aba === 'indiretas') await carregarIndiretas();
+  else if (aba === 'headcount') await carregarHeadcount();
+  destacarNovos(antes);
+}
+
+// Os valores das tabelas de indicadores, por tabela, linha e coluna
+// (pelo titulo, nao pela posicao: uma semana nova empurra as outras).
+function valoresNaTela() {
+  const valores = new Map();
+  document.querySelectorAll('.page:not([hidden]) td.indicator-cell').forEach((td) => {
+    const chave = chaveDaCelula(td);
+    if (chave) valores.set(chave, td.textContent.trim());
+  });
+  return valores;
+}
+
+function chaveDaCelula(td) {
+  const tabela = td.closest('table');
+  const titulo = tabela?.tHead?.rows[0]?.cells[td.cellIndex]?.querySelector('.col-title')?.textContent;
+  const linha = td.closest('tr')?.querySelector('.indicator-label')?.textContent;
+  if (!titulo || !linha) return null;
+  const dono = td.closest('[data-grupo]')?.dataset.grupo || tabela.id || '';
+  return `${dono}|${linha}|${titulo}`;
+}
+
+// Depois de chegar dado novo da pasta do SharePoint, o que mudou pisca
+// em amarelo por um instante.
+function destacarNovos(antes) {
+  if (SEM_ANIMACAO || !antes.size) return;
+  document.querySelectorAll('.page:not([hidden]) td.indicator-cell').forEach((td) => {
+    const chave = chaveDaCelula(td);
+    if (!chave || antes.get(chave) === td.textContent.trim()) return;
+    const alvo = td.querySelector('.indicator-value') || td;
+    alvo.classList.remove('valor-novo');
+    void alvo.offsetWidth; // reinicia a animacao
+    alvo.classList.add('valor-novo');
+    setTimeout(() => alvo.classList.remove('valor-novo'), 1800);
+  });
+}
+
+function iniciarLeituraDoSharePoint() {
+  sincronizarSharePoint();
+  if (sp.relogio) return;
+  sp.relogio = setInterval(() => {
+    if (!document.hidden) sincronizarSharePoint();
+  }, SP_INTERVALO);
+}
+
+seloSp.addEventListener('click', () => {
+  if (sp.estado === 'sem-pasta') { showPage('settings'); return; }
+  sincronizarSharePoint({ forcar: true });
+});
+
+// "No SharePoint: 13/10/2026 15:22 · Week" ao lado da ultima extracao,
+// com o mais novo de cada tipo no title.
+async function mostrarSharePoint(id, operacao, tipos) {
+  const alvo = document.getElementById(id);
+  if (!alvo || !operacao) return;
+  const pedido = String(++sp.pedidos);
+  alvo.dataset.pedido = pedido;
+  let info;
+  try {
+    info = await pywebview.api.get_sharepoint_info(operacao);
+  } catch (err) {
+    return;
+  }
+  if (alvo.dataset.pedido !== pedido) return; // trocou o filtro no meio
+  const todas = operacao === 'todas';
+  const achados = tipos.map((t) => (info.tipos || {})[t]).filter(Boolean)
+    .sort((a, b) => (a.quando < b.quando ? 1 : -1));
+  let texto;
+  if (!info.pasta) texto = 'Pasta não configurada';
+  else if (!achados.length) texto = todas ? 'Nenhum arquivo na pasta' : 'Nenhum arquivo desta operação';
+  else {
+    const novo = achados[0];
+    // "Gestor · Week" vira so "Week": a aba ja diz de quem e.
+    const tipo = tipos.length > 1 ? ` · ${novo.rotulo.replace(/^(Gestor|Turno) · /, '')}` : '';
+    texto = `${novo.texto}${todas ? ` · ${novo.operacao}` : ''}${tipo}`;
+  }
+  alvo.dataset.estado = achados.length ? 'ok' : 'vazio';
+  alvo.title = achados.length
+    ? `Relatório mais novo na pasta do SharePoint, por tipo:\n${achados.map((a) => `${a.rotulo}${todas ? ` (${a.operacao})` : ''}: ${a.texto}${a.periodo ? ` · período ${a.periodo}` : ''}`).join('\n')}`
+    : 'Nenhum relatório na pasta do SharePoint ainda.';
+  const campoTexto = alvo.querySelector('.sp-texto');
+  if (campoTexto) campoTexto.textContent = texto;
+  else alvo.textContent = `No SharePoint: ${texto}`;
+}

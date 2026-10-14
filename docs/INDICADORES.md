@@ -1265,3 +1265,40 @@ texto.
   Se a semana certa ja foi extraida de novo, fica a certa. So grava
   quando acha algo. As semanas que sumiram (dia > 12) nao foram
   gravadas na epoca: para elas, extrair o periodo de novo.
+
+## 29. Pasta do SharePoint compartilhada (14/10/2026)
+
+Os dados eram por computador: quem nao extraiu nao via nada. Agora a
+pasta do SharePoint (a mesma para todo mundo) e a fonte compartilhada
+(`arquivos_sharepoint.py`).
+
+- **Nome:** `ScoreCard_<op>_<AAAAMMDD_HHMMSS>[_<de>-<ate>][_GB-<group by>].xls`.
+  O periodo vem das datas digitadas; no mes com "Last Month", do mes
+  anterior inteiro; na semana com "Last Week", das semanas do proprio
+  arquivo (o arquivo e renomeado depois de baixado). O GB so aparece no
+  Month com Group By 1 diferente de User ID (a dispersao depende dele).
+- **Limpeza:** a extracao apaga so os anteriores da mesma operacao cujo
+  periodo cabe inteiro no novo; mais novos (de outra pessoa) e outros
+  periodos ficam. Month antigo sem periodo sai como antes; se o periodo
+  do novo nao da para saber, nada sai.
+- **Leitura (`sincronizar`):** varre `<pasta>/<op>/<tipo>` de todas as
+  operacoes; calcula os arquivos novos ou alterados (nome, tamanho,
+  data) com o mesmo `Api._calcular_indicadores` da extracao, montando o
+  resultado pelo nome (`resultado`). Ordem: do mais antigo ao mais novo;
+  um arquivo que chega atrasado faz os ja lidos mais novos serem lidos
+  de novo depois dele (o mais novo vale). `extraido_em` passa a ser a
+  data do arquivo. Fica de fora: arquivo mexido ha menos de 10 s (sendo
+  gravado), extraido ha mais de 400 dias, Month antigo sem periodo. Pico
+  antigo sem periodo usa o mes predominante dos dias
+  (`datas.mes_predominante`). O que foi lido fica em `sharepoint.json`;
+  trocar de pasta comeca do zero.
+- **Concorrencia:** uma trava (`Api._trava_dados`) impede a extracao e a
+  leitura de gravarem ao mesmo tempo; durante uma extracao a leitura
+  espera a proxima volta. O arquivo que a propria pessoa extraiu e
+  anotado como lido (`registrar`).
+- **Tela:** leitura ao entrar, ao abrir aba de resultado (no maximo a
+  cada 15 s) e a cada minuto; selo "SharePoint · hh:mm" na barra amarela
+  (clique le de novo); campo "No SharePoint" com a data do arquivo mais
+  novo (`get_sharepoint_info`, "todas" pega o mais novo entre as
+  operacoes). As respostas das abas passaram a ser numeradas: a de um
+  filtro antigo que chega depois nao desenha por cima da nova.

@@ -127,6 +127,37 @@ caso, `"escala_espanhola": True`). Nenhuma outra parte do código muda.
   se estiver minimizada). Duas janelas gravando nos mesmos dados
   sobrescreveriam uma à outra.
 
+### 4.0 Pasta do SharePoint compartilhada
+
+A pasta do SharePoint é a mesma para todo mundo, então **o que qualquer
+pessoa extrai aparece para todas**: quem filtra uma operação, semana ou
+mês vê o resultado mesmo sem ter extraído.
+
+- **Como funciona:** o app olha a pasta ao entrar, ao abrir uma aba de
+  resultado e a cada minuto, e calcula os relatórios que ainda não tem,
+  na ordem em que foram extraídos (o mais novo vale para o mesmo
+  período). Chegando dado novo, aparece um aviso ("Dado novo da pasta do
+  SharePoint · Hughes · Week"), a aba se redesenha e os valores que
+  mudaram piscam em amarelo.
+- **Selo na barra amarela:** "SharePoint · 10:42" é a hora da última
+  leitura; clicar lê de novo na hora. Sem pasta configurada, o selo
+  avisa e leva para Configurações.
+- **Nome do arquivo:** `ScoreCard_<operação>_<AAAAMMDD_HHMMSS>_<de>-<até>.xls`
+  — a data e hora da extração e o período do relatório (no Month com
+  outro Group By 1, também `_GB-<Group By>`). É o período no nome que
+  diz de que mês é um Month, que não tem coluna de data.
+- **Histórico na pasta:** a extração nova apaga só os arquivos
+  anteriores da mesma operação que ela substitui por inteiro (o mesmo
+  período ou um pedaço dele). As outras semanas e meses ficam.
+- **Arquivos de antes desta versão** (sem o período no nome): os de
+  semana, indiretas e pico são lidos pelo conteúdo; os de mês (Month,
+  Gestor · Month, Turno · Month) não dizem o mês e ficam de fora —
+  extraia o mês de novo uma vez.
+- **Todos na mesma versão:** a versão antiga apaga todos os arquivos da
+  operação na pasta a cada extração, inclusive o histórico.
+- Os lançamentos digitados (Headcount, dias/horas e sinergia do
+  Coverage) continuam **por computador**.
+
 ### 4.1.1 Menu, topo e atalhos
 
 - **Menu em grupos:** *Resultados* (Início, Resultado Gestor, Resultado
@@ -221,8 +252,15 @@ caso, `"escala_espanhola": True`). Nenhuma outra parte do código muda.
   PowerPoint). Indicador sem número vira célula vazia, para nenhum
   valor mudar de lugar. Cada valor vai centralizado, em fonte de 10 pt
   e sem quebra de linha, para caber numa linha só da célula.
-- **Última extração:** mostra quando a operação escolhida foi extraída
-  pela última vez.
+- **Última extração:** quando a operação escolhida foi extraída pela
+  última vez — por esta pessoa ou por qualquer outra (o que veio da
+  pasta do SharePoint guarda a data do arquivo).
+- **No SharePoint:** ao lado, a data do relatório mais novo da operação
+  na pasta do SharePoint (Week, Month ou Pico), tirada do nome do
+  arquivo, com um ponto verde. Passando o mouse, o mais novo de cada
+  tipo e o período dele. O mesmo campo aparece no Resultado Gestor, no
+  Resultado Turno e no Coverage; nas Horas Indiretas, ao lado da última
+  extração.
 - **Sem extração no mês:** aparece "Nenhuma extração de <operação> em
   <mês> ainda" com o botão **Extrair agora**, que abre a tela de
   extração com a operação já escolhida.
@@ -739,7 +777,10 @@ Tudo fica **no próprio computador**, em `%APPDATA%\ScoreCard\`:
   meio, fica o arquivo antigo inteiro — nunca um pedaço.
 - Os relatórios baixados ficam na pasta do SharePoint, em
   `<pasta>\<operação>\Week|Month|Dias de Pico|Indiretas\` e
-  `<pasta>\<operação>\Gestor|Turno\Week|Month\`.
+  `<pasta>\<operação>\Gestor|Turno\Week|Month\`, um arquivo por período
+  (ver [4.0](#40-pasta-do-sharepoint-compartilhada)).
+- `sharepoint.json` anota os relatórios da pasta já lidos (nome,
+  tamanho e data), para só calcular de novo o que mudou.
 - O app descompactado fica em `%LOCALAPPDATA%\ScoreCard\app-<versão>`
   (a versão anterior é apagada ao abrir uma nova).
 - Os dados são **por computador**: cada pessoa que usa o app tem os
@@ -862,6 +903,7 @@ ScoreCard.exe (lancador.py)
 | `registro.py` | log com filtro de credenciais |
 | `conexao.py` | checagem da VPN antes de extrair |
 | `reparo_semanas.py` | acerta, ao abrir, semanas gravadas com dia e mês trocados |
+| `arquivos_sharepoint.py` | nome com o período, limpeza do que foi substituído e leitura da pasta compartilhada |
 | `diagnostico.py` | zip de diagnóstico |
 | `versao.py` / `VERSAO` | número da versão e detalhes do .exe |
 | `config/operations.py` | cadastro das 12 operações |

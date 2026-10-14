@@ -8,11 +8,12 @@ um <iframe> cujo nome muda a cada sessao (tem um token/timestamp), entao
 localizamos o frame por um trecho fixo do nome em vez do nome completo.
 """
 
-import glob
 import os
 from datetime import datetime
 
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
+
+import arquivos_sharepoint
 
 
 SCREENSHOT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "screenshots")
@@ -436,9 +437,13 @@ def select_custom_date_range(frame, from_date, to_date, from_time=None, to_time=
     fill_field("#timefield-1143-inputEl", None, to_time, "a hora de 'To Date'")
 
 
-def export_report(page, frame, download_dir, operation_key, export_format="EXCEL"):
+def export_report(page, frame, download_dir, operation_key, export_format="EXCEL",
+                  tipo="week", periodo=None, group_by=None):
     """Clica em Export, escolhe o formato e salva o arquivo baixado em
-    download_dir. Retorna o caminho completo do arquivo salvo."""
+    download_dir. Retorna o caminho completo do arquivo salvo.
+
+    periodo (de, ate) e group_by vao no nome do arquivo, para quem le a
+    pasta do SharePoint saber o que ele traz (ver arquivos_sharepoint)."""
     export_button_selectors = [
         lambda f: f.get_by_role("button", name="Export", exact=True),
         lambda f: f.get_by_text("Export", exact=True),
@@ -468,21 +473,14 @@ def export_report(page, frame, download_dir, operation_key, export_format="EXCEL
     download = download_info.value
 
     os.makedirs(download_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     extension = os.path.splitext(download.suggested_filename)[1] or ".xlsx"
-    filename = f"ScoreCard_{operation_key}_{timestamp}{extension}"
+    de, ate = periodo or (None, None)
+    filename = arquivos_sharepoint.nome_do_arquivo(
+        operation_key, datetime.now(), extension, de, ate, group_by)
     dest_path = os.path.join(download_dir, filename)
     download.save_as(dest_path)
 
-    # Mantem so o relatorio mais recente desta operacao na pasta: apaga
-    # os anteriores gerados por este app (mesmo prefixo), sem mexer em
-    # nenhum outro arquivo que o usuario tenha colocado ali.
-    old_files_pattern = os.path.join(download_dir, f"ScoreCard_{operation_key}_*")
-    for old_file in glob.glob(old_files_pattern):
-        if os.path.abspath(old_file) != os.path.abspath(dest_path):
-            try:
-                os.remove(old_file)
-            except OSError:
-                pass  # nao deixa uma falha de limpeza derrubar a extracao
-
-    return dest_path
+    # A pasta guarda o historico: saem so os relatorios anteriores desta
+    # operacao que o novo substitui por inteiro (mesmo periodo ou um
+    # pedaco dele), sem mexer em nenhum outro arquivo que esteja ali.
+    return arquivos_sharepoint.guardar(dest_path, operation_key, tipo)
